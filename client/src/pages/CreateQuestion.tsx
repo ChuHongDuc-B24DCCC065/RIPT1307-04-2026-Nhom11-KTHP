@@ -3,6 +3,7 @@ import { Form, Input, Button, Card, Typography, Select, message, Space } from 'a
 import { ArrowLeftOutlined, SendOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
+
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
@@ -11,17 +12,7 @@ const CreateQuestion: React.FC = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = (values: any) => {
-    setLoading(true);
-    // Giả lập việc gửi câu hỏi
-    console.log('Question Data:', values);
-    
-    setTimeout(() => {
-      setLoading(false);
-      message.success('Đã đăng câu hỏi thành công!');
-      navigate('/');
-    }, 1500);
-  };
+
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -52,7 +43,7 @@ const CreateQuestion: React.FC = () => {
             name="title"
             rules={[
               { required: true, message: 'Vui lòng nhập tiêu đề!' },
-              { min: 10, message: 'Tiêu đề quá ngắn (tối thiểu 10 ký tự)!' }
+
             ]}
           >
             <Input placeholder="Ví dụ: Làm thế nào để sử dụng React Hooks hiệu quả?" size="large" />
@@ -63,7 +54,7 @@ const CreateQuestion: React.FC = () => {
             name="description"
             rules={[
               { required: true, message: 'Vui lòng nhập nội dung chi tiết!' },
-              { min: 20, message: 'Nội dung quá ngắn (tối thiểu 20 ký tự)!' }
+
             ]}
           >
             <TextArea 

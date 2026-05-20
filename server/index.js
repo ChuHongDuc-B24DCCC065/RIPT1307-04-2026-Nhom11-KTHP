@@ -95,5 +95,6 @@ app.post('/api/login', async (req, res) => {
 // Import admin routes
 const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminRoutes);
-
+const questionRoutes = require('./routes/questionRoutes');
+app.use('/api/questions', questionRoutes);
 app.listen(5000, () => console.log("🚀 Server chạy ở cổng 5000"));
