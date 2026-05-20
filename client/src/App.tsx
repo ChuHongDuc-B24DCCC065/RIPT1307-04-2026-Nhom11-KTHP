@@ -8,6 +8,9 @@ import LandingPage from './pages/LandingPage';
 
 import AdminPage from './pages/AdminPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import CreateQuestion from './pages/CreateQuestion';
+import QuestionDetail from './pages/QuestionDetail';
+import UserProfile from './pages/UserProfile';
 const { Header, Content, Footer } = Layout;
 
 const App: React.FC = () => {
@@ -31,6 +34,10 @@ const App: React.FC = () => {
       label: <Link to="/admin">Quản trị</Link>,
     }] : []),
     ...(parsedUser ? [
+      {
+        key: '/profile',
+        label: <Link to="/profile">Hồ sơ cá nhân</Link>,
+      },
       {
         key: 'logout',
         label: <span onClick={handleLogout} style={{ color: '#ff4d4f' }}>Đăng xuất</span>,
@@ -60,6 +67,9 @@ const App: React.FC = () => {
               <Route path="/welcome" element={<LandingPage />} /> 
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/create-question" element={<CreateQuestion />} />
+              <Route path="/questions/:id" element={<QuestionDetail />} />
+              <Route path="/profile" element={<UserProfile />} />
               
               {/* Bọc trang Admin bằng ProtectedRoute */}
               <Route 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Card, Typography, Select, message, Space } from 'antd';
 import { ArrowLeftOutlined, SendOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -12,33 +12,7 @@ const CreateQuestion: React.FC = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = async (values: any) => {
-    console.log("Question Data:", values); 
-    setLoading(true); 
 
-    try {
-      const token = localStorage.getItem('token');
-      
-      const res = await axios.post('http://localhost:5000/api/questions', {
-        title: values.title,
-        description: values.description, 
-        tags: values.tags // Truyền luôn mảng tags lên nếu Backend cần dùng
-      }, {
-        headers: { Authorization: `Bearer ${token}` } 
-      });
-
-      if (res.status === 201 || res.status === 200) {
-        message.success("Đăng câu hỏi thành công!");
-        form.resetFields(); // Làm sạch form sau khi đăng xong
-        navigate('/'); // Điều hướng về trang chủ
-      }
-    } catch (err) {
-      console.error("Lỗi đăng câu hỏi:", err);
-  message.error(err.response?.data?.message || "Không thể đăng câu hỏi!");
-    } finally {
-      setLoading(false); // Tắt hiệu ứng loading kể cả khi thành công hay thất bại
-    }
-  };
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -69,7 +43,7 @@ const CreateQuestion: React.FC = () => {
             name="title"
             rules={[
               { required: true, message: 'Vui lòng nhập tiêu đề!' },
-              
+
             ]}
           >
             <Input placeholder="Ví dụ: Làm thế nào để sử dụng React Hooks hiệu quả?" size="large" />
@@ -80,7 +54,7 @@ const CreateQuestion: React.FC = () => {
             name="description"
             rules={[
               { required: true, message: 'Vui lòng nhập nội dung chi tiết!' },
-              
+
             ]}
           >
             <TextArea 
