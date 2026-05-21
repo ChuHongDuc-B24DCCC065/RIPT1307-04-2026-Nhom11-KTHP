@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Typography, Row, Col, Avatar, Button, Tabs, List, Space, Tag, Modal, Form, Input, message } from 'antd';
-import { UserOutlined, EditOutlined, DeleteOutlined, MailOutlined, IdcardOutlined, MessageOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { UserOutlined, EditOutlined, DeleteOutlined, MailOutlined, IdcardOutlined, MessageOutlined, ClockCircleOutlined, PhoneOutlined, BankOutlined, GlobalOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
@@ -56,6 +56,33 @@ const UserProfile: React.FC = () => {
       fetchMyQuestions();
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await axios.get('http://localhost:5000/api/users/profile', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data.success && res.data.data) {
+          const fetchedUser = res.data.data;
+          setUser((prevUser: any) => {
+            const newUser = { ...prevUser, ...fetchedUser };
+            localStorage.setItem('user', JSON.stringify(newUser));
+            return newUser;
+          });
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải profile:", error);
+      }
+    };
+
+    if (user) {
+      fetchUserProfile();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!user) return null;
 
@@ -214,6 +241,30 @@ const UserProfile: React.FC = () => {
                   <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}><IdcardOutlined /> HỌ TÊN</Text>
                   <Text strong>{user.fullName || user.username}</Text>
                 </div>
+                {user.phoneNumber && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}><PhoneOutlined /> SỐ ĐIỆN THOẠI</Text>
+                    <Text strong>{user.phoneNumber}</Text>
+                  </div>
+                )}
+                {user.school && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}><BankOutlined /> TRƯỜNG HỌC</Text>
+                    <Text strong>{user.school}</Text>
+                  </div>
+                )}
+                {user.website && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}><GlobalOutlined /> WEBSITE</Text>
+                    <a href={user.website.startsWith('http') ? user.website : `https://${user.website}`} target="_blank" rel="noopener noreferrer"><Text strong style={{ color: '#1890ff' }}>{user.website}</Text></a>
+                  </div>
+                )}
+                {user.bio && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}><InfoCircleOutlined /> GIỚI THIỆU</Text>
+                    <Text strong>{user.bio}</Text>
+                  </div>
+                )}
               </Space>
               
               <Button 
@@ -224,7 +275,11 @@ const UserProfile: React.FC = () => {
                 onClick={() => {
                   form.setFieldsValue({
                     fullName: user.fullName || user.username,
-                    email: user.email || ''
+                    email: user.email || '',
+                    phoneNumber: user.phoneNumber || '',
+                    school: user.school || '',
+                    bio: user.bio || '',
+                    website: user.website || ''
                   });
                   setIsEditModalVisible(true);
                 }}
@@ -265,6 +320,22 @@ const UserProfile: React.FC = () => {
             <Input placeholder="example@student.ptit.edu.vn" size="large" />
           </Form.Item>
           
+          <Form.Item name="phoneNumber" label="Số điện thoại">
+            <Input placeholder="Nhập số điện thoại" size="large" />
+          </Form.Item>
+          
+          <Form.Item name="school" label="Trường học">
+            <Input placeholder="Nhập tên trường học" size="large" />
+          </Form.Item>
+
+          <Form.Item name="bio" label="Giới thiệu bản thân">
+            <Input.TextArea placeholder="Vài nét về bản thân..." rows={3} size="large" />
+          </Form.Item>
+
+          <Form.Item name="website" label="Link Website">
+            <Input placeholder="https://yourwebsite.com" size="large" />
+          </Form.Item>
+
           <Form.Item label="Tên đăng nhập (Mặc định)">
             <Input value={user.username} disabled size="large" />
           </Form.Item>
