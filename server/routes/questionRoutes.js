@@ -106,7 +106,28 @@ router.get('/:id', async (req, res) => {
       [req.params.id]
     );
 
-    res.json({ success: true, data: { ...question, answers } });
+    // Lấy comments cho từng answer
+    let answersWithComments = answers.map(a => ({ ...a, comments: [] }));
+    if (answers.length > 0) {
+      const answerIds = answers.map(a => a.id);
+      const placeholders = answerIds.map(() => '?').join(',');
+      const [comments] = await pool.query(
+        `SELECT c.*, u.username AS author
+         FROM comments c
+         LEFT JOIN users u ON u.id = c.user_id
+         WHERE c.answer_id IN (${placeholders})
+         ORDER BY c.created_at ASC`,
+        answerIds
+      );
+      const commentsMap = {};
+      comments.forEach(c => {
+        if (!commentsMap[c.answer_id]) commentsMap[c.answer_id] = [];
+        commentsMap[c.answer_id].push(c);
+      });
+      answersWithComments = answers.map(a => ({ ...a, comments: commentsMap[a.id] || [] }));
+    }
+
+    res.json({ success: true, data: { ...question, answers: answersWithComments } });
   } catch (err) {
     console.error('GET /questions/:id:', err.message);
     res.status(500).json({ success: false, message: 'Lỗi server.' });
@@ -279,6 +300,27 @@ router.post('/:id/answers/:answerId/vote', authMiddleware, async (req, res) => {
     res.json({ success: true, votes: updated.votes });
   } catch (err) {
     console.error('POST /answers/:answerId/vote:', err.message);
+    res.status(500).json({ success: false, message: 'Lỗi server.' });
+  }
+});
+
+// POST bình luận vào câu trả lời
+router.post('/:id/answers/:answerId/comments', authMiddleware, async (req, res) => {
+  const { content } = req.body;
+  if (!content || !content.trim())
+    return res.status(400).json({ success: false, message: 'Vui lòng nhập nội dung bình luận.' });
+  try {
+    const [result] = await pool.execute(
+      'INSERT INTO comments (content, answer_id, user_id) VALUES (?, ?, ?)',
+      [content.trim(), req.params.answerId, req.user.id]
+    );
+    res.status(201).json({
+      success: true,
+      message: 'Đã đăng bình luận!',
+      data: { id: result.insertId, content: content.trim(), author: req.user.username, created_at: new Date() }
+    });
+  } catch (err) {
+    console.error('POST comment:', err.message);
     res.status(500).json({ success: false, message: 'Lỗi server.' });
   }
 });
