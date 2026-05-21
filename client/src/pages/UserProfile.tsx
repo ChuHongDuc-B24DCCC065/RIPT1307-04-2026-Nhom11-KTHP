@@ -3,6 +3,7 @@ import { Card, Typography, Row, Col, Avatar, Button, Tabs, List, Space, Tag, Mod
 import { UserOutlined, EditOutlined, DeleteOutlined, MailOutlined, IdcardOutlined, MessageOutlined, ClockCircleOutlined, PhoneOutlined, BankOutlined, GlobalOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import EditProfileModal from '../components/EditProfileModal';
 
 const { Title, Text } = Typography;
 
@@ -21,7 +22,6 @@ const UserProfile: React.FC = () => {
   const [myQuestions, setMyQuestions] = useState<Question[]>([]); // Data động từ Backend
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
 
   // Hàm lấy câu hỏi của riêng user này từ Backend
   const fetchMyQuestions = async () => {
@@ -85,25 +85,6 @@ const UserProfile: React.FC = () => {
   }, []);
 
   if (!user) return null;
-
-  const handleUpdateProfile = async (values: any) => {
-    try {
-      const token = localStorage.getItem('token');
-      // Gọi API cập nhật profile lên Backend (nếu có)
-      await axios.put('http://localhost:5000/api/users/profile', values, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      const updatedUser = { ...user, ...values };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      message.success('Cập nhật thông tin thành công!');
-      setIsEditModalVisible(false);
-      window.dispatchEvent(new Event('storage'));
-    } catch (error) {
-      message.error("Không thể cập nhật thông tin lên server!");
-    }
-  };
 
   const handleDeleteQuestion = (id: number) => {
     Modal.confirm({
@@ -272,17 +253,7 @@ const UserProfile: React.FC = () => {
                 block 
                 icon={<EditOutlined />} 
                 style={{ marginTop: 30, height: '40px', borderRadius: '6px' }}
-                onClick={() => {
-                  form.setFieldsValue({
-                    fullName: user.fullName || user.username,
-                    email: user.email || '',
-                    phoneNumber: user.phoneNumber || '',
-                    school: user.school || '',
-                    bio: user.bio || '',
-                    website: user.website || ''
-                  });
-                  setIsEditModalVisible(true);
-                }}
+                onClick={() => setIsEditModalVisible(true)}
               >
                 Chỉnh sửa hồ sơ
               </Button>
@@ -299,53 +270,18 @@ const UserProfile: React.FC = () => {
         </Col>
       </Row>
 
-      {/* Modal Chỉnh sửa hồ sơ */}
-      <Modal
-        title="Cập nhật thông tin cá nhân"
-        open={isEditModalVisible}
+      {/* Modal Chỉnh sửa hồ sơ đã tách ra component riêng */}
+      <EditProfileModal
+        user={user}
+        isVisible={isEditModalVisible}
         onCancel={() => setIsEditModalVisible(false)}
-        footer={null}
-        centered
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleUpdateProfile}
-        >
-          <Form.Item name="fullName" label="Họ và tên" rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}>
-            <Input placeholder="Nhập họ và tên đầy đủ" size="large" />
-          </Form.Item>
-          
-          <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Vui lòng nhập email!' }, { type: 'email', message: 'Email không đúng định dạng!' }]}>
-            <Input placeholder="example@student.ptit.edu.vn" size="large" />
-          </Form.Item>
-          
-          <Form.Item name="phoneNumber" label="Số điện thoại">
-            <Input placeholder="Nhập số điện thoại" size="large" />
-          </Form.Item>
-          
-          <Form.Item name="school" label="Trường học">
-            <Input placeholder="Nhập tên trường học" size="large" />
-          </Form.Item>
-
-          <Form.Item name="bio" label="Giới thiệu bản thân">
-            <Input.TextArea placeholder="Vài nét về bản thân..." rows={3} size="large" />
-          </Form.Item>
-
-          <Form.Item name="website" label="Link Website">
-            <Input placeholder="https://yourwebsite.com" size="large" />
-          </Form.Item>
-
-          <Form.Item label="Tên đăng nhập (Mặc định)">
-            <Input value={user.username} disabled size="large" />
-          </Form.Item>
-          
-          <div style={{ textAlign: 'right', marginTop: 30 }}>
-            <Button onClick={() => setIsEditModalVisible(false)} style={{ marginRight: 10 }}>Hủy bỏ</Button>
-            <Button type="primary" htmlType="submit" size="large">Lưu thay đổi</Button>
-          </div>
-        </Form>
-      </Modal>
+        onSuccess={(updatedUser) => {
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          setUser(updatedUser);
+          setIsEditModalVisible(false);
+          window.dispatchEvent(new Event('storage'));
+        }}
+      />
     </div>
   );
 };
