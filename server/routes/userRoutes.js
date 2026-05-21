@@ -46,4 +46,22 @@ router.put('/profile', authMiddleware, async (req, res) => {
   }
 });
 
+// Lấy danh sách câu hỏi đã đánh dấu
+router.get('/bookmarks', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT q.id, q.title, q.description, q.tags, q.user_id, b.created_at
+       FROM bookmarks b
+       JOIN questions q ON b.question_id = q.id
+       WHERE b.user_id = ?
+       ORDER BY b.created_at DESC`,
+      [req.user.id]
+    );
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error('GET /users/bookmarks:', error.message);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
 module.exports = router;
