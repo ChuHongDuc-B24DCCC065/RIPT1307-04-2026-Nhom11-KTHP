@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:5173', 
+  origin: process.env.CLIENT_URL || 'http://localhost:5173', 
   credentials: true
 }));
 
@@ -99,4 +99,5 @@ const questionRoutes = require('./routes/questionRoutes');
 app.use('/api/questions', questionRoutes);
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
-app.listen(5000, () => console.log("🚀 Server chạy ở cổng 5000"));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server chạy ở cổng ${PORT}`));
