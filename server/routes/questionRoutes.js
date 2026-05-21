@@ -325,4 +325,47 @@ router.post('/:id/answers/:answerId/comments', authMiddleware, async (req, res) 
   }
 });
 
+// API kiểm tra trạng thái đánh dấu (bookmark)
+router.get('/:id/bookmark-status', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT * FROM bookmarks WHERE user_id = ? AND question_id = ?',
+      [req.user.id, req.params.id]
+    );
+    res.json({ success: true, isBookmarked: rows.length > 0 });
+  } catch (err) {
+    console.error('GET /bookmark-status:', err.message);
+    res.status(500).json({ success: false, message: 'Lỗi server.' });
+  }
+});
+
+// API Bật/Tắt đánh dấu (Toggle bookmark)
+router.post('/:id/bookmark', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT * FROM bookmarks WHERE user_id = ? AND question_id = ?',
+      [req.user.id, req.params.id]
+    );
+
+    if (rows.length > 0) {
+      // Đã đánh dấu -> Bỏ đánh dấu
+      await pool.execute(
+        'DELETE FROM bookmarks WHERE user_id = ? AND question_id = ?',
+        [req.user.id, req.params.id]
+      );
+      res.json({ success: true, isBookmarked: false, message: 'Đã bỏ đánh dấu câu hỏi.' });
+    } else {
+      // Chưa đánh dấu -> Thêm đánh dấu
+      await pool.execute(
+        'INSERT INTO bookmarks (user_id, question_id) VALUES (?, ?)',
+        [req.user.id, req.params.id]
+      );
+      res.json({ success: true, isBookmarked: true, message: 'Đã đánh dấu câu hỏi.' });
+    }
+  } catch (err) {
+    console.error('POST /bookmark:', err.message);
+    res.status(500).json({ success: false, message: 'Lỗi server.' });
+  }
+});
+
 module.exports = router;

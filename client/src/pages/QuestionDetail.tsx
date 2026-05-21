@@ -10,6 +10,8 @@ import {
   ArrowLeftOutlined, SendOutlined, CheckCircleFilled
 } from '@ant-design/icons';
 import axios from 'axios';
+import BookmarkButton from '../components/BookmarkButton';
+
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 // --- Interfaces khớp với dữ liệu trả về từ Backend ---
@@ -65,6 +67,7 @@ const QuestionDetail: React.FC = () => {
   const [commentTexts, setCommentTexts]         = useState<Record<number, string>>({});
   const [showComment, setShowComment]           = useState<Record<number, boolean>>({});
   const [submittingComment, setSubmittingComment] = useState<number | null>(null);
+
   // --- Lấy chi tiết câu hỏi từ API ---
   const fetchQuestion = async () => {
     setLoading(true);
@@ -84,6 +87,7 @@ const QuestionDetail: React.FC = () => {
   useEffect(() => {
     fetchQuestion();
   }, [id]);
+
   // --- Vote câu hỏi ---
   const handleVote = async (type: 'up' | 'down') => {
     if (!user) {
@@ -252,7 +256,10 @@ const QuestionDetail: React.FC = () => {
           </Col>
           {/* Cột nội dung */}
           <Col span={22}>
-            <Title level={2}>{question.title}</Title>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Title level={2} style={{ margin: 0, paddingBottom: 16 }}>{question.title}</Title>
+              {id && <BookmarkButton questionId={id} style={{ marginLeft: 16 }} />}
+            </div>
             <Space split={<Divider type="vertical" />} style={{ marginBottom: 20 }} wrap>
               <Space><UserOutlined /> <Text strong>{question.author}</Text></Space>
               <Space><ClockCircleOutlined /> {formatTime(question.created_at)}</Space>
