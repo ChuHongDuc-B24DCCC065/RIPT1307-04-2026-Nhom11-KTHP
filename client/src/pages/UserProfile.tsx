@@ -29,7 +29,7 @@ const UserProfile: React.FC = () => {
   setLoading(true);
   try {
     const token = localStorage.getItem('token');
-    const res = await axios.get('http://localhost:5000/api/questions/user/questions', {
+    const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/user/questions`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     const questions = res.data.data || [];
@@ -62,7 +62,7 @@ const UserProfile: React.FC = () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) return;
-        const res = await axios.get('http://localhost:5000/api/users/profile', {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data.success && res.data.data) {
@@ -90,7 +90,7 @@ const UserProfile: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       // Gọi API cập nhật profile lên Backend (nếu có)
-      await axios.put('http://localhost:5000/api/users/profile', values, {
+      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users/profile`, values, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -116,7 +116,7 @@ const UserProfile: React.FC = () => {
         try {
           const token = localStorage.getItem('token');
           // Gọi API xóa câu hỏi cụ thể
-          await axios.delete(`http://localhost:5000/api/questions/${id}`, {
+          await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           message.success(`Đã xóa câu hỏi thành công!`);

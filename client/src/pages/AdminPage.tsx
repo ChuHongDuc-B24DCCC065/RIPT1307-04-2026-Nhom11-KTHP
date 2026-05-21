@@ -48,7 +48,7 @@ const AdminPage: React.FC = () => {
 
   // Tạo axios instance với interceptor
   const axiosInstance = axios.create({
-    baseURL: 'http://localhost:5000/api',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   });
 
   // Interceptor để tự động thêm token
