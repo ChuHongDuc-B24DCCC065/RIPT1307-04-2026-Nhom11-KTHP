@@ -21,6 +21,7 @@ import {
   DeleteOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
+import AdminDashboard from './AdminDashboard';
 
 const { Header, Content, Sider } = Layout;
 
@@ -39,6 +40,7 @@ interface Post {
 }
 
 const AdminPage: React.FC = () => {
+  const [selectedMenu, setSelectedMenu] = useState<string>('1');
   const [users, setUsers] = useState<User[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -211,57 +213,39 @@ const AdminPage: React.FC = () => {
     <Layout style={{ minHeight: '100vh' }}>
       <Sider breakpoint="lg" collapsedWidth="0">
         <div style={{ height: 32, margin: 16, background: 'rgba(255,255,255,0.2)', borderRadius: 6 }} />
-        <Menu theme="dark" mode="inline" defaultSelectedKeys={['1']} items={menuItems} />
+        <Menu 
+          theme="dark" 
+          mode="inline" 
+          selectedKeys={[selectedMenu]} 
+          items={menuItems} 
+          onSelect={({ key }) => setSelectedMenu(key)}
+        />
       </Sider>
 
       <Layout>
         <Header style={{ padding: 0, background: colorBgContainer }} />
         <Content style={{ margin: '24px 16px' }}>
-          <div style={{ padding: 24, background: colorBgContainer, borderRadius: borderRadiusLG }}>
+          <div style={{ 
+            padding: selectedMenu === '1' ? 0 : 24, 
+            background: selectedMenu === '1' ? 'transparent' : colorBgContainer, 
+            borderRadius: borderRadiusLG,
+            minHeight: '80vh'
+          }}>
+            {selectedMenu === '1' && <AdminDashboard />}
             
-            <Row gutter={16} style={{ marginBottom: 24 }}>
-              <Col span={8}>
-                <Card variant="borderless">
-                  <Statistic 
-                    title="Tổng người dùng" 
-                    value={stats.totalUsers} 
-                    prefix={<UserOutlined />} 
-                  />
-                </Card>
-              </Col>
-              <Col span={8}>
-                <Card variant="borderless">
-                  <Statistic 
-                    title="Tổng bài viết" 
-                    value={stats.totalPosts} 
-                    prefix={<FileTextOutlined />} 
-                  />
-                </Card>
-              </Col>
-              <Col span={8}>
-                <Card variant="borderless">
-                  <Statistic 
-                    title="Báo cáo" 
-                    value={stats.reports} 
-                    valueStyle={{ color: '#cf1322' }}
-                    prefix={<WarningOutlined />} 
-                  />
-                </Card>
-              </Col>
-            </Row>
+            {selectedMenu === '2' && (
+              <>
+                <h2 style={{ marginBottom: 24 }}>Quản lý người dùng</h2>
+                <Table columns={userColumns} dataSource={users} rowKey="id" loading={loading} />
+              </>
+            )}
 
-            <Tabs defaultActiveKey="1" items={[
-              {
-                key: '1',
-                label: 'Quản lý người dùng',
-                children: <Table columns={userColumns} dataSource={users} rowKey="id" loading={loading} />,
-              },
-              {
-                key: '2',
-                label: 'Quản lý bài viết',
-                children: <Table columns={postColumns} dataSource={posts} rowKey="id" loading={loading} />,
-              },
-            ]} />
+            {selectedMenu === '3' && (
+              <>
+                <h2 style={{ marginBottom: 24 }}>Quản lý bài viết</h2>
+                <Table columns={postColumns} dataSource={posts} rowKey="id" loading={loading} />
+              </>
+            )}
             
           </div>
         </Content>
