@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Typography, Row, Col, Avatar, Button, Tabs, List, Space, Tag, Modal, Form, Input, message } from 'antd';
-import { UserOutlined, EditOutlined, DeleteOutlined, MailOutlined, IdcardOutlined, MessageOutlined, ClockCircleOutlined, PhoneOutlined, BankOutlined, GlobalOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { UserOutlined, EditOutlined, DeleteOutlined, MailOutlined, IdcardOutlined, MessageOutlined, ClockCircleOutlined, PhoneOutlined, BankOutlined, GlobalOutlined, InfoCircleOutlined, BookOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import EditProfileModal from '../components/EditProfileModal';
@@ -20,6 +20,7 @@ const UserProfile: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || 'null'));
   const [myQuestions, setMyQuestions] = useState<Question[]>([]); // Data động từ Backend
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Question[]>([]);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -49,11 +50,26 @@ const UserProfile: React.FC = () => {
   }
 };
 
+  // Hàm lấy câu hỏi đã đánh dấu
+  const fetchBookmarkedQuestions = async () => {
+    if (!user) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users/bookmarks`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setBookmarkedQuestions(res.data.data || []);
+    } catch (error) {
+      console.error("Lỗi khi tải câu hỏi đã đánh dấu:", error);
+    }
+  };
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
     } else {
       fetchMyQuestions();
+      fetchBookmarkedQuestions();
     }
   }, [user, navigate]);
 
@@ -180,6 +196,53 @@ const UserProfile: React.FC = () => {
     },
     {
       key: '2',
+      label: (
+        <span>
+          <BookOutlined /> Đã đánh dấu
+        </span>
+      ),
+      children: (
+        <List
+          itemLayout="vertical"
+          size="large"
+          loading={loading}
+          dataSource={bookmarkedQuestions}
+          locale={{ emptyText: 'Bạn chưa đánh dấu câu hỏi nào.' }}
+          renderItem={(item) => {
+            const parsedTags = typeof item.tags === 'string' ? item.tags.split(',') : (item.tags || []);
+            return (
+              <List.Item
+                key={item.id}
+                style={{ padding: '20px 0' }}
+                actions={[
+                  <Space key="time"><ClockCircleOutlined /> Đánh dấu lúc: {item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : ''}</Space>
+                ]}
+              >
+                <List.Item.Meta
+                  title={
+                    <Link to={`/questions/${item.id}`} style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                      {item.title}
+                    </Link>
+                  }
+                  description={
+                    <Space wrap>
+                      {parsedTags.map((tag: string) => (
+                        <Tag key={tag} color="geekblue">#{tag.trim()}</Tag>
+                      ))}
+                    </Space>
+                  }
+                />
+                <div style={{ color: '#555', marginTop: 10 }}>
+                  {item.description && item.description.length > 150 ? `${item.description.substring(0, 150)}...` : item.description}
+                </div>
+              </List.Item>
+            );
+          }}
+        />
+      ),
+    },
+    {
+      key: '3',
       label: (
         <span>
           <ClockCircleOutlined /> Hoạt động gần đây
