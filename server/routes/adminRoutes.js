@@ -78,18 +78,29 @@ router.get("/stats", async (req, res) => {
 });
 
 // ─────────────────────────────────────────
-// API Lấy danh sách Users
+// API Lấy danh sách Users (có phân trang)
 // ─────────────────────────────────────────
 router.get("/users", async (req, res) => {
   try {
-    console.log("Fetching users list...");
-    
+    console.log("Fetching users list with pagination...");
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit) || 10);
+    const offset = (page - 1) * limit;
+
+    // Lấy tổng số lượng users
+    const [countResult] = await pool.query("SELECT COUNT(*) AS total FROM users");
+    const total = countResult[0].total;
+
+    // Lấy danh sách users theo phân trang
     const [users] = await pool.query(
-      "SELECT id, username, email, role, created_at, status FROM users ORDER BY created_at DESC"
+      `SELECT id, username, email, role, created_at, status 
+       FROM users 
+       ORDER BY created_at DESC 
+       LIMIT ${limit} OFFSET ${offset}`
     );
     
-    console.log(`Found ${users.length} users`);
-    res.json({ users: users });
+    console.log(`Found ${users.length} users (total: ${total})`);
+    res.json({ users: users, total: total });
   } catch (error) {
     console.error("Error in /users:", error);
     res.status(500).json({ message: "Lỗi server: " + error.message });
@@ -97,18 +108,29 @@ router.get("/users", async (req, res) => {
 });
 
 // ─────────────────────────────────────────
-// API Lấy danh sách Posts
+// API Lấy danh sách Posts (có phân trang)
 // ─────────────────────────────────────────
 router.get("/posts", async (req, res) => {
   try {
-    console.log("Fetching posts list...");
-    
+    console.log("Fetching posts list with pagination...");
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit) || 10);
+    const offset = (page - 1) * limit;
+
+    // Lấy tổng số lượng posts (questions)
+    const [countResult] = await pool.query("SELECT COUNT(*) AS total FROM questions");
+    const total = countResult[0].total;
+
+    // Lấy danh sách posts theo phân trang
     const [posts] = await pool.query(
-      "SELECT id, title, author, created_at as createdAt FROM questions ORDER BY created_at DESC"
+      `SELECT id, title, author, created_at as createdAt 
+       FROM questions 
+       ORDER BY created_at DESC 
+       LIMIT ${limit} OFFSET ${offset}`
     );
     
-    console.log(`Found ${posts.length} posts`);
-    res.json({ posts: posts });
+    console.log(`Found ${posts.length} posts (total: ${total})`);
+    res.json({ posts: posts, total: total });
   } catch (error) {
     console.error("Error in /posts:", error);
     res.status(500).json({ message: "Lỗi server: " + error.message });

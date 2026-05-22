@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Statistic, Table, Timeline, Progress, Spin, message, Typography, Space, Divider } from 'antd';
-import { 
-  UserOutlined, 
-  FileTextOutlined, 
-  MessageOutlined, 
-  LikeOutlined, 
-  WarningOutlined, 
-  HistoryOutlined, 
-  CheckCircleOutlined, 
-  DashboardOutlined 
+import {
+  UserOutlined,
+  FileTextOutlined,
+  MessageOutlined,
+  LikeOutlined,
+  WarningOutlined,
+  HistoryOutlined,
+  CheckCircleOutlined,
+  DashboardOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 
@@ -90,10 +90,10 @@ const AdminDashboard: React.FC = () => {
   const columns = [
     { title: 'Tiêu đề bài viết/câu hỏi', dataIndex: 'title', key: 'title' },
     { title: 'Người đăng', dataIndex: 'author', key: 'author' },
-    { 
-      title: 'Lượt báo cáo', 
-      dataIndex: 'reports', 
-      key: 'reports', 
+    {
+      title: 'Lượt báo cáo',
+      dataIndex: 'reports',
+      key: 'reports',
       render: (text: number) => (
         <Space>
           <WarningOutlined style={{ color: '#ff4d4f' }} />
@@ -115,8 +115,8 @@ const AdminDashboard: React.FC = () => {
           <Col span={6} xs={24} sm={12} lg={6} key={index}>
             <Card
               bordered={false}
-              style={{ 
-                borderRadius: '16px', 
+              style={{
+                borderRadius: '16px',
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.04)',
                 background: `linear-gradient(145deg, #ffffff 40%, ${card.bgColor} 100%)`,
                 transition: 'all 0.3s ease',
@@ -130,10 +130,10 @@ const AdminDashboard: React.FC = () => {
                 value={card.value}
                 valueStyle={{ color: card.color, fontWeight: 800, fontSize: '32px', marginTop: '8px' }}
                 prefix={
-                  <div style={{ 
-                    backgroundColor: card.color, 
-                    color: 'white', 
-                    borderRadius: '12px', 
+                  <div style={{
+                    backgroundColor: card.color,
+                    color: 'white',
+                    borderRadius: '12px',
                     marginRight: '16px',
                     display: 'flex',
                     alignItems: 'center',
@@ -153,8 +153,8 @@ const AdminDashboard: React.FC = () => {
       </Row>
 
       {/* 3. Thống kê tỷ lệ bằng Progress */}
-      <Card 
-        bordered={false} 
+      <Card
+        bordered={false}
         style={{ borderRadius: '16px', boxShadow: '0 4px 24px rgba(0, 0, 0, 0.04)', marginBottom: 24 }}
         bodyStyle={{ padding: '24px' }}
       >
@@ -163,9 +163,9 @@ const AdminDashboard: React.FC = () => {
         </Title>
         <Row gutter={32} align="middle">
           <Col span={8} xs={24} md={8} style={{ textAlign: 'center' }}>
-            <Progress 
-              type="circle" 
-              percent={statsData?.acceptedAnswerRate || 0} 
+            <Progress
+              type="circle"
+              percent={statsData?.acceptedAnswerRate || 0}
               strokeColor={{ '0%': '#108ee9', '100%': '#87d068' }}
               strokeWidth={12}
               size={150}
@@ -175,7 +175,7 @@ const AdminDashboard: React.FC = () => {
               Tỷ lệ câu hỏi đã có câu trả lời
             </div>
           </Col>
-          
+
           <Col span={1} xs={0} md={1} style={{ display: 'flex', justifyContent: 'center' }}>
             <Divider type="vertical" style={{ height: '120px' }} />
           </Col>
@@ -186,9 +186,9 @@ const AdminDashboard: React.FC = () => {
                 <Text strong style={{ fontSize: '15px' }}>Tỷ lệ người dùng là Giảng viên</Text>
                 <Text type="secondary" strong>{statsData?.teacherStudentRatio?.teacher || 0}%</Text>
               </Space>
-              <Progress 
-                percent={statsData?.teacherStudentRatio?.teacher || 0} 
-                status="active" 
+              <Progress
+                percent={statsData?.teacherStudentRatio?.teacher || 0}
+                status="active"
                 strokeColor={{ from: '#722ed1', to: '#b37feb' }}
                 strokeWidth={12}
               />
@@ -198,9 +198,9 @@ const AdminDashboard: React.FC = () => {
                 <Text strong style={{ fontSize: '15px' }}>Tỷ lệ người dùng là Sinh viên</Text>
                 <Text type="secondary" strong>{statsData?.teacherStudentRatio?.student || 0}%</Text>
               </Space>
-              <Progress 
-                percent={statsData?.teacherStudentRatio?.student || 0} 
-                status="active" 
+              <Progress
+                percent={statsData?.teacherStudentRatio?.student || 0}
+                status="active"
                 strokeColor={{ from: '#1890ff', to: '#69c0ff' }}
                 strokeWidth={12}
               />
@@ -212,35 +212,35 @@ const AdminDashboard: React.FC = () => {
       {/* 2. Khối danh sách cảnh báo/hoạt động */}
       <Row gutter={[24, 24]}>
         <Col span={16} xs={24} lg={16}>
-          <Card 
+          <Card
             title={
               <Space>
-                <WarningOutlined style={{ color: '#faad14', fontSize: '18px' }} /> 
+                <WarningOutlined style={{ color: '#faad14', fontSize: '18px' }} />
                 <span style={{ fontWeight: 600 }}>Các bài viết bị báo cáo vi phạm nhiều nhất</span>
               </Space>
             }
-            bordered={false} 
-            style={{ borderRadius: '16px', boxShadow: '0 4px 24px rgba(0, 0, 0, 0.04)', height: '100%' }}
+            bordered={false}
+            style={{ borderRadius: '16px', boxShadow: '0 4px 24px rgba(116, 53, 53, 0.04)', height: '100%' }}
             headStyle={{ borderBottom: '1px solid #f1f5f9', padding: '16px 24px' }}
             bodyStyle={{ padding: '16px 24px' }}
           >
-            <Table 
-              columns={columns} 
-              dataSource={statsData?.reportedQuestions || []} 
+            <Table
+              columns={columns}
+              dataSource={statsData?.reportedQuestions || []}
               pagination={{ pageSize: 4 }}
               size="middle"
             />
           </Card>
         </Col>
         <Col span={8} xs={24} lg={8}>
-          <Card 
+          <Card
             title={
               <Space>
-                <HistoryOutlined style={{ color: '#1890ff', fontSize: '18px' }} /> 
+                <HistoryOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
                 <span style={{ fontWeight: 600 }}>Lịch sử hoạt động hệ thống</span>
               </Space>
             }
-            bordered={false} 
+            bordered={false}
             style={{ borderRadius: '16px', boxShadow: '0 4px 24px rgba(0, 0, 0, 0.04)', height: '100%' }}
             headStyle={{ borderBottom: '1px solid #f1f5f9', padding: '16px 24px' }}
             bodyStyle={{ padding: '24px' }}

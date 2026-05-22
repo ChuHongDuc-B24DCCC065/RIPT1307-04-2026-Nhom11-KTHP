@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { List, Tag, Space, Button, Row, Col, Typography, Card, message, Empty, Skeleton, Input } from 'antd';
+import { List, Tag, Space, Button, Row, Col, Typography, Card, message, Empty, Skeleton, Input, Pagination } from 'antd';
 import { MessageOutlined, LikeOutlined, UserOutlined, ClockCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -35,14 +35,23 @@ const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // --- Gọi API lấy danh sách câu hỏi ---
-  const fetchQuestions = async () => {
+  // --- States Phân Trang ---
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [totalQuestions, setTotalQuestions] = useState<number>(0);
+
+  // --- Gọi API lấy danh sách câu hỏi với phân trang ---
+  const fetchQuestions = async (page: number, limit: number) => {
     setLoading(true);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions`);
-      // Hỗ trợ cả 2 kiểu response: mảng trực tiếp hoặc { data: [...] }
-      const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions`, {
+        params: { page, limit }
+      });
+      // Hỗ trợ cả 2 kiểu response: mảng trực tiếp hoặc đối tượng { data: [...], total: số_lượng }
+      const data = res.data?.data || [];
+      const total = res.data?.pagination?.total ?? res.data?.total ?? (Array.isArray(res.data) ? res.data.length : data.length);
       setQuestions(data);
+      setTotalQuestions(total);
     } catch (error) {
       console.error('Lỗi tải câu hỏi:', error);
       message.error('Không thể tải danh sách câu hỏi!');
@@ -52,8 +61,13 @@ const HomePage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchQuestions();
-  }, []);
+    fetchQuestions(currentPage, pageSize);
+  }, [currentPage, pageSize]);
+
+  const handlePageChange = (page: number, size: number) => {
+    setCurrentPage(page);
+    setPageSize(size);
+  };
 
   const handleCreateQuestion = () => {
     if (!user) {
@@ -96,7 +110,7 @@ const HomePage: React.FC = () => {
               Câu hỏi mới nhất
               {!loading && (
                 <Text type="secondary" style={{ fontSize: 14, fontWeight: 'normal', marginLeft: 10 }}>
-                  ({filteredQuestions.length} câu hỏi)
+                  ({totalQuestions} câu hỏi)
                 </Text>
               )}
             </Title>
@@ -117,70 +131,82 @@ const HomePage: React.FC = () => {
               <Empty description={searchQuery ? "Không tìm thấy câu hỏi nào phù hợp!" : "Chưa có câu hỏi nào. Hãy là người đầu tiên đặt câu hỏi!"} />
             </Card>
           ) : (
-            <List
-              itemLayout="vertical"
-              size="large"
-              dataSource={filteredQuestions}
-              renderItem={(item) => {
-                // Parse tags: "reactjs,nodejs" → ['reactjs', 'nodejs']
-                const tagList = item.tags
-                  ? item.tags.split(',').map(t => t.trim()).filter(Boolean)
-                  : [];
-                return (
-                  <Card
-                    hoverable
-                    key={item.id}
-                    style={{ marginBottom: 16 }}
-                    onClick={() => navigate(`/questions/${item.id}`)}
-                  >
-                    <List.Item
-                      actions={[
-                        <Space key="votes"><LikeOutlined /> {item.votes ?? 0} Votes</Space>,
-                        <Space key="answers"><MessageOutlined /> {item.answer_count ?? 0} Trả lời</Space>,
-                        <Space key="time"><ClockCircleOutlined /> {item.created_at ? formatTime(item.created_at) : 'Vừa xong'}</Space>,
-                      ]}
+            <>
+              <List
+                itemLayout="vertical"
+                size="large"
+                dataSource={filteredQuestions}
+                renderItem={(item) => {
+                  // Parse tags: "reactjs,nodejs" → ['reactjs', 'nodejs']
+                  const tagList = item.tags
+                    ? item.tags.split(',').map(t => t.trim()).filter(Boolean)
+                    : [];
+                  return (
+                    <Card
+                      hoverable
+                      key={item.id}
+                      style={{ marginBottom: 16 }}
+                      onClick={() => navigate(`/questions/${item.id}`)}
                     >
-                      <List.Item.Meta
-                        title={
-                          <a
-                            href={`/questions/${item.id}`}
-                            style={{ fontSize: 18, fontWeight: 600 }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {item.title}
-                          </a>
-                        }
-                        description={
-                          <Space>
-                            <UserOutlined />
-                            <Text type="secondary">{item.author || 'Ẩn danh'}</Text>
-                          </Space>
-                        }
-                      />
-                      {/* Nội dung tóm tắt */}
-                      <div style={{ marginBottom: 12, color: '#555' }}>
-                        {item.description && item.description.length > 150
-                          ? `${item.description.substring(0, 150)}...`
-                          : item.description}
-                      </div>
-                      {/* Tags */}
-                      <div onClick={(e) => e.stopPropagation()}>
-                        {tagList.map(tag => (
-                          <Tag 
-                            color="geekblue" 
-                            key={tag} 
-                            style={{ cursor: 'pointer' }}
-                            onClick={() => setSearchQuery(tag)}
-                          >
-                            #{tag}
-                          </Tag>
-                        ))}
-                      </div>
-                    </List.Item>
-                  </Card>
-                );
-              }}
-            />
+                      <List.Item
+                        actions={[
+                          <Space key="votes"><LikeOutlined /> {item.votes ?? 0} Votes</Space>,
+                          <Space key="answers"><MessageOutlined /> {item.answer_count ?? 0} Trả lời</Space>,
+                          <Space key="time"><ClockCircleOutlined /> {item.created_at ? formatTime(item.created_at) : 'Vừa xong'}</Space>,
+                        ]}
+                      >
+                        <List.Item.Meta
+                          title={
+                            <a
+                              href={`/questions/${item.id}`}
+                              style={{ fontSize: 18, fontWeight: 600 }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {item.title}
+                            </a>
+                          }
+                          description={
+                            <Space>
+                              <UserOutlined />
+                              <Text type="secondary">{item.author || 'Ẩn danh'}</Text>
+                            </Space>
+                          }
+                        />
+                        {/* Nội dung tóm tắt */}
+                        <div style={{ marginBottom: 12, color: '#555' }}>
+                          {item.description && item.description.length > 150
+                            ? `${item.description.substring(0, 150)}...`
+                            : item.description}
+                        </div>
+                        {/* Tags */}
+                        <div onClick={(e) => e.stopPropagation()}>
+                          {tagList.map(tag => (
+                            <Tag 
+                              color="geekblue" 
+                              key={tag} 
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => setSearchQuery(tag)}
+                            >
+                              #{tag}
+                            </Tag>
+                          ))}
+                        </div>
+                      </List.Item>
+                    </Card>
+                  );
+                }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24, marginBottom: 16 }}>
+                <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={totalQuestions}
+                  onChange={handlePageChange}
+                  showSizeChanger
+                  pageSizeOptions={['5', '10', '20']}
+                />
+              </div>
+            </>
           )}
         </Col>
 
@@ -254,7 +280,7 @@ const HomePage: React.FC = () => {
               <div>
                 <Text type="secondary">Tổng câu hỏi</Text>
                 <Title level={4} style={{ margin: '8px 0 0 0' }}>
-                  {questions.length}
+                  {totalQuestions}
                 </Title>
               </div>
             </div>

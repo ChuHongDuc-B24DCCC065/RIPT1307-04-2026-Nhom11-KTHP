@@ -48,6 +48,12 @@ const AdminPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [stats, setStats] = useState({ totalUsers: 0, totalPosts: 0, reports: 0 });
 
+  // --- States Phân Trang Độc Lập ---
+  const [userPage, setUserPage] = useState<number>(1);
+  const [userTotal, setUserTotal] = useState<number>(0);
+  const [postPage, setPostPage] = useState<number>(1);
+  const [postTotal, setPostTotal] = useState<number>(0);
+
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
   // Tạo axios instance với interceptor
@@ -89,13 +95,21 @@ const AdminPage: React.FC = () => {
     
     try {
       const [usersRes, postsRes, statsRes] = await Promise.all([
-        axiosInstance.get('/admin/users'),
-        axiosInstance.get('/admin/posts'),
+        axiosInstance.get('/admin/users', { params: { page: userPage, limit: 10 } }),
+        axiosInstance.get('/admin/posts', { params: { page: postPage, limit: 10 } }),
         axiosInstance.get('/admin/stats'),
       ]);
 
-      setUsers(usersRes.data.users || []);
-      setPosts(postsRes.data.posts || []);
+      const usersData = usersRes.data.users || [];
+      const usersTotalCount = usersRes.data.total ?? usersRes.data.pagination?.total ?? usersData.length;
+      setUsers(usersData);
+      setUserTotal(usersTotalCount);
+
+      const postsData = postsRes.data.posts || [];
+      const postsTotalCount = postsRes.data.total ?? postsRes.data.pagination?.total ?? postsData.length;
+      setPosts(postsData);
+      setPostTotal(postsTotalCount);
+
       setStats(statsRes.data);
       
     } catch (error: any) {
@@ -109,37 +123,42 @@ const AdminPage: React.FC = () => {
   };
 
   useEffect(() => {
-  // Kiểm tra token và user info
-  const token = localStorage.getItem('token');
-  const userStr = localStorage.getItem('user');
-  
-  console.log('Token:', token);
-  console.log('User:', userStr);
-  
-  if (!token) {
-    message.error('Vui lòng đăng nhập lại!');
-    window.location.href = '/login';
-    return;
-  }
-  
-  // Giải mã token xem có role admin không
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const decoded = JSON.parse(atob(base64));
-    console.log('Decoded token:', decoded);
+    // Kiểm tra token và user info
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
     
-    if (decoded.role !== 'admin') {
-      message.error('Bạn không có quyền truy cập trang Admin!');
-      window.location.href = '/';
+    console.log('Token:', token);
+    console.log('User:', userStr);
+    
+    if (!token) {
+      message.error('Vui lòng đăng nhập lại!');
+      window.location.href = '/login';
       return;
     }
-  } catch (error) {
-    console.error('Lỗi decode token:', error);
-  }
-  
-  fetchData();
-}, []);
+    
+    // Giải mã token xem có role admin không
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const decoded = JSON.parse(atob(base64));
+      console.log('Decoded token:', decoded);
+      
+      if (decoded.role !== 'admin') {
+        message.error('Bạn không có quyền truy cập trang Admin!');
+        window.location.href = '/';
+        return;
+      }
+    } catch (error) {
+      console.error('Lỗi decode token:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchData();
+    }
+  }, [userPage, postPage]);
 
   // Xử lý xóa post
   const handleDeletePost = async (postId: string) => {
@@ -236,14 +255,36 @@ const AdminPage: React.FC = () => {
             {selectedMenu === '2' && (
               <>
                 <h2 style={{ marginBottom: 24 }}>Quản lý người dùng</h2>
-                <Table columns={userColumns} dataSource={users} rowKey="id" loading={loading} />
+                <Table 
+                  columns={userColumns} 
+                  dataSource={users} 
+                  rowKey="id" 
+                  loading={loading} 
+                  pagination={{
+                    current: userPage,
+                    pageSize: 10,
+                    total: userTotal,
+                    onChange: (page) => setUserPage(page),
+                  }}
+                />
               </>
             )}
 
             {selectedMenu === '3' && (
               <>
                 <h2 style={{ marginBottom: 24 }}>Quản lý bài viết</h2>
-                <Table columns={postColumns} dataSource={posts} rowKey="id" loading={loading} />
+                <Table 
+                  columns={postColumns} 
+                  dataSource={posts} 
+                  rowKey="id" 
+                  loading={loading} 
+                  pagination={{
+                    current: postPage,
+                    pageSize: 10,
+                    total: postTotal,
+                    onChange: (page) => setPostPage(page),
+                  }}
+                />
               </>
             )}
             
