@@ -85,7 +85,7 @@ router.get("/users", async (req, res) => {
     console.log("Fetching users list...");
     
     const [users] = await pool.query(
-      "SELECT id, username, email, role, created_at FROM users ORDER BY created_at DESC"
+      "SELECT id, username, email, role, created_at, status FROM users ORDER BY created_at DESC"
     );
     
     console.log(`Found ${users.length} users`);
@@ -116,21 +116,23 @@ router.get("/posts", async (req, res) => {
 });
 
 // ─────────────────────────────────────────
-// DELETE User
+// Cập nhật trạng thái (Ban/Unban) User
 // ─────────────────────────────────────────
-router.delete("/users/:id", async (req, res) => {
+router.put("/users/:id/status", async (req, res) => {
   const { id } = req.params;
+  const { status } = req.body; // 'active' hoặc 'banned'
 
   try {
-    const [result] = await pool.query("DELETE FROM users WHERE id = ?", [id]);
+    const [result] = await pool.query("UPDATE users SET status = ? WHERE id = ?", [status, id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: `Không tìm thấy user với id = ${id}.` });
     }
 
-    res.json({ message: `Đã xóa user id = ${id} thành công.` });
+    const action = status === 'banned' ? 'Khóa' : 'Mở khóa';
+    res.json({ message: `Đã ${action.toLowerCase()} user id = ${id} thành công.` });
   } catch (error) {
-    console.error("Lỗi DELETE /users/:id:", error);
+    console.error("Lỗi PUT /users/:id/status:", error);
     res.status(500).json({ message: "Lỗi server: " + error.message });
   }
 });
