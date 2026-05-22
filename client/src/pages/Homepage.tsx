@@ -133,7 +133,12 @@ const HomePage: React.FC = () => {
                     {/* Tags */}
                     <div onClick={(e) => e.stopPropagation()}>
                       {tagList.map(tag => (
-                        <Tag color="geekblue" key={tag} style={{ cursor: 'pointer' }}>
+                        <Tag 
+                          color="geekblue" 
+                          key={tag} 
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => navigate(`/search?tag=${tag}`)}
+                        >
                           #{tag}
                         </Tag>
                       ))}
@@ -180,7 +185,12 @@ const HomePage: React.FC = () => {
         <Card title="Thẻ phổ biến" style={{ marginBottom: 20 }}>
           <Space wrap>
             {['javascript', 'reactjs', 'nodejs', 'mysql', 'typescript'].map(tag => (
-              <Tag color="blue" key={tag} style={{ cursor: 'pointer' }}>
+              <Tag 
+                color="blue" 
+                key={tag} 
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate(`/search?tag=${tag}`)}
+              >
                 {tag}
               </Tag>
             ))}
