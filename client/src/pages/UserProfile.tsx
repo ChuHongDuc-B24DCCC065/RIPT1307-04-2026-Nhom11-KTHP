@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Typography, Row, Col, Avatar, Button, Tabs, List, Space, Tag, Modal, Form, Input, message } from 'antd';
-import { UserOutlined, EditOutlined, DeleteOutlined, MailOutlined, IdcardOutlined, MessageOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { UserOutlined, EditOutlined, DeleteOutlined, MailOutlined, IdcardOutlined, MessageOutlined, ClockCircleOutlined, PhoneOutlined, BankOutlined, GlobalOutlined, InfoCircleOutlined, BookOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import EditProfileModal from '../components/EditProfileModal';
 
 const { Title, Text } = Typography;
 
@@ -19,9 +20,9 @@ const UserProfile: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || 'null'));
   const [myQuestions, setMyQuestions] = useState<Question[]>([]); // Data động từ Backend
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Question[]>([]);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
 
   // Hàm lấy câu hỏi của riêng user này từ Backend
   const fetchMyQuestions = async () => {
@@ -29,7 +30,7 @@ const UserProfile: React.FC = () => {
   setLoading(true);
   try {
     const token = localStorage.getItem('token');
-    const res = await axios.get('http://localhost:5000/api/questions/user/questions', {
+    const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/user/questions`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     const questions = res.data.data || [];
@@ -49,34 +50,58 @@ const UserProfile: React.FC = () => {
   }
 };
 
+  // Hàm lấy câu hỏi đã đánh dấu
+  const fetchBookmarkedQuestions = async () => {
+    if (!user) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users/bookmarks`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setBookmarkedQuestions(res.data.data || []);
+    } catch (error) {
+      console.error("Lỗi khi tải câu hỏi đã đánh dấu:", error);
+    }
+  };
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
     } else {
       fetchMyQuestions();
+      fetchBookmarkedQuestions();
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data.success && res.data.data) {
+          const fetchedUser = res.data.data;
+          setUser((prevUser: any) => {
+            const newUser = { ...prevUser, ...fetchedUser };
+            localStorage.setItem('user', JSON.stringify(newUser));
+            return newUser;
+          });
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải profile:", error);
+      }
+    };
+
+    if (user) {
+      fetchUserProfile();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!user) return null;
 
-  const handleUpdateProfile = async (values: any) => {
-    try {
-      const token = localStorage.getItem('token');
-      // Gọi API cập nhật profile lên Backend (nếu có)
-      await axios.put('http://localhost:5000/api/users/profile', values, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      const updatedUser = { ...user, ...values };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      message.success('Cập nhật thông tin thành công!');
-      setIsEditModalVisible(false);
-      window.dispatchEvent(new Event('storage'));
-    } catch (error) {
-      message.error("Không thể cập nhật thông tin lên server!");
-    }
-  };
 
   const handleDeleteQuestion = (id: number) => {
     Modal.confirm({
@@ -89,7 +114,7 @@ const UserProfile: React.FC = () => {
         try {
           const token = localStorage.getItem('token');
           // Gọi API xóa câu hỏi cụ thể
-          await axios.delete(`http://localhost:5000/api/questions/${id}`, {
+          await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           message.success(`Đã xóa câu hỏi thành công!`);
@@ -173,6 +198,53 @@ const UserProfile: React.FC = () => {
       key: '2',
       label: (
         <span>
+          <BookOutlined /> Đã đánh dấu
+        </span>
+      ),
+      children: (
+        <List
+          itemLayout="vertical"
+          size="large"
+          loading={loading}
+          dataSource={bookmarkedQuestions}
+          locale={{ emptyText: 'Bạn chưa đánh dấu câu hỏi nào.' }}
+          renderItem={(item) => {
+            const parsedTags = typeof item.tags === 'string' ? item.tags.split(',') : (item.tags || []);
+            return (
+              <List.Item
+                key={item.id}
+                style={{ padding: '20px 0' }}
+                actions={[
+                  <Space key="time"><ClockCircleOutlined /> Đánh dấu lúc: {item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : ''}</Space>
+                ]}
+              >
+                <List.Item.Meta
+                  title={
+                    <Link to={`/questions/${item.id}`} style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                      {item.title}
+                    </Link>
+                  }
+                  description={
+                    <Space wrap>
+                      {parsedTags.map((tag: string) => (
+                        <Tag key={tag} color="geekblue">#{tag.trim()}</Tag>
+                      ))}
+                    </Space>
+                  }
+                />
+                <div style={{ color: '#555', marginTop: 10 }}>
+                  {item.description && item.description.length > 150 ? `${item.description.substring(0, 150)}...` : item.description}
+                </div>
+              </List.Item>
+            );
+          }}
+        />
+      ),
+    },
+    {
+      key: '3',
+      label: (
+        <span>
           <ClockCircleOutlined /> Hoạt động gần đây
         </span>
       ),
@@ -214,6 +286,30 @@ const UserProfile: React.FC = () => {
                   <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}><IdcardOutlined /> HỌ TÊN</Text>
                   <Text strong>{user.fullName || user.username}</Text>
                 </div>
+                {user.phoneNumber && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}><PhoneOutlined /> SỐ ĐIỆN THOẠI</Text>
+                    <Text strong>{user.phoneNumber}</Text>
+                  </div>
+                )}
+                {user.school && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}><BankOutlined /> TRƯỜNG HỌC</Text>
+                    <Text strong>{user.school}</Text>
+                  </div>
+                )}
+                {user.website && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}><GlobalOutlined /> WEBSITE</Text>
+                    <a href={user.website.startsWith('http') ? user.website : `https://${user.website}`} target="_blank" rel="noopener noreferrer"><Text strong style={{ color: '#1890ff' }}>{user.website}</Text></a>
+                  </div>
+                )}
+                {user.bio && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}><InfoCircleOutlined /> GIỚI THIỆU</Text>
+                    <Text strong>{user.bio}</Text>
+                  </div>
+                )}
               </Space>
               
               <Button 
@@ -221,13 +317,7 @@ const UserProfile: React.FC = () => {
                 block 
                 icon={<EditOutlined />} 
                 style={{ marginTop: 30, height: '40px', borderRadius: '6px' }}
-                onClick={() => {
-                  form.setFieldsValue({
-                    fullName: user.fullName || user.username,
-                    email: user.email || ''
-                  });
-                  setIsEditModalVisible(true);
-                }}
+                onClick={() => setIsEditModalVisible(true)}
               >
                 Chỉnh sửa hồ sơ
               </Button>
@@ -244,37 +334,18 @@ const UserProfile: React.FC = () => {
         </Col>
       </Row>
 
-      {/* Modal Chỉnh sửa hồ sơ */}
-      <Modal
-        title="Cập nhật thông tin cá nhân"
-        open={isEditModalVisible}
+      {/* Modal Chỉnh sửa hồ sơ đã tách ra component riêng */}
+      <EditProfileModal
+        user={user}
+        isVisible={isEditModalVisible}
         onCancel={() => setIsEditModalVisible(false)}
-        footer={null}
-        centered
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleUpdateProfile}
-        >
-          <Form.Item name="fullName" label="Họ và tên" rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}>
-            <Input placeholder="Nhập họ và tên đầy đủ" size="large" />
-          </Form.Item>
-          
-          <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Vui lòng nhập email!' }, { type: 'email', message: 'Email không đúng định dạng!' }]}>
-            <Input placeholder="example@student.ptit.edu.vn" size="large" />
-          </Form.Item>
-          
-          <Form.Item label="Tên đăng nhập (Mặc định)">
-            <Input value={user.username} disabled size="large" />
-          </Form.Item>
-          
-          <div style={{ textAlign: 'right', marginTop: 30 }}>
-            <Button onClick={() => setIsEditModalVisible(false)} style={{ marginRight: 10 }}>Hủy bỏ</Button>
-            <Button type="primary" htmlType="submit" size="large">Lưu thay đổi</Button>
-          </div>
-        </Form>
-      </Modal>
+        onSuccess={(updatedUser) => {
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          setUser(updatedUser);
+          setIsEditModalVisible(false);
+          window.dispatchEvent(new Event('storage'));
+        }}
+      />
     </div>
   );
 };

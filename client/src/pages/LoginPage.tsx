@@ -9,7 +9,7 @@ const LoginPage: React.FC = () => {
 
   const onFinish = async (values: any) => {
     try {
-      const res = await axios.post('http://localhost:5000/api/login', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/login`, {
         email: values.username,
         password: values.password
       });

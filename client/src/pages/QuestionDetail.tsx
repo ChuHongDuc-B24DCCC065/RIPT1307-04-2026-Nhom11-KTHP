@@ -10,9 +10,18 @@ import {
   ArrowLeftOutlined, SendOutlined, CheckCircleFilled
 } from '@ant-design/icons';
 import axios from 'axios';
+import BookmarkButton from '../components/BookmarkButton';
+
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 // --- Interfaces khớp với dữ liệu trả về từ Backend ---
+interface Comment {
+  id: number;
+  content: string;
+  author: string;
+  user_id: number;
+  created_at: string;
+}
 interface Answer {
   id: number;
   content: string;
@@ -21,6 +30,7 @@ interface Answer {
   user_id: number;
   author: string;       // Từ LEFT JOIN users
   created_at: string;
+  comments: Comment[];
 }
 interface Question {
   id: number;
@@ -42,7 +52,7 @@ const formatTime = (dateStr: string): string => {
   if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
   return `${Math.floor(diff / 86400)} ngày trước`;
 };
-const API = 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const QuestionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -51,9 +61,13 @@ const QuestionDetail: React.FC = () => {
   // --- State ---
   const [question, setQuestion] = useState<Question | null>(null);
   const [loading, setLoading]   = useState(true);
-  const [answerText, setAnswerText]     = useState('');
-  const [submitting, setSubmitting]     = useState(false);
-  const [isLiked, setIsLiked]           = useState(false);
+  const [answerText, setAnswerText]             = useState('');
+  const [submitting, setSubmitting]             = useState(false);
+  const [isLiked, setIsLiked]                   = useState(false);
+  const [commentTexts, setCommentTexts]         = useState<Record<number, string>>({});
+  const [showComment, setShowComment]           = useState<Record<number, boolean>>({});
+  const [submittingComment, setSubmittingComment] = useState<number | null>(null);
+
   // --- Lấy chi tiết câu hỏi từ API ---
   const fetchQuestion = async () => {
     setLoading(true);
@@ -73,6 +87,7 @@ const QuestionDetail: React.FC = () => {
   useEffect(() => {
     fetchQuestion();
   }, [id]);
+
   // --- Vote câu hỏi ---
   const handleVote = async (type: 'up' | 'down') => {
     if (!user) {
@@ -161,6 +176,29 @@ const QuestionDetail: React.FC = () => {
       setSubmitting(false);
     }
   };
+
+  // --- Đăng bình luận vào câu trả lời ---
+  const handlePostComment = async (answerId: number) => {
+    const content = (commentTexts[answerId] || '').trim();
+    if (!content) { message.warning('Vui lòng nhập bình luận!'); return; }
+    if (!user) { message.warning('Bạn cần đăng nhập!'); navigate('/login'); return; }
+    setSubmittingComment(answerId);
+    try {
+      await axios.post(
+        `${API}/questions/${id}/answers/${answerId}/comments`,
+        { content },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      message.success('Đã đăng bình luận!');
+      setCommentTexts(prev => ({ ...prev, [answerId]: '' }));
+      setShowComment(prev => ({ ...prev, [answerId]: false }));
+      fetchQuestion();
+    } catch {
+      message.error('Không thể đăng bình luận!');
+    } finally {
+      setSubmittingComment(null);
+    }
+  };
   // --- Loading skeleton ---
   if (loading) {
     return (
@@ -218,7 +256,10 @@ const QuestionDetail: React.FC = () => {
           </Col>
           {/* Cột nội dung */}
           <Col span={22}>
-            <Title level={2}>{question.title}</Title>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Title level={2} style={{ margin: 0, paddingBottom: 16 }}>{question.title}</Title>
+              {id && <BookmarkButton questionId={id} style={{ marginLeft: 16 }} />}
+            </div>
             <Space split={<Divider type="vertical" />} style={{ marginBottom: 20 }} wrap>
               <Space><UserOutlined /> <Text strong>{question.author}</Text></Space>
               <Space><ClockCircleOutlined /> {formatTime(question.created_at)}</Space>
@@ -314,6 +355,49 @@ const QuestionDetail: React.FC = () => {
                         </Paragraph>
                       }
                     />
+                    {/* === Bình luận === */}
+                    <div style={{ marginTop: 10, borderTop: '1px solid #f5f5f5', paddingTop: 8 }}>
+                      {answer.comments?.map(c => (
+                        <div key={c.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 6, fontSize: 13, color: '#555' }}>
+                          <UserOutlined style={{ color: '#bbb', marginTop: 2, flexShrink: 0 }} />
+                          <span style={{ flex: 1 }}>
+                            <Text strong style={{ fontSize: 13 }}>{c.author}</Text>
+                            <span style={{ margin: '0 6px', color: '#ccc' }}>|</span>
+                            {c.content}
+                          </span>
+                          <Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+                            {formatTime(c.created_at)}
+                          </Text>
+                        </div>
+                      ))}
+                      {user ? (
+                        showComment[answer.id] ? (
+                          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                            <Input
+                              size="small"
+                              placeholder="Nhập bình luận..."
+                              value={commentTexts[answer.id] || ''}
+                              onChange={e => setCommentTexts(prev => ({ ...prev, [answer.id]: e.target.value }))}
+                              onPressEnter={() => handlePostComment(answer.id)}
+                            />
+                            <Button size="small" type="primary"
+                              loading={submittingComment === answer.id}
+                              onClick={() => handlePostComment(answer.id)}
+                            >Gửi</Button>
+                            <Button size="small"
+                              onClick={() => setShowComment(prev => ({ ...prev, [answer.id]: false }))}
+                            >Hủy</Button>
+                          </div>
+                        ) : (
+                          <Button type="link" size="small"
+                            style={{ padding: 0, fontSize: 12, height: 'auto', color: '#888' }}
+                            onClick={() => setShowComment(prev => ({ ...prev, [answer.id]: true }))}
+                          >
+                            + Thêm bình luận
+                          </Button>
+                        )
+                      ) : null}
+                    </div>
                   </Col>
                 </Row>
               </List.Item>
