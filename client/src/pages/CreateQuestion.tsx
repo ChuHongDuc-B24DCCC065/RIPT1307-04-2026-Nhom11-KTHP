@@ -26,7 +26,7 @@ const CreateQuestion: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const res = await axios.post('http://localhost:5000/api/questions', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions`, {
         title: values.title,
         description: description, 
         tags: values.tags
