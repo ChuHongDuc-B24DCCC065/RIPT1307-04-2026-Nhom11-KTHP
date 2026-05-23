@@ -3,16 +3,23 @@ import { Form, Input, Button, Card, Typography, Select, message, Space } from 'a
 import { ArrowLeftOutlined, SendOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import MarkdownEditor from '../components/MarkdownEditor';
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
 
 const CreateQuestion: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [description, setDescription] = useState('');
 
   const onFinish = async (values: any) => {
+    // Validate markdown editor is not empty
+    if (!description.trim()) {
+      message.error('Vui lòng nhập nội dung chi tiết!');
+      return;
+    }
+
     console.log("Question Data:", values); 
     setLoading(true); 
 
@@ -21,22 +28,23 @@ const CreateQuestion: React.FC = () => {
       
       const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions`, {
         title: values.title,
-        description: values.description, 
-        tags: values.tags // Truyền luôn mảng tags lên nếu Backend cần dùng
+        description: description, 
+        tags: values.tags
       }, {
         headers: { Authorization: `Bearer ${token}` } 
       });
 
       if (res.status === 201 || res.status === 200) {
         message.success("Đăng câu hỏi thành công!");
-        form.resetFields(); // Làm sạch form sau khi đăng xong
-        navigate('/'); // Điều hướng về trang chủ
+        form.resetFields();
+        setDescription('');
+        navigate('/');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Lỗi đăng câu hỏi:", err);
-  message.error(err.response?.data?.message || "Không thể đăng câu hỏi!");
+      message.error(err.response?.data?.message || "Không thể đăng câu hỏi!");
     } finally {
-      setLoading(false); // Tắt hiệu ứng loading kể cả khi thành công hay thất bại
+      setLoading(false);
     }
   };
 
@@ -69,25 +77,21 @@ const CreateQuestion: React.FC = () => {
             name="title"
             rules={[
               { required: true, message: 'Vui lòng nhập tiêu đề!' },
-              
             ]}
           >
             <Input placeholder="Ví dụ: Làm thế nào để sử dụng React Hooks hiệu quả?" size="large" />
           </Form.Item>
 
-          <Form.Item
-            label="Nội dung chi tiết"
-            name="description"
-            rules={[
-              { required: true, message: 'Vui lòng nhập nội dung chi tiết!' },
-              
-            ]}
-          >
-            <TextArea 
-              rows={8} 
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+              Nội dung chi tiết
+            </label>
+            <MarkdownEditor 
+              value={description}
+              onChange={setDescription}
               placeholder="Mô tả chi tiết vấn đề, những gì bạn đã thử và kết quả mong muốn..." 
             />
-          </Form.Item>
+          </div>
 
           <Form.Item
             label="Gắn thẻ (Tags)"
