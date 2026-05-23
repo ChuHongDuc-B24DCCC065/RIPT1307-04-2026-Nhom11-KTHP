@@ -182,10 +182,10 @@ const AdminDashboard: React.FC = () => {
 
           <Col span={15} xs={24} md={15}>
             <div style={{ marginBottom: 24 }}>
-              <Space justify="space-between" style={{ width: '100%', marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: 8 }}>
                 <Text strong style={{ fontSize: '15px' }}>Tỷ lệ người dùng là Giảng viên</Text>
                 <Text type="secondary" strong>{statsData?.teacherStudentRatio?.teacher || 0}%</Text>
-              </Space>
+              </div>
               <Progress 
                 percent={statsData?.teacherStudentRatio?.teacher || 0} 
                 status="active" 
@@ -194,10 +194,10 @@ const AdminDashboard: React.FC = () => {
               />
             </div>
             <div>
-              <Space justify="space-between" style={{ width: '100%', marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: 8 }}>
                 <Text strong style={{ fontSize: '15px' }}>Tỷ lệ người dùng là Sinh viên</Text>
                 <Text type="secondary" strong>{statsData?.teacherStudentRatio?.student || 0}%</Text>
-              </Space>
+              </div>
               <Progress 
                 percent={statsData?.teacherStudentRatio?.student || 0} 
                 status="active" 
