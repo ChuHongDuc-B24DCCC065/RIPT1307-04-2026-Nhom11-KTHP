@@ -55,6 +55,11 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = rows[0];
+        
+        if (user.status === 'banned') {
+            return res.status(403).json({ message: "Tài khoản của bạn đã bị khóa!" });
+        }
+
         const isMatch = await bcrypt.compare(password, user.password);
         
         if (!isMatch) {

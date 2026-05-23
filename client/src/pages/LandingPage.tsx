@@ -19,7 +19,7 @@ const LandingPage: React.FC = () => {
     <div style={{ textAlign: 'center', padding: '50px 20px', background: '#fff' }}>
       <Row justify="center">
         <Col span={16}>
-          <Title style={{ fontSize: '48px' }}>Chào mừng đến với SV-FORUM</Title>
+          <Title style={{ fontSize: '48px' }}>Chào mừng đến với Diễn đàn hỏi đáp sinh viên</Title>
           <Paragraph style={{ fontSize: '18px', color: '#666' }}>
             Nơi kết nối tri thức, giải đáp mọi thắc mắc và chia sẻ kinh nghiệm học tập 
             dành riêng cho cộng đồng sinh viên.
