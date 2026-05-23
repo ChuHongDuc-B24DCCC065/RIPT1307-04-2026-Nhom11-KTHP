@@ -22,6 +22,7 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import AdminDashboard from './AdminDashboard';
+import ToggleUserStatusButton from '../components/ToggleUserStatusButton';
 
 const { Header, Content, Sider } = Layout;
 
@@ -30,6 +31,7 @@ interface User {
   username: string;
   email: string;
   role: string;
+  status?: string;
 }
 
 interface Post {
@@ -150,15 +152,6 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    try {
-      await axiosInstance.delete(`/admin/users/${userId}`);
-      message.success('Xóa người dùng thành công!');
-      fetchData(); // Refresh data
-    } catch (error) {
-      message.error('Xóa thất bại!');
-    }
-  };
 
   // Menu items theo chuẩn AntD v5
   const menuItems = [
@@ -172,18 +165,25 @@ const AdminPage: React.FC = () => {
     { title: 'Tên tài khoản', dataIndex: 'username', key: 'username' }, 
     { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Vai trò', dataIndex: 'role', key: 'role' },
+    { 
+      title: 'Trạng thái', 
+      dataIndex: 'status', 
+      key: 'status',
+      render: (status: string) => (
+        <span style={{ color: status === 'banned' ? 'red' : 'green' }}>
+          {status === 'banned' ? 'Banned' : 'Active'}
+        </span>
+      )
+    },
     {
       title: 'Hành động',
       key: 'action',
       render: (_: any, record: User) => (
-        <Popconfirm 
-          title="Xóa người dùng này?" 
-          onConfirm={() => handleDeleteUser(record.id)}
-          okText="Xóa"
-          cancelText="Hủy"
-        >
-          <Button type="link" danger icon={<DeleteOutlined />}>Xóa</Button>
-        </Popconfirm>
+        <ToggleUserStatusButton 
+          userId={record.id} 
+          currentStatus={record.status} 
+          onSuccess={fetchData} 
+        />
       ),
     },
   ];

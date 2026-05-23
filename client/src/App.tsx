@@ -81,7 +81,7 @@ const App: React.FC = () => {
               letterSpacing: '1px',
               textShadow: '0 2px 4px rgba(0,0,0,0.2)'
             }}>
-              SV-FORUM
+              Diễn Đàn Hỏi Đáp Sinh Viên
             </div>
             <Menu 
               theme="dark" 
