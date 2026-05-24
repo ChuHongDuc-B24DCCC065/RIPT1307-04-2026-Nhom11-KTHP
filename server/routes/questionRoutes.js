@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
+const { createNotification } = require('../utils/notification');
 
 const normalizeTags = (tags) => {
   if (!tags) return [];
@@ -219,7 +220,7 @@ router.post('/:id/answers', authMiddleware, async (req, res) => {
     return res.status(400).json({ success: false, message: 'Vui lòng nhập câu trả lời.' });
 
   try {
-    const [[question]] = await pool.execute('SELECT id FROM questions WHERE id = ?', [req.params.id]);
+    const [[question]] = await pool.execute('SELECT id, user_id FROM questions WHERE id = ?', [req.params.id]);
     if (!question)
       return res.status(404).json({ success: false, message: 'Không tìm thấy câu hỏi.' });
 
@@ -227,6 +228,14 @@ router.post('/:id/answers', authMiddleware, async (req, res) => {
       'INSERT INTO answers (content, question_id, user_id) VALUES (?, ?, ?)',
       [content.trim(), req.params.id, req.user.id]
     );
+
+    if (question.user_id && question.user_id !== req.user.id) {
+      await createNotification(
+        question.user_id,
+        `${req.user.username} đã trả lời câu hỏi của bạn.`,
+        `/questions/${req.params.id}`
+      );
+    }
 
     res.status(201).json({
       success: true,
@@ -252,6 +261,15 @@ router.patch('/:id/answers/:answerId/accept', authMiddleware, async (req, res) =
     await pool.execute('UPDATE answers SET is_accepted = 1 WHERE id = ? AND question_id = ?',
       [req.params.answerId, req.params.id]);
 
+    const [[answer]] = await pool.execute('SELECT user_id FROM answers WHERE id = ?', [req.params.answerId]);
+    if (answer && answer.user_id && answer.user_id !== req.user.id) {
+      await createNotification(
+        answer.user_id,
+        `${req.user.username} đã chấp nhận câu trả lời của bạn.`,
+        `/questions/${req.params.id}`
+      );
+    }
+
     res.json({ success: true, message: 'Đã chấp nhận câu trả lời.' });
   } catch (err) {
     console.error('PATCH accept answer:', err.message);
@@ -267,11 +285,21 @@ router.post('/:id/vote', authMiddleware, async (req, res) => {
   const delta = type === 'up' ? 1 : -1;
 
   try {
-    const [[question]] = await pool.execute('SELECT id FROM questions WHERE id = ?', [req.params.id]);
+    const [[question]] = await pool.execute('SELECT id, user_id FROM questions WHERE id = ?', [req.params.id]);
     if (!question)
       return res.status(404).json({ success: false, message: 'Không tìm thấy câu hỏi.' });
 
     await pool.execute('UPDATE questions SET votes = votes + ? WHERE id = ?', [delta, req.params.id]);
+    
+    if (question.user_id && question.user_id !== req.user.id) {
+      const action = type === 'up' ? 'upvote' : 'downvote';
+      await createNotification(
+        question.user_id,
+        `${req.user.username} đã ${action} câu hỏi của bạn.`,
+        `/questions/${req.params.id}`
+      );
+    }
+
     const [[updated]] = await pool.execute('SELECT votes FROM questions WHERE id = ?', [req.params.id]);
     res.json({ success: true, votes: updated.votes });
   } catch (err) {
@@ -288,14 +316,26 @@ router.post('/:id/answers/:answerId/vote', authMiddleware, async (req, res) => {
   const delta = type === 'up' ? 1 : -1;
 
   try {
+    const [[answer]] = await pool.execute('SELECT id, user_id FROM answers WHERE id = ? AND question_id = ?', [req.params.answerId, req.params.id]);
+    if (!answer) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy câu trả lời.' });
+    }
+
     await pool.execute(
       'UPDATE answers SET votes = votes + ? WHERE id = ? AND question_id = ?',
       [delta, req.params.answerId, req.params.id]
     );
 
+    if (answer.user_id && answer.user_id !== req.user.id) {
+      const action = type === 'up' ? 'upvote' : 'downvote';
+      await createNotification(
+        answer.user_id,
+        `${req.user.username} đã ${action} câu trả lời của bạn.`,
+        `/questions/${req.params.id}`
+      );
+    }
+
     const [[updated]] = await pool.execute('SELECT votes FROM answers WHERE id = ?', [req.params.answerId]);
-    if (!updated)
-      return res.status(404).json({ success: false, message: 'Không tìm thấy câu trả lời.' });
 
     res.json({ success: true, votes: updated.votes });
   } catch (err) {
@@ -310,10 +350,21 @@ router.post('/:id/answers/:answerId/comments', authMiddleware, async (req, res) 
   if (!content || !content.trim())
     return res.status(400).json({ success: false, message: 'Vui lòng nhập nội dung bình luận.' });
   try {
+    const [[answer]] = await pool.execute('SELECT user_id FROM answers WHERE id = ?', [req.params.answerId]);
+
     const [result] = await pool.execute(
       'INSERT INTO comments (content, answer_id, user_id) VALUES (?, ?, ?)',
       [content.trim(), req.params.answerId, req.user.id]
     );
+
+    if (answer && answer.user_id && answer.user_id !== req.user.id) {
+      await createNotification(
+        answer.user_id,
+        `${req.user.username} đã bình luận về câu trả lời của bạn.`,
+        `/questions/${req.params.id}`
+      );
+    }
+
     res.status(201).json({
       success: true,
       message: 'Đã đăng bình luận!',

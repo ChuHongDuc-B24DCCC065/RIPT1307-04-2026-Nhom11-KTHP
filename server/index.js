@@ -107,5 +107,7 @@ const questionRoutes = require('./routes/questionRoutes');
 app.use('/api/questions', questionRoutes);
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
+const notificationRoutes = require('./routes/notificationRoutes');
+app.use('/api/notifications', notificationRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server chạy ở cổng ${PORT}`));
