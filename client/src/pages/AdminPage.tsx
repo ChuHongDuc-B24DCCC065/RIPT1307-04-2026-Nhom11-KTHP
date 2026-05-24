@@ -2,11 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
-  Card, 
-  Col, 
-  Row, 
-  Statistic, 
-  Tabs, 
   Table, 
   Button, 
   Popconfirm, 
@@ -16,7 +11,6 @@ import {
 import {
   UserOutlined,
   FileTextOutlined,
-  WarningOutlined,
   DashboardOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
@@ -46,7 +40,6 @@ const AdminPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [stats, setStats] = useState({ totalUsers: 0, totalPosts: 0, reports: 0 });
 
   // --- States Phân Trang Độc Lập ---
   const [userPage, setUserPage] = useState<number>(1);
@@ -94,10 +87,9 @@ const AdminPage: React.FC = () => {
     setLoading(true);
     
     try {
-      const [usersRes, postsRes, statsRes] = await Promise.all([
+      const [usersRes, postsRes] = await Promise.all([
         axiosInstance.get('/admin/users', { params: { page: userPage, limit: 10 } }),
         axiosInstance.get('/admin/posts', { params: { page: postPage, limit: 10 } }),
-        axiosInstance.get('/admin/stats'),
       ]);
 
       const usersData = usersRes.data.users || [];
@@ -110,7 +102,6 @@ const AdminPage: React.FC = () => {
       setPosts(postsData);
       setPostTotal(postsTotalCount);
 
-      setStats(statsRes.data);
       
     } catch (error: any) {
       console.error('Fetch data error:', error);
