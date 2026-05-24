@@ -8,7 +8,9 @@ const jwt = require('jsonwebtoken');
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173', 
+  origin: function (origin, callback) {
+    callback(null, true); // Cho phép mọi domain kết nối (Fix triệt để lỗi CORS)
+  },
   credentials: true
 }));
 
@@ -168,5 +170,7 @@ const questionRoutes = require('./routes/questionRoutes');
 app.use('/api/questions', questionRoutes);
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
+const notificationRoutes = require('./routes/notificationRoutes');
+app.use('/api/notifications', notificationRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server chạy ở cổng ${PORT}`));

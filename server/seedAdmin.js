@@ -1,18 +1,9 @@
 // seedAdmin.js
 // Chạy: node seedAdmin.js
 
-const mysql = require("mysql2/promise");
+require('dotenv').config();
 const bcrypt = require("bcrypt");
-
-// ─── Cấu hình kết nối ────────────────────────────────
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "123456",
-  database: "diendanhoidapsinhvien",
-  waitForConnections: true,
-  connectionLimit: 5,
-});
+const pool = require('./config/db');
 
 // ─── Thông tin Admin ─────────────────────────────────
 const ADMIN = {
