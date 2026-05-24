@@ -40,7 +40,6 @@ const AdminPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  // unused stats const removed
 
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
@@ -89,7 +88,6 @@ const AdminPage: React.FC = () => {
 
       setUsers(usersRes.data.users || []);
       setPosts(postsRes.data.posts || []);
-      // unused stats removed
       
     } catch (error: any) {
       console.error('Fetch data error:', error);
