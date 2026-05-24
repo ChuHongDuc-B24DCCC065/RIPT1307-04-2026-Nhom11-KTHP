@@ -2,11 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
-  Card, 
-  Col, 
-  Row, 
-  Statistic, 
-  Tabs, 
   Table, 
   Button, 
   Popconfirm, 
@@ -16,7 +11,6 @@ import {
 import {
   UserOutlined,
   FileTextOutlined,
-  WarningOutlined,
   DashboardOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
@@ -46,7 +40,6 @@ const AdminPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [stats, setStats] = useState({ totalUsers: 0, totalPosts: 0, reports: 0 });
 
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
@@ -88,15 +81,13 @@ const AdminPage: React.FC = () => {
     setLoading(true);
     
     try {
-      const [usersRes, postsRes, statsRes] = await Promise.all([
+      const [usersRes, postsRes] = await Promise.all([
         axiosInstance.get('/admin/users'),
         axiosInstance.get('/admin/posts'),
-        axiosInstance.get('/admin/stats'),
       ]);
 
       setUsers(usersRes.data.users || []);
       setPosts(postsRes.data.posts || []);
-      setStats(statsRes.data);
       
     } catch (error: any) {
       console.error('Fetch data error:', error);
