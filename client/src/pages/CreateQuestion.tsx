@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import MarkdownEditor from '../components/MarkdownEditor';
 
-const { Title, Text } = Typography;
+const { Title, Paragraph } = Typography;
 
 const CreateQuestion: React.FC = () => {
   const navigate = useNavigate();
@@ -14,13 +14,11 @@ const CreateQuestion: React.FC = () => {
   const [description, setDescription] = useState('');
 
   const onFinish = async (values: any) => {
-    // Validate markdown editor is not empty
     if (!description.trim()) {
       message.error('Vui lòng nhập nội dung chi tiết!');
       return;
     }
 
-    console.log("Question Data:", values); 
     setLoading(true); 
 
     try {
@@ -29,7 +27,7 @@ const CreateQuestion: React.FC = () => {
       const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions`, {
         title: values.title,
         description: description, 
-        tags: values.tags
+        tags: values.tags.join(',') // Khớp định dạng MySQL string "react,node"
       }, {
         headers: { Authorization: `Bearer ${token}` } 
       });
@@ -49,22 +47,33 @@ const CreateQuestion: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+    <div style={{ maxWidth: 840, margin: '0 auto', padding: '12px' }}>
       <Space style={{ marginBottom: 20 }}>
         <Button 
           icon={<ArrowLeftOutlined />} 
           onClick={() => navigate('/')}
           type="text"
+          style={{ fontWeight: 600, color: '#64748b' }}
         >
           Quay lại trang chủ
         </Button>
       </Space>
 
-      <Card>
-        <Title level={2} style={{ marginBottom: 30 }}>Đặt câu hỏi mới</Title>
-        <Text type="secondary" style={{ display: 'block', marginBottom: 20 }}>
-          Hãy mô tả chi tiết vấn đề của bạn để cộng đồng có thể hỗ trợ tốt nhất.
-        </Text>
+      <Card
+        bordered={false}
+        style={{
+          boxShadow: '0 10px 30px -5px rgba(99, 102, 241, 0.04), 0 8px 12px -6px rgba(0, 0, 0, 0.02)',
+          borderRadius: '20px',
+          border: '1px solid #e2e8f0',
+          padding: '16px'
+        }}
+      >
+        <div style={{ marginBottom: 32 }}>
+          <Title level={2} style={{ margin: 0, fontWeight: 800, color: '#1e293b', letterSpacing: '-0.5px' }}>Đặt câu hỏi mới</Title>
+          <Paragraph type="secondary" style={{ marginTop: 8, fontSize: '14px', lineHeight: '1.5', color: '#64748b' }}>
+            Hãy chia sẻ câu hỏi của bạn với cộng đồng. Mô tả chi tiết vấn đề cùng với các lỗi (nếu có) để nhận được sự trợ giúp tốt nhất và nhanh nhất.
+          </Paragraph>
+        </div>
 
         <Form
           form={form}
@@ -73,35 +82,39 @@ const CreateQuestion: React.FC = () => {
           autoComplete="off"
         >
           <Form.Item
-            label="Tiêu đề câu hỏi"
+            label={<span style={{ fontWeight: 650, color: '#334155' }}>Tiêu đề câu hỏi</span>}
             name="title"
             rules={[
-              { required: true, message: 'Vui lòng nhập tiêu đề!' },
+              { required: true, message: 'Vui lòng nhập tiêu đề câu hỏi!' },
             ]}
           >
-            <Input placeholder="Ví dụ: Làm thế nào để sử dụng React Hooks hiệu quả?" size="large" />
+            <Input 
+              placeholder="Ví dụ: Làm thế nào để giải quyết lỗi CORS trong ExpressJS khi gọi từ React?" 
+              size="large" 
+              style={{ borderRadius: '10px', height: '42px' }}
+            />
           </Form.Item>
 
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-              Nội dung chi tiết
+          <div style={{ marginBottom: '28px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 650, color: '#334155', fontSize: '14px' }}>
+              Nội dung chi tiết câu hỏi
             </label>
             <MarkdownEditor 
               value={description}
               onChange={setDescription}
-              placeholder="Mô tả chi tiết vấn đề, những gì bạn đã thử và kết quả mong muốn..." 
+              placeholder="Mô tả chi tiết vấn đề, những gì bạn đã thử nghiệm và kết quả mong muốn đạt được..." 
             />
           </div>
 
           <Form.Item
-            label="Gắn thẻ (Tags)"
+            label={<span style={{ fontWeight: 650, color: '#334155' }}>Gắn thẻ (Tags)</span>}
             name="tags"
             rules={[{ required: true, message: 'Vui lòng chọn ít nhất một thẻ!' }]}
           >
             <Select
               mode="tags"
               style={{ width: '100%' }}
-              placeholder="Chọn hoặc nhập thẻ (ví dụ: reactjs, javascript...)"
+              placeholder="Chọn hoặc gõ từ khóa (ví dụ: reactjs, nodejs, python...)"
               options={[
                 { value: 'reactjs', label: 'ReactJS' },
                 { value: 'nodejs', label: 'NodeJS' },
@@ -111,12 +124,15 @@ const CreateQuestion: React.FC = () => {
                 { value: 'mongodb', label: 'MongoDB' },
                 { value: 'css', label: 'CSS' },
                 { value: 'html', label: 'HTML' },
+                { value: 'python', label: 'Python' },
+                { value: 'tailwind', label: 'Tailwind' },
               ]}
               size="large"
+              dropdownStyle={{ borderRadius: '12px' }}
             />
           </Form.Item>
 
-          <Form.Item style={{ marginTop: 40 }}>
+          <Form.Item style={{ marginTop: 42, marginBottom: 12 }}>
             <Button 
               type="primary" 
               htmlType="submit" 
@@ -124,8 +140,16 @@ const CreateQuestion: React.FC = () => {
               icon={<SendOutlined />} 
               loading={loading}
               block
+              style={{
+                borderRadius: '10px',
+                height: '46px',
+                fontWeight: 600,
+                background: '#6366f1',
+                borderColor: '#6366f1',
+                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
+              }}
             >
-              Đăng câu hỏi
+              Đăng câu hỏi lên diễn đàn
             </Button>
           </Form.Item>
         </Form>
