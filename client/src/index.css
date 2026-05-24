@@ -1,8 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 body, html {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
@@ -10,3 +17,192 @@ body, html {
   min-height: 100vh;
 }
 
+/* Beautiful custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* High-end transitions & Animations */
+.transition-all {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Premium Card hover style */
+.premium-card {
+  border: 1px solid #f1f5f9 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.premium-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -10px rgba(99, 102, 241, 0.12), 0 8px 16px -8px rgba(0, 0, 0, 0.04) !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Custom left sidebar navigation items */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: #64748b;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  margin-bottom: 4px;
+}
+
+.sidebar-nav-item:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+.sidebar-nav-item.active {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.sidebar-nav-item.active .anticon {
+  color: #4f46e5;
+}
+
+/* Popular Tag Pills */
+.sidebar-tag {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #f1f5f9;
+  color: #475569;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.sidebar-tag:hover {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+  border-color: rgba(99, 102, 241, 0.2);
+  transform: scale(1.03);
+}
+
+/* Active Category Dropdown */
+.category-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.category-dropdown-header:hover {
+  background-color: #f1f5f9;
+}
+
+.category-sub-item {
+  padding: 10px 16px 10px 44px;
+  font-size: 13.5px;
+  color: #475569;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  margin-bottom: 2px;
+  font-weight: 450;
+}
+
+.category-sub-item:hover {
+  background-color: #f8fafc;
+  color: #4f46e5;
+  padding-left: 48px;
+}
+
+/* Premium Search Bar focus states */
+.premium-search-input {
+  border: none !important;
+  background-color: #f1f5f9 !important;
+  transition: all 0.25s ease !important;
+}
+
+.premium-search-input:focus, .premium-search-input-focused {
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+  border: 1px solid rgba(99, 102, 241, 0.4) !important;
+}
+
+/* Header Action buttons */
+.btn-action-primary {
+  background: #6366f1;
+  color: white;
+  font-weight: 500;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-action-primary:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.bell-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f1f5f9;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bell-icon-wrapper:hover {
+  background-color: #e2e8f0;
+  color: #1e293b;
+}
+
+/* Status Indicator Dot */
+.status-indicator-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #22c55e;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+}
