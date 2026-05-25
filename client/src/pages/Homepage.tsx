@@ -27,6 +27,18 @@ const formatTime = (dateStr: string): string => {
   return `${Math.floor(diff / 86400)} ngày trước`;
 };
 
+// --- MOCK DATA GIẢ CHO TRANG CHỦ ---
+const MOCK_QUESTION: Question = {
+  id: 1,
+  title: "Lỗi 'Hydration failed' trong React 19 khi dùng Next.js, làm sao để fix?",
+  description: "Chào mọi người, hiện tại mình đang nâng cấp dự án từ React 18 lên React 19 và gặp phải lỗi Hydration mismatch. Mình không rõ tại sao lỗi này lại xuất hiện vì ở version trước chạy rất bình thường.",
+  tags: "ReactJS,Frontend,TypeScript,Web Performance",
+  author: "Nguyen Van A",
+  votes: 128,
+  answer_count: 3,
+  created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 giờ trước
+};
+
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -42,10 +54,11 @@ const HomePage: React.FC = () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions`);
       const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
-      setQuestions(data);
+      setQuestions([MOCK_QUESTION, ...data]);
     } catch (error) {
       console.error('Lỗi tải câu hỏi:', error);
-      message.error('Không thể tải danh sách câu hỏi!');
+      // Hiển thị mock data nếu API lỗi
+      setQuestions([MOCK_QUESTION]);
     } finally {
       setLoading(false);
     }

@@ -14,6 +14,7 @@ import QuestionDetail from './pages/QuestionDetail';
 import EditQuestion from './pages/EditQuestion';
 import UserProfile from './pages/UserProfile';
 import SearchAndFilterPage from './pages/SearchAndFilterPage';
+import { NotificationBell } from './components/NotificationBell';
 import {
   SearchOutlined,
   BellOutlined,
@@ -168,11 +169,7 @@ const AppContent: React.FC = () => {
           </button>
 
           {/* Chuông thông báo */}
-          <Badge count={2} size="small" color="#ef4444" offset={[-2, 2]}>
-            <div className="bell-icon-wrapper">
-              <BellOutlined style={{ fontSize: '20px' }} />
-            </div>
-          </Badge>
+          <NotificationBell />
 
           {/* Avatar / Nút đăng nhập */}
           {parsedUser ? (
