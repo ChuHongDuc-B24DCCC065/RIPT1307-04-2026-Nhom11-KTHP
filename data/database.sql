@@ -30,3 +30,30 @@ CREATE TABLE notifications (
         REFERENCES users (id)
         ON DELETE CASCADE
 );
+
+
+USE defaultdb;
+
+CREATE TABLE reports (
+    id INT NOT NULL AUTO_INCREMENT,
+    user_id_report INT NOT NULL,
+    question_id INT NOT NULL,
+    ly_do TEXT NOT NULL,
+    trang_thai ENUM('pending', 'resolved', 'rejected') DEFAULT 'pending',
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+
+    KEY user_id_report (user_id_report),
+    KEY question_id (question_id),
+
+    CONSTRAINT reports_ibfk_1
+        FOREIGN KEY (user_id_report)
+        REFERENCES users (id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT reports_ibfk_2
+        FOREIGN KEY (question_id)
+        REFERENCES questions (id)
+        ON DELETE CASCADE
+);
