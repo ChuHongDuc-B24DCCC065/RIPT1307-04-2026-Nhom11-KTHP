@@ -206,3 +206,9 @@ body, html {
   border: 2px solid #ffffff;
   box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
 }
+
+/* Discussion Title Hover Effect */
+.discussion-title-hover:hover {
+  color: #6366f1 !important;
+}
+

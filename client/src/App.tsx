@@ -12,6 +12,7 @@ import QuestionDetail from './pages/QuestionDetail';
 import EditQuestion from './pages/EditQuestion';
 import UserProfile from './pages/UserProfile';
 import SearchAndFilterPage from './pages/SearchAndFilterPage';
+import DiscussionsPage from './pages/DiscussionsPage';
 import {
   SearchOutlined,
   BellOutlined,
@@ -23,7 +24,8 @@ import {
   LogoutOutlined,
   SettingOutlined,
   DownOutlined,
-  RightOutlined
+  RightOutlined,
+  CommentOutlined
 } from '@ant-design/icons';
 
 const { Header, Content, Sider } = Layout;
@@ -89,6 +91,7 @@ const AppContent: React.FC = () => {
   const isHomeActive = location.pathname === '/' || location.pathname === '/welcome';
   const isPopularActive = location.search.includes('popular') || (location.pathname === '/search' && location.search.includes('tag=popular'));
   const isNewestActive = location.search.includes('newest');
+  const isDiscussionsActive = location.pathname === '/discussions';
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
@@ -235,6 +238,14 @@ const AppContent: React.FC = () => {
             </div>
 
             <div 
+              className={`sidebar-nav-item ${isDiscussionsActive ? 'active' : ''}`}
+              onClick={() => navigate('/discussions')}
+            >
+              <CommentOutlined style={{ fontSize: '18px' }} />
+              <span>Thảo luận cộng đồng</span>
+            </div>
+
+            <div 
               className={`sidebar-nav-item ${isPopularActive ? 'active' : ''}`}
               onClick={() => navigate('/search?q=popular')}
             >
@@ -307,6 +318,7 @@ const AppContent: React.FC = () => {
         <Content style={{ padding: '24px 24px 40px 12px', minHeight: 'calc(100vh - 72px)' }}>
           <Routes>
             <Route path="/" element={<HomePage />} />   
+            <Route path="/discussions" element={<DiscussionsPage />} />
             <Route path="/welcome" element={<LandingPage />} /> 
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
