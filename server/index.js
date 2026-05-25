@@ -170,6 +170,8 @@ const questionRoutes = require('./routes/questionRoutes');
 app.use('/api/questions', questionRoutes);
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
+const reportRoutes = require('./routes/reportRoutes');
+app.use('/api/reports', reportRoutes);
 const notificationRoutes = require('./routes/notificationRoutes');
 app.use('/api/notifications', notificationRoutes);
 const PORT = process.env.PORT || 5000;

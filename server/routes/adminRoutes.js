@@ -199,4 +199,66 @@ router.delete("/posts/:id", async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────
+// Lấy danh sách Reports
+// ─────────────────────────────────────────
+router.get("/reports", async (req, res) => {
+  try {
+    console.log("Fetching reports list...");
+    
+    const query = `
+      SELECT r.*, q.title as question_title, u.username as reporter_name
+      FROM reports r
+      LEFT JOIN questions q ON r.question_id = q.id
+      LEFT JOIN users u ON r.user_id_report = u.id
+      ORDER BY r.id DESC
+    `;
+    
+    const [reports] = await pool.query(query);
+    
+    res.json({ reports });
+  } catch (error) {
+    console.error("Error in /reports:", error.message);
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+});
+
+// ─────────────────────────────────────────
+// DELETE Report & Bài vi phạm
+// ─────────────────────────────────────────
+router.delete("/reports/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // 1. Lấy thông tin report để biết question_id (bài viết bị report)
+    const [reportRows] = await pool.query("SELECT * FROM reports WHERE id = ?", [id]);
+    
+    if (reportRows.length === 0) {
+      return res.status(404).json({ message: `Không tìm thấy báo cáo với id = ${id}.` });
+    }
+
+    const report = reportRows[0];
+    const questionId = report.question_id;
+
+    // 2. Xóa bài viết (bài vi phạm)
+    if (questionId) {
+      await pool.query("DELETE FROM questions WHERE id = ?", [questionId]);
+      
+      // Xóa các câu trả lời liên quan (nếu cần thiết, dựa trên bảng answers)
+      // await pool.query("DELETE FROM answers WHERE question_id = ?", [questionId]);
+      
+      // 3. Xóa tất cả report liên quan đến bài viết này
+      await pool.query("DELETE FROM reports WHERE question_id = ?", [questionId]);
+    } else {
+      // Nếu không xác định được bài vi phạm, chỉ xóa report hiện tại
+      await pool.query("DELETE FROM reports WHERE id = ?", [id]);
+    }
+
+    res.json({ message: `Đã xóa bài vi phạm và các báo cáo liên quan thành công.` });
+  } catch (error) {
+    console.error("Lỗi DELETE /reports/:id:", error);
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+});
+
 module.exports = router;
