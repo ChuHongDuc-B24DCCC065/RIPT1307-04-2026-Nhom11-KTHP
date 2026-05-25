@@ -6,6 +6,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import LandingPage from './pages/LandingPage';
 import AdminPage from './pages/AdminPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import CreateQuestion from './pages/CreateQuestion';
 import QuestionDetail from './pages/QuestionDetail';
@@ -90,10 +92,13 @@ const AppContent: React.FC = () => {
   const isPopularActive = location.search.includes('popular') || (location.pathname === '/search' && location.search.includes('tag=popular'));
   const isNewestActive = location.search.includes('newest');
 
+  const hideLayout = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
+
   return (
     <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
       
       {/* ==================== HEADER TRẮNG SANG TRỌNG ==================== */}
+      {!hideLayout && (
       <Header style={{
         position: 'sticky',
         top: 0,
@@ -202,11 +207,13 @@ const AppContent: React.FC = () => {
 
         </div>
       </Header>
+      )}
 
       {/* ==================== THÂN TRANG GỒM SIDEBAR TRÁI + MAIN CONTENT ==================== */}
       <Layout style={{ background: '#f8fafc' }}>
         
         {/* SIDEBAR TRÁI */}
+        {!hideLayout && (
         <Sider 
           width={280} 
           theme="light"
@@ -302,14 +309,17 @@ const AppContent: React.FC = () => {
             )}
           </div>
         </Sider>
+        )}
 
         {/* MAIN CONTENT AREA */}
-        <Content style={{ padding: '24px 24px 40px 12px', minHeight: 'calc(100vh - 72px)' }}>
+        <Content style={{ padding: hideLayout ? 0 : '24px 24px 40px 12px', minHeight: hideLayout ? '100vh' : 'calc(100vh - 72px)' }}>
           <Routes>
             <Route path="/" element={<HomePage />} />   
             <Route path="/welcome" element={<LandingPage />} /> 
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/create-question" element={<CreateQuestion />} />
             <Route path="/questions/:id" element={<QuestionDetail />} />
             <Route path="/questions/:id/edit" element={<EditQuestion />} />

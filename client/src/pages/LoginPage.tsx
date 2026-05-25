@@ -31,8 +31,8 @@ const LoginPage: React.FC = () => {
       }
       
     } catch (err: any) {
-      const errorMsg = err.response?.data || 'Tài khoản hoặc mật khẩu không đúng!';
-      message.error(errorMsg);
+      const errorMsg = err.response?.data?.message || err.response?.data || 'Tài khoản hoặc mật khẩu không đúng!';
+      message.error(typeof errorMsg === 'string' ? errorMsg : 'Tài khoản hoặc mật khẩu không đúng!');
     }
   };
 
@@ -95,7 +95,11 @@ const LoginPage: React.FC = () => {
             />
           </Form.Item>
 
-          <Form.Item style={{ marginTop: 32 }}>
+          <div style={{ textAlign: 'right', marginBottom: 24, marginTop: -8 }}>
+            <Link to="/forgot-password" style={{ color: '#6366f1', fontSize: '13.5px', fontWeight: 500 }}>Quên mật khẩu?</Link>
+          </div>
+
+          <Form.Item style={{ marginTop: 0 }}>
             <Button 
               type="primary" 
               htmlType="submit" 

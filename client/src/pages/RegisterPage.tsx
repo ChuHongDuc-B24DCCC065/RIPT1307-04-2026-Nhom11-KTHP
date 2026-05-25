@@ -16,7 +16,8 @@ const RegisterPage: React.FC = () => {
       message.success('Đăng ký tài khoản thành công!');
       setTimeout(() => navigate('/login'), 1500);
     } catch (err: any) {
-      message.error(err.response?.data || 'Đăng ký thất bại. Vui lòng thử lại!');
+      const errorMsg = err.response?.data?.message || err.response?.data || 'Đăng ký thất bại. Vui lòng thử lại!';
+      message.error(typeof errorMsg === 'string' ? errorMsg : 'Đăng ký thất bại. Vui lòng thử lại!');
     }
   };
 
@@ -88,6 +89,30 @@ const RegisterPage: React.FC = () => {
             <Input.Password 
               prefix={<LockOutlined style={{ color: '#94a3b8' }} />} 
               placeholder="Mật khẩu tối thiểu 6 ký tự" 
+              size="large"
+              style={{ borderRadius: '10px' }}
+            />
+          </Form.Item>
+
+          <Form.Item 
+            name="confirmPassword" 
+            label={<span style={{ fontWeight: 600, color: '#475569', fontSize: '13px' }}>Xác nhận mật khẩu</span>} 
+            dependencies={['password']}
+            rules={[
+              { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('password') === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                },
+              }),
+            ]}
+          >
+            <Input.Password 
+              prefix={<LockOutlined style={{ color: '#94a3b8' }} />} 
+              placeholder="Nhập lại mật khẩu" 
               size="large"
               style={{ borderRadius: '10px' }}
             />
