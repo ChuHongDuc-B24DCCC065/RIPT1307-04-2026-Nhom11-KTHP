@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { List, Tag, Space, Button, Card, Typography, message, Empty, Skeleton, Avatar, Dropdown, Menu } from 'antd';
+import { List, Button, Card, Typography, message, Empty, Skeleton, Avatar, Dropdown } from 'antd';
 import { 
   MessageOutlined, 
   LikeOutlined, 
   LikeFilled,
-  ClockCircleOutlined, 
   FilterOutlined,
   DownOutlined,
   EyeOutlined
@@ -248,19 +247,26 @@ const DiscussionsPage: React.FC = () => {
     navigate(`/questions/${id}`);
   };
 
-  const sortMenuItems = (
-    <Menu onClick={({ key }) => setSortKey(key as any)}>
-      <Menu.Item key="newest" style={{ fontWeight: sortKey === 'newest' ? 600 : 400, color: sortKey === 'newest' ? '#6366f1' : '#1e293b' }}>
-        Mới nhất
-      </Menu.Item>
-      <Menu.Item key="popular" style={{ fontWeight: sortKey === 'popular' ? 600 : 400, color: sortKey === 'popular' ? '#6366f1' : '#1e293b' }}>
-        Phổ biến
-      </Menu.Item>
-      <Menu.Item key="views" style={{ fontWeight: sortKey === 'views' ? 600 : 400, color: sortKey === 'views' ? '#6366f1' : '#1e293b' }}>
-        Nhiều lượt xem
-      </Menu.Item>
-    </Menu>
-  );
+  const sortMenuItems = {
+    items: [
+      {
+        key: 'newest',
+        label: 'Mới nhất',
+        style: { fontWeight: sortKey === 'newest' ? 600 : 400, color: sortKey === 'newest' ? '#6366f1' : '#1e293b' }
+      },
+      {
+        key: 'popular',
+        label: 'Phổ biến',
+        style: { fontWeight: sortKey === 'popular' ? 600 : 400, color: sortKey === 'popular' ? '#6366f1' : '#1e293b' }
+      },
+      {
+        key: 'views',
+        label: 'Nhiều lượt xem',
+        style: { fontWeight: sortKey === 'views' ? 600 : 400, color: sortKey === 'views' ? '#6366f1' : '#1e293b' }
+      }
+    ],
+    onClick: ({ key }: { key: string }) => setSortKey(key as any)
+  };
 
   const sortedData = getSortedQuestions();
 
@@ -292,7 +298,7 @@ const DiscussionsPage: React.FC = () => {
         </div>
 
         {/* Dropdown sắp xếp cực kỳ tinh xảo */}
-        <Dropdown overlay={sortMenuItems} trigger={['click']} placement="bottomRight">
+        <Dropdown menu={sortMenuItems} trigger={['click']} placement="bottomRight">
           <Button style={{
             height: '42px',
             borderRadius: '10px',
