@@ -212,3 +212,104 @@ body, html {
   color: #6366f1 !important;
 }
 
+/* --- PREMIUM ADDITIONS FOR QUESTION DETAIL --- */
+
+/* Glowing border and background for accepted solution */
+.glow-accepted {
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.8) 0%, rgba(255, 255, 255, 1) 100%) !important;
+  border: 1px solid #10b981 !important;
+  box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.15), 0 1px 3px rgba(16, 185, 129, 0.05) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-accepted::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, #10b981, #34d399);
+}
+
+/* Call-to-Action Premium Gradient and Shimmer */
+.glow-cta {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%) !important;
+  background-size: 200% auto !important;
+  animation: gradientShift 6s ease infinite !important;
+  border: none !important;
+  color: white !important;
+  box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.glow-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.55), 0 8px 16px -8px rgba(236, 72, 153, 0.3) !important;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Active Vote Button with scale and glow */
+.vote-btn-active {
+  background: #e0e7ff !important;
+  color: #6366f1 !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.3) !important;
+  transform: scale(1.1);
+}
+
+/* Interactive elements general hover effects */
+.animated-hover-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.animated-hover-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Breadcrumb Styling */
+.breadcrumb-link {
+  color: #64748b;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  font-size: 13px;
+}
+
+.breadcrumb-link:hover {
+  color: #6366f1;
+}
+
+/* Rich content styling inside markdown descriptions */
+.premium-description p {
+  margin-bottom: 1rem;
+}
+
+.premium-description ul, .premium-description ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.premium-description li {
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+}
+
+/* Comment soft styling */
+.premium-comment-card {
+  background-color: #f8fafc;
+  border-left: 3px solid #cbd5e1;
+  transition: all 0.2s ease;
+}
+
+.premium-comment-card:hover {
+  background-color: #f1f5f9;
+  border-left-color: #6366f1;
+}
+
