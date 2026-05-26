@@ -13,7 +13,10 @@ import {
   FireOutlined, PlusOutlined
 } from '@ant-design/icons';
 
+import axios from 'axios';
+import BookmarkButton from '../components/BookmarkButton';
 const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
 // --- Interfaces khớp với dữ liệu trả về từ Backend ---
 interface Comment {
@@ -130,8 +133,10 @@ const getUserDetails = (username: string): UserDetails => {
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const QuestionDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || 'null');
-  const isAuthor = user ? user.id === MOCK_QUESTION.user_id : true; 
+  const token = localStorage.getItem('token');
 
   // --- Refs ---
   const answerEditorRef = useRef<HTMLDivElement>(null);
@@ -282,11 +287,29 @@ const QuestionDetail: React.FC = () => {
     }
   };
 
-  const handleAcceptComment = (id: number) => {
-    setComments(comments.map(c => ({
-      ...c,
-      isAccepted: c.id === id ? !c.isAccepted : false // Hủy các check cũ, chỉ cho 1 tick
-    })));
+  const handlePostComment = async (answerId: number) => {
+    if (!user) {
+      message.warning('Bạn cần đăng nhập để bình luận!');
+      return;
+    }
+    const text = commentTexts[answerId]?.trim();
+    if (!text) return;
+    setSubmittingComment(answerId);
+    try {
+      await axios.post(
+        `${API}/questions/${id}/answers/${answerId}/comments`,
+        { content: text },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      message.success('Đã gửi bình luận!');
+      setCommentTexts(prev => ({ ...prev, [answerId]: '' }));
+      setShowComment(prev => ({ ...prev, [answerId]: false }));
+      fetchQuestion();
+    } catch {
+      message.error('Lỗi khi gửi bình luận!');
+    } finally {
+      setSubmittingComment(null);
+    }
   };
 
   // --- Theo dõi tác giả ---
@@ -310,6 +333,9 @@ const QuestionDetail: React.FC = () => {
       answerEditorRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  const isOwner = user && question ? user.id === question.user_id : false;
+  const tagList = question && question.tags ? question.tags.split(',').map(t => t.trim()) : [];
 
   if (loading) {
     return (
@@ -339,12 +365,12 @@ const QuestionDetail: React.FC = () => {
     );
   }
 
-  const sortLabels: Record<string, string> = {
-    newest: 'Mới nhất',
-    oldest: 'Cũ nhất',
-    most_voted: 'Vote cao nhất',
-    least_voted: 'Vote thấp nhất'
-  };
+  // const sortLabels: Record<string, string> = {
+  //   newest: 'Mới nhất',
+  //   oldest: 'Cũ nhất',
+  //   most_voted: 'Vote cao nhất',
+  //   least_voted: 'Vote thấp nhất'
+  // };
 
   // Lọc các câu hỏi liên quan cùng chung thẻ tags
   const relatedQuestions = allQuestions
@@ -780,7 +806,7 @@ const QuestionDetail: React.FC = () => {
                     rows={5}
                     placeholder="Nhập câu trả lời chi tiết, mã nguồn minh họa và giải pháp đầy đủ để giúp đỡ cộng đồng..."
                     value={answerText}
-                    onChange={(e) => setAnswerText(e.target.value)}
+                    onChange={(e: any) => setAnswerText(e.target.value)}
                     style={{ marginBottom: 20, fontSize: 15, borderRadius: '14px', padding: '14px', border: '1px solid #e2e8f0', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.01)' }}
                   />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
