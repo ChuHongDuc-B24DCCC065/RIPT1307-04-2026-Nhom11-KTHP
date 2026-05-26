@@ -12,11 +12,8 @@ import {
   ThunderboltOutlined, GlobalOutlined, InfoCircleOutlined,
   FireOutlined, PlusOutlined
 } from '@ant-design/icons';
-import axios from 'axios';
-import BookmarkButton from '../components/BookmarkButton';
 
 const { Title, Text, Paragraph } = Typography;
-const { TextArea } = Input;
 
 // --- Interfaces khớp với dữ liệu trả về từ Backend ---
 interface Comment {
@@ -133,10 +130,8 @@ const getUserDetails = (username: string): UserDetails => {
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const QuestionDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || 'null');
-  const token = localStorage.getItem('token');
+  const isAuthor = user ? user.id === MOCK_QUESTION.user_id : true; 
 
   // --- Refs ---
   const answerEditorRef = useRef<HTMLDivElement>(null);
@@ -287,27 +282,11 @@ const QuestionDetail: React.FC = () => {
     }
   };
 
-  // --- Đăng bình luận vào câu trả lời ---
-  const handlePostComment = async (answerId: number) => {
-    const content = (commentTexts[answerId] || '').trim();
-    if (!content) { message.warning('Vui lòng nhập bình luận!'); return; }
-    if (!user) { message.warning('Bạn cần đăng nhập!'); navigate('/login'); return; }
-    setSubmittingComment(answerId);
-    try {
-      await axios.post(
-        `${API}/questions/${id}/answers/${answerId}/comments`,
-        { content },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      message.success('Đã đăng bình luận!');
-      setCommentTexts(prev => ({ ...prev, [answerId]: '' }));
-      setShowComment(prev => ({ ...prev, [answerId]: false }));
-      fetchQuestion();
-    } catch {
-      message.error('Không thể đăng bình luận!');
-    } finally {
-      setSubmittingComment(null);
-    }
+  const handleAcceptComment = (id: number) => {
+    setComments(comments.map(c => ({
+      ...c,
+      isAccepted: c.id === id ? !c.isAccepted : false // Hủy các check cũ, chỉ cho 1 tick
+    })));
   };
 
   // --- Theo dõi tác giả ---
@@ -360,10 +339,12 @@ const QuestionDetail: React.FC = () => {
     );
   }
 
-  const tagList = question.tags
-    ? question.tags.split(',').map(t => t.trim()).filter(Boolean)
-    : [];
-  const isOwner = user?.id === question.user_id;
+  const sortLabels: Record<string, string> = {
+    newest: 'Mới nhất',
+    oldest: 'Cũ nhất',
+    most_voted: 'Vote cao nhất',
+    least_voted: 'Vote thấp nhất'
+  };
 
   // Lọc các câu hỏi liên quan cùng chung thẻ tags
   const relatedQuestions = allQuestions

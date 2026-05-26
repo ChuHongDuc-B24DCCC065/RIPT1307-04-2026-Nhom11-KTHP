@@ -1,0 +1,26 @@
+.custom-quill .ql-toolbar {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-color: #e2e8f0;
+  background-color: #f8fafc;
+  padding: 12px;
+}
+.custom-quill .ql-container {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border-color: #e2e8f0;
+  min-height: 300px;
+  font-size: 15px;
+  padding-bottom: 30px;
+}
+.custom-quill .ql-editor {
+  min-height: 300px;
+}
+.custom-quill .ql-editor.ql-blank::before {
+  color: #94a3b8;
+  font-style: normal;
+}
+.custom-select-tags.ant-select-focused .ant-select-selector {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1) !important;
+}
