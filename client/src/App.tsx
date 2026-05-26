@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Layout, ConfigProvider, Input, Button, Avatar, Badge, Dropdown, Space, message } from 'antd';
+import { Layout, ConfigProvider, Input, Button, Avatar, Dropdown, Space, message } from 'antd';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import HomePage from './pages/Homepage';
+import DiscussionsPage from './pages/DiscussionsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import LandingPage from './pages/LandingPage';
@@ -17,7 +18,6 @@ import SearchAndFilterPage from './pages/SearchAndFilterPage';
 import { NotificationBell } from './components/NotificationBell';
 import {
   SearchOutlined,
-  BellOutlined,
   PlusOutlined,
   HomeOutlined,
   FireOutlined,
