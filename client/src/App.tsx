@@ -26,7 +26,8 @@ import {
   LogoutOutlined,
   SettingOutlined,
   DownOutlined,
-  RightOutlined
+  RightOutlined,
+  CommentOutlined
 } from '@ant-design/icons';
 
 const { Header, Content, Sider } = Layout;
@@ -92,6 +93,7 @@ const AppContent: React.FC = () => {
   const isHomeActive = location.pathname === '/' || location.pathname === '/welcome';
   const isPopularActive = location.search.includes('popular') || (location.pathname === '/search' && location.search.includes('tag=popular'));
   const isNewestActive = location.search.includes('newest');
+  const isDiscussionsActive = location.pathname === '/discussions';
 
   const hideLayout = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
 
@@ -239,6 +241,14 @@ const AppContent: React.FC = () => {
             </div>
 
             <div 
+              className={`sidebar-nav-item ${isDiscussionsActive ? 'active' : ''}`}
+              onClick={() => navigate('/discussions')}
+            >
+              <CommentOutlined style={{ fontSize: '18px' }} />
+              <span>Thảo luận cộng đồng</span>
+            </div>
+
+            <div 
               className={`sidebar-nav-item ${isPopularActive ? 'active' : ''}`}
               onClick={() => navigate('/search?q=popular')}
             >
@@ -312,6 +322,7 @@ const AppContent: React.FC = () => {
         <Content style={{ padding: hideLayout ? 0 : '24px 24px 40px 12px', minHeight: hideLayout ? '100vh' : 'calc(100vh - 72px)' }}>
           <Routes>
             <Route path="/" element={<HomePage />} />   
+            <Route path="/discussions" element={<DiscussionsPage />} />
             <Route path="/welcome" element={<LandingPage />} /> 
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
