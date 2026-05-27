@@ -1,26 +1,296 @@
-.custom-quill .ql-toolbar {
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  border-color: #e2e8f0;
+/* Premium Redesign for Create Post Page */
+
+.create-question-container {
   background-color: #f8fafc;
-  padding: 12px;
+  min-height: 100vh;
+  padding: 48px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
-.custom-quill .ql-container {
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
-  border-color: #e2e8f0;
-  min-height: 300px;
+
+.create-question-wrapper {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Beautiful Premium Card matching the mockup */
+.create-question-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02), 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+  padding: 40px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.create-question-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -2px rgba(0, 0, 0, 0.02), 0 25px 35px -5px rgba(99, 102, 241, 0.05);
+}
+
+/* Header Section */
+.create-question-header {
+  margin-bottom: 32px;
+}
+
+.create-question-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+  margin: 0 0 6px 0;
+}
+
+.create-question-subtitle {
   font-size: 15px;
-  padding-bottom: 30px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 450;
 }
+
+/* Form Item Label */
+.create-question-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.create-question-required-star {
+  color: #ef4444;
+  margin-left: 4px;
+  font-size: 16px;
+}
+
+/* Beautiful Input field */
+.create-question-input {
+  border-radius: 8px !important;
+  border: 1px solid #cbd5e1 !important;
+  padding: 10px 16px !important;
+  font-size: 15px !important;
+  color: #1e293b !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  height: auto !important;
+}
+
+.create-question-input:focus, 
+.create-question-input-focused {
+  border-color: #a855f7 !important;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.12) !important;
+}
+
+/* Custom Select Dropdown & Tags Styling matching mockup */
+.custom-select-tags .ant-select-selector {
+  border-radius: 8px !important;
+  border: 1px solid #cbd5e1 !important;
+  padding: 4px 8px !important;
+  min-height: 46px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  background-color: #ffffff !important;
+}
+
+.custom-select-tags.ant-select-focused .ant-select-selector {
+  border-color: #a855f7 !important;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.12) !important;
+}
+
+/* Rendered Tag Pills - Modern Purple design with Hash symbol */
+.premium-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px !important;
+  border-radius: 999px !important;
+  background-color: #f3e8ff !important;
+  color: #7e22ce !important;
+  border: 1px solid #e9d5ff !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  margin: 4px 6px 4px 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+.premium-tag-pill .ant-tag-close-icon {
+  color: #a855f7 !important;
+  margin-left: 4px !important;
+  font-size: 11px !important;
+}
+
+.premium-tag-pill .ant-tag-close-icon:hover {
+  color: #7e22ce !important;
+}
+
+/* Suggestions Row styling */
+.create-question-suggestions-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.suggestions-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+/* Suggestion tag pill - click to add */
+.suggestion-tag-pill {
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background-color: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.suggestion-tag-pill:hover {
+  background-color: #e9d5ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.15);
+}
+
+.suggestion-tag-pill:active {
+  transform: translateY(0);
+}
+
+/* Custom React Quill Editor Styling */
+.custom-quill {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-quill:focus-within {
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.12);
+}
+
+.custom-quill .ql-toolbar {
+  border: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  background-color: #f8fafc;
+  padding: 10px 16px !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.custom-quill .ql-container {
+  border: none !important;
+  min-height: 200px;
+  font-family: inherit;
+  font-size: 15px;
+  color: #1e293b;
+  background-color: #ffffff;
+}
+
 .custom-quill .ql-editor {
-  min-height: 300px;
+  min-height: 200px;
+  padding: 16px 20px 40px 20px !important;
+  line-height: 1.6;
 }
+
 .custom-quill .ql-editor.ql-blank::before {
   color: #94a3b8;
   font-style: normal;
+  left: 20px !important;
 }
-.custom-select-tags.ant-select-focused .ant-select-selector {
-  border-color: #6366f1 !important;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1) !important;
+
+/* Words and Characters Counter inside editor container */
+.editor-counter-badge {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+  z-index: 10;
+  pointer-events: none;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Premium Footer Form Action Buttons */
+.form-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 36px;
+}
+
+/* Reset / Cancel Button */
+.btn-premium-cancel {
+  border-radius: 8px !important;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+  padding: 10px 24px !important;
+  height: 42px !important;
+  font-size: 14.5px !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn-premium-cancel:hover {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Submit Post Button - Modern Vibrant purple gradient matching the mockup */
+.btn-premium-submit {
+  border-radius: 8px !important;
+  background: #a855f7 !important; /* purple-500 matching the mockup */
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  padding: 10px 28px !important;
+  height: 42px !important;
+  font-size: 14.5px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 10px rgba(168, 85, 247, 0.2) !important;
+}
+
+.btn-premium-submit:hover {
+  background: #9333ea !important; /* purple-600 */
+  box-shadow: 0 6px 16px rgba(147, 51, 234, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+.btn-premium-submit:active {
+  transform: translateY(0);
+}
+
+/* User Alert Banner style */
+.verification-banner {
+  background-color: #f0fdf4 !important;
+  border: 1px solid #bbf7d0 !important;
+  border-radius: 12px !important;
+  padding: 14px 20px !important;
+  margin-bottom: 24px !important;
+}
+
+.verification-banner-text {
+  color: #166534 !important;
+  font-size: 14.5px !important;
+  font-weight: 500 !important;
 }
