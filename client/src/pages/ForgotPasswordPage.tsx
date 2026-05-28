@@ -3,6 +3,7 @@ import { Form, Input, Button, Card, message, Typography } from 'antd';
 import { MailOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
+import './ForgotPasswordPage.css';
 
 const { Title, Paragraph } = Typography;
 
@@ -19,7 +20,6 @@ const ForgotPasswordPage: React.FC = () => {
       message.success(res.data.message || 'Yêu cầu lấy lại mật khẩu thành công!');
       
       // Chuyển hướng sang trang reset password kèm theo email và token
-      // Lưu ý: Trong thực tế token sẽ được gửi qua email. Ở đây API đang trả về trực tiếp để test.
       if (res.data.token) {
         navigate(`/reset-password?email=${encodeURIComponent(values.email)}&token=${res.data.token}`);
       }
@@ -32,19 +32,16 @@ const ForgotPasswordPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '70vh', padding: '20px' }}>
-      <Card 
-        bordered={false}
-        style={{ 
-          width: 420, 
-          boxShadow: '0 10px 30px -5px rgba(99, 102, 241, 0.08), 0 8px 12px -6px rgba(0, 0, 0, 0.02)',
-          borderRadius: '20px',
-          border: '1px solid #f1f5f9'
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <Title level={3} style={{ margin: 0, fontWeight: 800, color: '#1e293b' }}>Quên mật khẩu</Title>
-          <Paragraph type="secondary" style={{ marginTop: 4, fontSize: '13px' }}>
+    <div className="auth-page-container">
+      {/* Dynamic gradient background glows */}
+      <div className="auth-bg-glow-1"></div>
+      <div className="auth-bg-glow-2"></div>
+
+      <Card bordered={false} className="auth-card">
+        <div className="auth-header">
+          <div className="auth-logo-badge">D</div>
+          <Title level={3} className="auth-title">Quên mật khẩu</Title>
+          <Paragraph className="auth-subtitle">
             Nhập email của bạn để lấy lại mật khẩu
           </Paragraph>
         </div>
@@ -52,43 +49,36 @@ const ForgotPasswordPage: React.FC = () => {
         <Form onFinish={onFinish} layout="vertical">
           <Form.Item 
             name="email" 
-            label={<span style={{ fontWeight: 600, color: '#475569', fontSize: '13px' }}>Email</span>}
+            label={<span className="auth-form-label">Email</span>}
             rules={[
               { required: true, message: 'Vui lòng nhập Email!' }, 
               { type: 'email', message: 'Email không hợp lệ!' }
             ]}
           >
             <Input 
-              prefix={<MailOutlined style={{ color: '#94a3b8' }} />} 
-              placeholder="Nhập email của bạn" 
+              prefix={<MailOutlined />} 
+              placeholder="user@example.com" 
               size="large" 
-              style={{ borderRadius: '10px' }}
+              className="auth-input-wrapper"
             />
           </Form.Item>
 
-          <Form.Item style={{ marginTop: 32 }}>
+          <Form.Item style={{ marginBottom: 0 }}>
             <Button 
               type="primary" 
               htmlType="submit" 
               block 
               size="large"
               loading={loading}
-              style={{ 
-                borderRadius: '10px', 
-                height: '44px',
-                fontWeight: 600, 
-                background: '#6366f1', 
-                borderColor: '#6366f1',
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.15)'
-              }}
+              className="auth-submit-btn"
             >
               Gửi yêu cầu
             </Button>
           </Form.Item>
         </Form>
         
-        <div style={{ textAlign: 'center', marginTop: 16, color: '#64748b', fontSize: '13.5px' }}>
-          Nhớ mật khẩu rồi? <Link to="/login" style={{ color: '#6366f1', fontWeight: 600 }}>Quay lại đăng nhập</Link>
+        <div className="auth-footer">
+          Nhớ mật khẩu rồi? <Link to="/login" className="auth-footer-link">Quay lại đăng nhập</Link>
         </div>
       </Card>
     </div>
