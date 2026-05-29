@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, ConfigProvider, Input, Button, Avatar, Badge, Dropdown, Space, message } from 'antd';
+import { Layout, ConfigProvider, Input, Button, Avatar, Dropdown, Space, message } from 'antd';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import HomePage from './pages/Homepage';
 import LoginPage from './pages/LoginPage';
@@ -17,7 +17,6 @@ import SearchAndFilterPage from './pages/SearchAndFilterPage';
 import { NotificationBell } from './components/NotificationBell';
 import {
   SearchOutlined,
-  BellOutlined,
   PlusOutlined,
   HomeOutlined,
   FireOutlined,
