@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Layout, ConfigProvider, Input, Button, Avatar, Dropdown, Space, message } from 'antd';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import HomePage from './pages/Homepage';
-import DiscussionsPage from './pages/DiscussionsPage';
+
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import LandingPage from './pages/LandingPage';
@@ -29,6 +29,7 @@ import {
   RightOutlined,
   CommentOutlined
 } from '@ant-design/icons';
+import './App.css';
 
 const { Header, Content, Sider } = Layout;
 
@@ -80,8 +81,8 @@ const AppContent: React.FC = () => {
     },
     {
       key: 'logout',
-      label: <span style={{ color: '#ef4444', fontWeight: 500 }}>Đăng xuất</span>,
-      icon: <LogoutOutlined style={{ color: '#ef4444' }} />,
+      label: <span className="menu-logout-text">Đăng xuất</span>,
+      icon: <LogoutOutlined className="menu-logout-icon" />,
       onClick: handleLogout
     }
   ];
@@ -98,75 +99,38 @@ const AppContent: React.FC = () => {
   const hideLayout = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <Layout className="app-layout">
       
       {/* ==================== HEADER TRẮNG SANG TRỌNG ==================== */}
       {!hideLayout && (
-      <Header style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 1000,
-        width: '100%',
-        height: '72px',
-        background: '#ffffff',
-        borderBottom: '1px solid #f1f5f9',
-        padding: '0 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-      }}>
+      <Header className="app-header">
         {/* Logo bên trái */}
-        <Link to={parsedUser ? '/' : '/welcome'} style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <div style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '10px',
-            background: '#6366f1',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '22px',
-            boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)'
-          }}>
+        <Link to={parsedUser ? '/' : '/welcome'} className="app-logo-link">
+          <div className="app-logo-icon">
             D
           </div>
-          <span style={{
-            fontSize: '19px',
-            fontWeight: '800',
-            color: '#1e293b',
-            letterSpacing: '-0.5px'
-          }}>
+          <span className="app-logo-text">
             Diễn Đàn Công Nghệ
           </span>
         </Link>
 
         {/* Ô Tìm Kiếm ở giữa */}
-        <form onSubmit={handleSearch} style={{ flex: '0 1 480px', margin: '0 20px' }}>
+        <form onSubmit={handleSearch} className="app-search-form">
           <Input
             placeholder="Tìm kiếm câu hỏi, chủ đề..."
-            prefix={<SearchOutlined style={{ color: '#94a3b8', marginRight: '4px' }} />}
+            prefix={<SearchOutlined className="app-search-icon" />}
             value={searchVal}
             onChange={(e) => setSearchVal(e.target.value)}
-            className="premium-search-input transition-all"
-            style={{
-              height: '42px',
-              borderRadius: '999px',
-              border: 'none',
-              padding: '0 16px',
-              fontSize: '14px'
-            }}
+            className="premium-search-input transition-all app-search-input"
           />
         </form>
 
         {/* Các nút bấm bên phải */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className="app-header-actions">
           
           {/* Nút đặt câu hỏi */}
           <button onClick={handleCreateQuestion} className="btn-action-primary transition-all">
-            <PlusOutlined style={{ fontSize: '14px' }} />
+            <PlusOutlined className="app-header-btn-icon" />
             <span>Đặt câu hỏi</span>
           </button>
 
@@ -176,15 +140,10 @@ const AppContent: React.FC = () => {
           {/* Avatar / Nút đăng nhập */}
           {parsedUser ? (
             <Dropdown menu={{ items: avatarMenuItems }} trigger={['click']} placement="bottomRight">
-              <div style={{ position: 'relative', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+              <div className="app-avatar-wrapper">
                 <Avatar 
                   size={40} 
-                  style={{ 
-                    backgroundColor: '#e0e7ff', 
-                    color: '#6366f1', 
-                    fontWeight: 600,
-                    border: '2px solid #e2e8f0' 
-                  }}
+                  className="app-avatar"
                   icon={!parsedUser.avatar && <UserOutlined />}
                   src={parsedUser.avatar}
                 >
@@ -194,11 +153,11 @@ const AppContent: React.FC = () => {
               </div>
             </Dropdown>
           ) : (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Button type="text" onClick={() => navigate('/login')} style={{ fontWeight: 500 }}>
+            <div className="app-auth-buttons">
+              <Button type="text" onClick={() => navigate('/login')} className="app-btn-login">
                 Đăng nhập
               </Button>
-              <Button type="primary" onClick={() => navigate('/register')} style={{ borderRadius: '999px', fontWeight: 500 }}>
+              <Button type="primary" onClick={() => navigate('/register')} className="app-btn-register">
                 Đăng ký
               </Button>
             </div>
@@ -209,26 +168,18 @@ const AppContent: React.FC = () => {
       )}
 
       {/* ==================== THÂN TRANG GỒM SIDEBAR TRÁI + MAIN CONTENT ==================== */}
-      <Layout style={{ background: '#f8fafc' }}>
+      <Layout className="app-main-layout">
         
         {/* SIDEBAR TRÁI */}
         {!hideLayout && (
         <Sider 
           width={280} 
           theme="light"
-          style={{
-            background: 'transparent',
-            borderRight: 'none',
-            padding: '24px 16px',
-            position: 'sticky',
-            top: '72px',
-            height: 'calc(100vh - 72px)',
-            overflowY: 'auto'
-          }}
+          className="app-sidebar"
         >
           {/* Section: Khám phá */}
-          <div style={{ marginBottom: '28px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.8px', padding: '0 16px 8px 16px' }}>
+          <div className="sidebar-section">
+            <div className="sidebar-section-title">
               KHÁM PHÁ
             </div>
             
@@ -236,7 +187,7 @@ const AppContent: React.FC = () => {
               className={`sidebar-nav-item ${isHomeActive ? 'active' : ''}`}
               onClick={() => navigate('/')}
             >
-              <HomeOutlined style={{ fontSize: '18px' }} />
+              <HomeOutlined className="sidebar-menu-icon" />
               <span>Trang chủ</span>
             </div>
 
@@ -244,7 +195,7 @@ const AppContent: React.FC = () => {
               className={`sidebar-nav-item ${isDiscussionsActive ? 'active' : ''}`}
               onClick={() => navigate('/discussions')}
             >
-              <CommentOutlined style={{ fontSize: '18px' }} />
+              <CommentOutlined className="sidebar-menu-icon" />
               <span>Thảo luận cộng đồng</span>
             </div>
 
@@ -252,7 +203,7 @@ const AppContent: React.FC = () => {
               className={`sidebar-nav-item ${isPopularActive ? 'active' : ''}`}
               onClick={() => navigate('/search?q=popular')}
             >
-              <FireOutlined style={{ fontSize: '18px' }} />
+              <FireOutlined className="sidebar-menu-icon" />
               <span>Câu hỏi phổ biến</span>
             </div>
 
@@ -260,18 +211,18 @@ const AppContent: React.FC = () => {
               className={`sidebar-nav-item ${isNewestActive ? 'active' : ''}`}
               onClick={() => navigate('/search?q=newest')}
             >
-              <ClockCircleOutlined style={{ fontSize: '18px' }} />
+              <ClockCircleOutlined className="sidebar-menu-icon" />
               <span>Câu hỏi mới nhất</span>
             </div>
           </div>
 
           {/* Section: Tags phổ biến */}
-          <div style={{ marginBottom: '28px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.8px', padding: '0 16px 12px 16px' }}>
+          <div className="sidebar-section">
+            <div className="sidebar-section-title tags-title">
               TAGS PHỔ BIẾN
             </div>
             
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '0 16px' }}>
+            <div className="sidebar-tags-wrapper">
               {sidebarTags.map(tag => (
                 <div 
                   key={tag} 
@@ -284,14 +235,7 @@ const AppContent: React.FC = () => {
             </div>
 
             <div 
-              style={{ 
-                fontSize: '13px', 
-                color: '#6366f1', 
-                fontWeight: 600, 
-                padding: '12px 16px 0 16px', 
-                cursor: 'pointer', 
-                display: 'inline-block' 
-              }}
+              className="sidebar-view-all"
               onClick={() => navigate('/search')}
             >
               Xem tất cả thẻ
@@ -301,14 +245,14 @@ const AppContent: React.FC = () => {
           {/* Section: Chuyên mục */}
           <div>
             <div className="category-dropdown-header transition-all" onClick={() => setCategoryOpen(!categoryOpen)}>
-              <Space style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.8px' }}>
+              <Space className="category-dropdown-title">
                 CHUYÊN MỤC
               </Space>
-              {categoryOpen ? <DownOutlined style={{ fontSize: '10px', color: '#94a3b8' }} /> : <RightOutlined style={{ fontSize: '10px', color: '#94a3b8' }} />}
+              {categoryOpen ? <DownOutlined className="category-dropdown-icon" /> : <RightOutlined className="category-dropdown-icon" />}
             </div>
 
             {categoryOpen && (
-              <div style={{ marginTop: '4px' }}>
+              <div className="category-sub-menu">
                 <div className="category-sub-item transition-all" onClick={() => navigate('/search?q=Web')}>Lập trình Web</div>
                 <div className="category-sub-item transition-all" onClick={() => navigate('/search?q=Di động')}>Di động</div>
                 <div className="category-sub-item transition-all" onClick={() => navigate('/search?q=Hệ điều hành')}>Hệ điều hành</div>
@@ -319,10 +263,9 @@ const AppContent: React.FC = () => {
         )}
 
         {/* MAIN CONTENT AREA */}
-        <Content style={{ padding: hideLayout ? 0 : '24px 24px 40px 12px', minHeight: hideLayout ? '100vh' : 'calc(100vh - 72px)' }}>
+        <Content className={`app-content ${hideLayout ? 'hide-layout' : ''}`}>
           <Routes>
             <Route path="/" element={<HomePage />} />   
-            <Route path="/discussions" element={<DiscussionsPage />} />
             <Route path="/welcome" element={<LandingPage />} /> 
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />

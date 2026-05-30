@@ -1,1 +1,189 @@
+/* App.css */
+.app-layout {
+  min-height: 100vh;
+  background: #f8fafc;
+}
 
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  height: 72px;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.app-logo-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.app-logo-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #6366f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 22px;
+  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);
+}
+
+.app-logo-text {
+  font-size: 19px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+}
+
+.app-search-form {
+  flex: 0 1 480px;
+  margin: 0 20px;
+}
+
+.app-search-input {
+  height: 42px;
+  border-radius: 999px;
+  border: none;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.app-search-icon {
+  color: #94a3b8;
+  margin-right: 4px;
+}
+
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.app-header-btn-icon {
+  font-size: 14px;
+}
+
+.app-avatar-wrapper {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.app-avatar {
+  background-color: #e0e7ff;
+  color: #6366f1;
+  font-weight: 600;
+  border: 2px solid #e2e8f0;
+}
+
+.app-auth-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.app-btn-login {
+  font-weight: 500;
+}
+
+.app-btn-register {
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.app-main-layout {
+  background: #f8fafc;
+}
+
+.app-sidebar {
+  background: transparent !important;
+  border-right: none;
+  padding: 24px 16px;
+  position: sticky !important;
+  top: 72px;
+  height: calc(100vh - 72px);
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  margin-bottom: 28px;
+}
+
+.sidebar-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+  padding: 0 16px 8px 16px;
+}
+
+.sidebar-section-title.tags-title {
+  padding-bottom: 12px;
+}
+
+.sidebar-menu-icon {
+  font-size: 18px;
+}
+
+.sidebar-tags-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 16px;
+}
+
+.sidebar-view-all {
+  font-size: 13px;
+  color: #6366f1;
+  font-weight: 600;
+  padding: 12px 16px 0 16px;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.category-dropdown-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+}
+
+.category-dropdown-icon {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.category-sub-menu {
+  margin-top: 4px;
+}
+
+.menu-logout-text {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.menu-logout-icon {
+  color: #ef4444;
+}
+
+.app-content {
+  padding: 24px 24px 40px 12px;
+  min-height: calc(100vh - 72px);
+}
+
+.app-content.hide-layout {
+  padding: 0;
+  min-height: 100vh;
+}

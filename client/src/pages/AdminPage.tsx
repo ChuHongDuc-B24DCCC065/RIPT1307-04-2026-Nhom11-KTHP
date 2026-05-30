@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
-  Table, 
-  Button, 
-  Popconfirm, 
   message, 
   theme 
 } from 'antd';
@@ -12,34 +9,20 @@ import {
   UserOutlined,
   FileTextOutlined,
   DashboardOutlined,
-  DeleteOutlined
+  MailOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import AdminDashboard from './AdminDashboard';
-import ToggleUserStatusButton from '../components/ToggleUserStatusButton';
+import AdminEmailBroadcast from './AdminEmailBroadcast';
+import AdminPostManagement from './AdminPostManagement';
+import AdminUserManagement from './AdminUserManagement';
 
 const { Header, Content, Sider } = Layout;
 
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-  status?: string;
-}
 
-interface Post {
-  id: string;
-  title: string;
-  author: string;
-  createdAt: string;
-}
 
 const AdminPage: React.FC = () => {
   const [selectedMenu, setSelectedMenu] = useState<string>('1');
-  const [users, setUsers] = useState<User[]>([]);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
 
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
@@ -78,24 +61,15 @@ const AdminPage: React.FC = () => {
   );
 
   const fetchData = async () => {
-    setLoading(true);
-    
     try {
-      const [usersRes, postsRes] = await Promise.all([
-        axiosInstance.get('/admin/users'),
-        axiosInstance.get('/admin/posts'),
-      ]);
-
-      setUsers(usersRes.data.users || []);
-      setPosts(postsRes.data.posts || []);
+      // Dữ liệu dùng chung có thể fetch ở đây nếu cần,
+      // hiện tại các component con tự xử lý dữ liệu của chúng.
       
     } catch (error: any) {
       console.error('Fetch data error:', error);
       if (error.response?.status !== 401) {
         message.error("Lỗi kết nối server!");
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -132,72 +106,14 @@ const AdminPage: React.FC = () => {
   fetchData();
 }, []);
 
-  // Xử lý xóa post
-  const handleDeletePost = async (postId: string) => {
-    try {
-      await axiosInstance.delete(`/admin/posts/${postId}`);
-      message.success('Xóa bài viết thành công!');
-      fetchData(); // Refresh data
-    } catch (error) {
-      message.error('Xóa thất bại!');
-    }
-  };
 
 
-  // Menu items theo chuẩn AntD v5
+
   const menuItems = [
     { key: '1', icon: <DashboardOutlined />, label: 'Dashboard' },
     { key: '2', icon: <UserOutlined />, label: 'Người dùng' },
     { key: '3', icon: <FileTextOutlined />, label: 'Bài viết' },
-  ];
-
-  const userColumns = [
-    { title: 'ID', dataIndex: 'id', key: 'id' }, 
-    { title: 'Tên tài khoản', dataIndex: 'username', key: 'username' }, 
-    { title: 'Email', dataIndex: 'email', key: 'email' },
-    { title: 'Vai trò', dataIndex: 'role', key: 'role' },
-    { 
-      title: 'Trạng thái', 
-      dataIndex: 'status', 
-      key: 'status',
-      render: (status: string) => (
-        <span style={{ color: status === 'banned' ? 'red' : 'green' }}>
-          {status === 'banned' ? 'Banned' : 'Active'}
-        </span>
-      )
-    },
-    {
-      title: 'Hành động',
-      key: 'action',
-      render: (_: any, record: User) => (
-        <ToggleUserStatusButton 
-          userId={record.id} 
-          currentStatus={record.status} 
-          onSuccess={fetchData} 
-        />
-      ),
-    },
-  ];
-
-  const postColumns = [
-    { title: 'ID', dataIndex: 'id', key: 'id' },
-    { title: 'Tiêu đề', dataIndex: 'title', key: 'title' },
-    { title: 'Tác giả', dataIndex: 'author', key: 'author' },
-    { title: 'Ngày tạo', dataIndex: 'createdAt', key: 'createdAt' },
-    {
-      title: 'Hành động',
-      key: 'action',
-      render: (_: any, record: Post) => (
-        <Popconfirm 
-          title="Xóa bài viết này?" 
-          onConfirm={() => handleDeletePost(record.id)}
-          okText="Xóa"
-          cancelText="Hủy"
-        >
-          <Button type="link" danger icon={<DeleteOutlined />}>Xóa</Button>
-        </Popconfirm>
-      ),
-    },
+    { key: '4', icon: <MailOutlined />, label: 'Gửi Thông báo' },
   ];
 
   return (
@@ -224,19 +140,11 @@ const AdminPage: React.FC = () => {
           }}>
             {selectedMenu === '1' && <AdminDashboard />}
             
-            {selectedMenu === '2' && (
-              <>
-                <h2 style={{ marginBottom: 24 }}>Quản lý người dùng</h2>
-                <Table columns={userColumns} dataSource={users} rowKey="id" loading={loading} />
-              </>
-            )}
+            {selectedMenu === '2' && <AdminUserManagement />}
 
-            {selectedMenu === '3' && (
-              <>
-                <h2 style={{ marginBottom: 24 }}>Quản lý bài viết</h2>
-                <Table columns={postColumns} dataSource={posts} rowKey="id" loading={loading} />
-              </>
-            )}
+            {selectedMenu === '3' && <AdminPostManagement />}
+
+            {selectedMenu === '4' && <AdminEmailBroadcast />}
             
           </div>
         </Content>
