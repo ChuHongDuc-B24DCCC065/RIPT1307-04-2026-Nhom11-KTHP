@@ -34,6 +34,24 @@ const AdminDashboard: React.FC = () => {
   const [statsData, setStatsData] = useState<any>(null);
 
   useEffect(() => {
+    // 1. Kiểm tra Role bảo mật (AD01)
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        if (user.role !== 'admin') {
+          message.error('Bạn không có quyền truy cập trang này.');
+          navigate('/');
+          return;
+        }
+      } catch (e) {
+        navigate('/');
+        return;
+      }
+    } else {
+      navigate('/login');
+      return;
+    }
     const fetchStats = async () => {
       try {
         setLoading(true);
