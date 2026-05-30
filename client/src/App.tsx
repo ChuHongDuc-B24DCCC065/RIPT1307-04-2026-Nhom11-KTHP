@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Layout, ConfigProvider, Input, Button, Avatar, Dropdown, Space, message } from 'antd';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import HomePage from './pages/Homepage';
-import DiscussionsPage from './pages/DiscussionsPage';
+
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import LandingPage from './pages/LandingPage';
