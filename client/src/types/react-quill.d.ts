@@ -28,3 +28,35 @@ declare module 'react-quill' {
   const ReactQuill: React.ComponentType<ReactQuillProps>;
   export default ReactQuill;
 }
+
+declare module 'react-quill-new' {
+  import React from 'react';
+  
+  export interface ReactQuillProps {
+    value?: string;
+    defaultValue?: string;
+    readOnly?: boolean;
+    theme?: string;
+    modules?: any;
+    formats?: string[];
+    bounds?: string | HTMLElement;
+    placeholder?: string;
+    preserveWhitespace?: boolean;
+    style?: React.CSSProperties;
+    className?: string;
+    tabIndex?: number;
+    onChange?: (content: string, delta: any, source: string, editor: any) => void;
+    onChangeSelection?: (selection: any, source: string, editor: any) => void;
+    onFocus?: (selection: any, source: string, editor: any) => void;
+    onBlur?: (previousSelection: any, source: string, editor: any) => void;
+    onKeyDown?: React.EventHandler<any>;
+    onKeyPress?: React.EventHandler<any>;
+    onKeyUp?: React.EventHandler<any>;
+    id?: string;
+    children?: React.ReactElement<any>;
+  }
+
+  const ReactQuill: React.ComponentType<ReactQuillProps>;
+  export default ReactQuill;
+}
+
