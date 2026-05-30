@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
-  Table, 
-  Button, 
-  Popconfirm, 
   message, 
   theme 
 } from 'antd';
@@ -12,7 +9,6 @@ import {
   UserOutlined,
   FileTextOutlined,
   DashboardOutlined,
-  DeleteOutlined,
   MailOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
@@ -23,17 +19,10 @@ import AdminUserManagement from './AdminUserManagement';
 
 const { Header, Content, Sider } = Layout;
 
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-  status?: string;
-}
+
 
 const AdminPage: React.FC = () => {
   const [selectedMenu, setSelectedMenu] = useState<string>('1');
-  const [loading, setLoading] = useState<boolean>(false);
 
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
@@ -72,8 +61,6 @@ const AdminPage: React.FC = () => {
   );
 
   const fetchData = async () => {
-    setLoading(true);
-    
     try {
       // Dữ liệu dùng chung có thể fetch ở đây nếu cần,
       // hiện tại các component con tự xử lý dữ liệu của chúng.
@@ -83,8 +70,6 @@ const AdminPage: React.FC = () => {
       if (error.response?.status !== 401) {
         message.error("Lỗi kết nối server!");
       }
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -23,7 +23,7 @@ import {
 import axios from 'axios';
 import dayjs from 'dayjs';
 
-const { Option } = Select;
+
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 
