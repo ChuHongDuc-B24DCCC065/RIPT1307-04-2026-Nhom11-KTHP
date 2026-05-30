@@ -42,7 +42,7 @@ const AdminDashboard: React.FC = () => {
     if (userData) {
       try {
         const user = JSON.parse(userData);
-        if (user.role !== 'Admin') {
+        if (user.role !== 'admin') {
           message.error('Bạn không có quyền truy cập trang này.');
           navigate('/');
           return;
@@ -55,7 +55,6 @@ const AdminDashboard: React.FC = () => {
       navigate('/login');
       return;
     }
-
     const fetchStats = async () => {
       try {
         setLoading(true);
