@@ -41,7 +41,6 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     'blockquote',
     'code-block',
     'list',
-    'bullet',
     'script',
     'indent',
     'size',
