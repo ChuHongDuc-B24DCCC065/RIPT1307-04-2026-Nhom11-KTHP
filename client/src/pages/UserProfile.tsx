@@ -191,7 +191,26 @@ const UserProfile: React.FC = () => {
               <Dragger 
                 name="file" 
                 multiple={false} 
-                action="/api/upload" 
+                action={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/upload`}
+                headers={{ Authorization: `Bearer ${localStorage.getItem('token')}` }}
+                onChange={(info) => {
+                  if (info.file.status === 'done') {
+                    message.success('Tải ảnh lên thành công!');
+                    const newAvatar = info.file.response?.avatar;
+                    if (newAvatar) {
+                      // Tạo link ảnh đầy đủ (Bỏ /api đi để lấy root server)
+                      const serverRoot = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
+                      const fullAvatarUrl = `${serverRoot}${newAvatar}`;
+                      
+                      const updatedUser = { ...user, avatar: fullAvatarUrl };
+                      localStorage.setItem('user', JSON.stringify(updatedUser));
+                      setUser(updatedUser);
+                      window.dispatchEvent(new Event('storage'));
+                    }
+                  } else if (info.file.status === 'error') {
+                    message.error(info.file.response?.message || 'Tải ảnh lên thất bại!');
+                  }
+                }}
                 style={{ background: '#fafafa', borderColor: '#e2e8f0' }}
               >
                 <Flex align="center" justify="space-between" style={{ padding: '8px 16px' }}>

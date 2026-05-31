@@ -184,7 +184,11 @@ app.get('/api/fix-db', async (req, res) => {
     }
 });
 
-// Import admin routes
+// Cấu hình static folder cho uploads
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Import routes
 const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminRoutes);
 const questionRoutes = require('./routes/questionRoutes');
@@ -195,5 +199,8 @@ const reportRoutes = require('./routes/reportRoutes');
 app.use('/api/reports', reportRoutes);
 const notificationRoutes = require('./routes/notificationRoutes');
 app.use('/api/notifications', notificationRoutes);
+const uploadRoutes = require('./routes/uploadRoutes');
+app.use('/api/upload', uploadRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server chạy ở cổng ${PORT}`));

@@ -26,11 +26,31 @@ router.get('/profile', authMiddleware, async (req, res) => {
   }
 });
 
+const bcrypt = require('bcrypt');
+
 // Cập nhật profile
 router.put('/profile', authMiddleware, async (req, res) => {
-  const { fullName, phoneNumber, school, bio, website } = req.body;
+  const { fullName, phoneNumber, school, bio, website, currentPassword, newPassword } = req.body;
   try {
-    // Dùng INSERT ON DUPLICATE KEY UPDATE để tự động thêm mới nếu chưa có, hoặc cập nhật nếu đã có
+    // 1. Nếu có gửi kèm yêu cầu đổi mật khẩu
+    if (currentPassword && newPassword) {
+      // Lấy thông tin user hiện tại để so sánh mật khẩu cũ
+      const [users] = await pool.execute('SELECT password FROM users WHERE id = ?', [req.user.id]);
+      if (users.length === 0) {
+        return res.status(404).json({ success: false, message: 'User không tồn tại' });
+      }
+      
+      const isMatch = await bcrypt.compare(currentPassword, users[0].password);
+      if (!isMatch) {
+        return res.status(400).json({ success: false, message: 'Mật khẩu hiện tại không chính xác!' });
+      }
+
+      // Đổi mật khẩu mới
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await pool.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.user.id]);
+    }
+
+    // 2. Cập nhật thông tin profile
     await pool.execute(
       `INSERT INTO user_profile (user_id, full_name, phone, school, bio, website) 
        VALUES (?, ?, ?, ?, ?, ?) 
