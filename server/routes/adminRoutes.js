@@ -261,4 +261,19 @@ router.delete("/reports/:id", async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────
+// API Lấy danh sách Comments
+// ─────────────────────────────────────────
+router.get("/comments", async (req, res) => {
+  try {
+    console.log("Fetching comments list...");
+    // Tạm thời trả về mảng rỗng hoặc query từ bảng nếu có
+    // const [comments] = await pool.query("SELECT * FROM comments");
+    res.json({ comments: [] });
+  } catch (error) {
+    console.error("Error in /comments:", error);
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+});
+
 module.exports = router;
