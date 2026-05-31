@@ -3,6 +3,19 @@ const router = express.Router();
 const pool = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
 const { createNotification } = require('../utils/notification');
+const jwt = require('jsonwebtoken');
+
+const getUserIdFromHeader = (req) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return null;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'bi_mat_quoc_gia');
+    return decoded.id;
+  } catch (e) {
+    return null;
+  }
+};
 
 const normalizeTags = (tags) => {
   if (!tags) return [];
@@ -31,22 +44,27 @@ router.get('/', async (req, res) => {
       params.push(tag);
     }
 
-    // ✅ Dùng pool.query thay vì pool.execute
+    // ✅ Dùng pool.query thay vì pool.execute cho total
     const [[{ total }]] = await pool.query(
       `SELECT COUNT(*) AS total FROM questions q ${where}`,
       params
     );
 
-    // ✅ LIMIT và OFFSET nhúng thẳng vào chuỗi SQL, KHÔNG truyền qua params
+    const userId = getUserIdFromHeader(req);
+    const rowParams = userId ? [userId, ...params] : params;
+
+    // ✅ LIMIT và OFFSET nhúng thẳng vào chuỗi SQL
     const [rows] = await pool.query(
       `SELECT q.*, 
               (SELECT COUNT(*) FROM answers a WHERE a.question_id = q.id) AS answer_count
+              ${userId ? `, qv.vote_type AS user_vote_type` : ''}
        FROM questions q
        LEFT JOIN users u ON u.id = q.user_id
+       ${userId ? `LEFT JOIN question_votes qv ON qv.question_id = q.id AND qv.user_id = ?` : ''}
        ${where}
        ORDER BY q.created_at DESC
        LIMIT ${limit} OFFSET ${offset}`,
-      params
+      rowParams
     );
 
     res.json({
@@ -98,6 +116,13 @@ router.get('/:id', async (req, res) => {
     await pool.execute('UPDATE questions SET views = views + 1 WHERE id = ?', [req.params.id]);
     question.views += 1;
 
+    const userId = getUserIdFromHeader(req);
+    let questionUserVoteType = 0;
+    if (userId) {
+      const [[qv]] = await pool.execute('SELECT vote_type FROM question_votes WHERE user_id = ? AND question_id = ?', [userId, req.params.id]);
+      if (qv) questionUserVoteType = qv.vote_type;
+    }
+
     const [answers] = await pool.execute(
       `SELECT a.*, u.username AS author
        FROM answers a
@@ -125,10 +150,17 @@ router.get('/:id', async (req, res) => {
         if (!commentsMap[c.answer_id]) commentsMap[c.answer_id] = [];
         commentsMap[c.answer_id].push(c);
       });
-      answersWithComments = answers.map(a => ({ ...a, comments: commentsMap[a.id] || [] }));
+      answersWithComments = answers.map(a => ({ ...a, comments: commentsMap[a.id] || [], user_vote_type: 0 }));
+      
+      if (userId) {
+        const [avotes] = await pool.query(`SELECT answer_id, vote_type FROM answer_votes WHERE user_id = ? AND answer_id IN (${placeholders})`, [userId, ...answerIds]);
+        const avMap = {};
+        avotes.forEach(v => avMap[v.answer_id] = v.vote_type);
+        answersWithComments = answersWithComments.map(a => ({ ...a, user_vote_type: avMap[a.id] || 0 }));
+      }
     }
 
-    res.json({ success: true, data: { ...question, answers: answersWithComments } });
+    res.json({ success: true, data: { ...question, user_vote_type: questionUserVoteType, answers: answersWithComments } });
   } catch (err) {
     console.error('GET /questions/:id:', err.message);
     res.status(500).json({ success: false, message: 'Lỗi Database: ' + err.message });
@@ -149,9 +181,15 @@ router.post('/', authMiddleware, async (req, res) => {
     return res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất một thẻ.' });
 
   try {
+    let authorName = req.user.username;
+    if (!authorName) {
+      const [[user]] = await pool.execute('SELECT username FROM users WHERE id = ?', [req.user.id]);
+      authorName = user ? user.username : 'Unknown';
+    }
+
     const [result] = await pool.execute(
       'INSERT INTO questions (title, description, tags, user_id, author) VALUES (?, ?, ?, ?, ?)',
-      [title.trim(), description.trim(), tagStr, req.user.id, req.user.username]
+      [title.trim(), description.trim(), tagStr, req.user.id, authorName]
     );
 
     res.status(201).json({
@@ -289,9 +327,34 @@ router.post('/:id/vote', authMiddleware, async (req, res) => {
     if (!question)
       return res.status(404).json({ success: false, message: 'Không tìm thấy câu hỏi.' });
 
-    await pool.execute('UPDATE questions SET votes = votes + ? WHERE id = ?', [delta, req.params.id]);
+    const [[existingVote]] = await pool.execute(
+      'SELECT vote_type FROM question_votes WHERE user_id = ? AND question_id = ?',
+      [req.user.id, req.params.id]
+    );
+
+    let voteChange = 0;
+    if (existingVote) {
+      if (existingVote.vote_type === delta) {
+        // Bỏ vote
+        await pool.execute('DELETE FROM question_votes WHERE user_id = ? AND question_id = ?', [req.user.id, req.params.id]);
+        voteChange = -delta;
+      } else {
+        // Đổi vote
+        await pool.execute('UPDATE question_votes SET vote_type = ? WHERE user_id = ? AND question_id = ?', [delta, req.user.id, req.params.id]);
+        voteChange = delta * 2;
+      }
+    } else {
+      // Vote mới
+      await pool.execute('INSERT INTO question_votes (user_id, question_id, vote_type) VALUES (?, ?, ?)', [req.user.id, req.params.id, delta]);
+      voteChange = delta;
+    }
+
+    if (voteChange !== 0) {
+      await pool.execute('UPDATE questions SET votes = votes + ? WHERE id = ?', [voteChange, req.params.id]);
+    }
     
-    if (question.user_id && question.user_id !== req.user.id) {
+    // Gửi thông báo nếu có tương tác mới (không gửi nếu bỏ vote)
+    if (voteChange !== -delta && question.user_id && question.user_id !== req.user.id) {
       const action = type === 'up' ? 'upvote' : 'downvote';
       await createNotification(
         question.user_id,
@@ -301,7 +364,8 @@ router.post('/:id/vote', authMiddleware, async (req, res) => {
     }
 
     const [[updated]] = await pool.execute('SELECT votes FROM questions WHERE id = ?', [req.params.id]);
-    res.json({ success: true, votes: updated.votes });
+    const user_vote_type = existingVote && existingVote.vote_type === delta ? 0 : delta;
+    res.json({ success: true, votes: updated.votes, user_vote_type });
   } catch (err) {
     console.error('POST /questions/:id/vote:', err.message);
     res.status(500).json({ success: false, message: 'Lỗi server.' });
@@ -321,12 +385,36 @@ router.post('/:id/answers/:answerId/vote', authMiddleware, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy câu trả lời.' });
     }
 
-    await pool.execute(
-      'UPDATE answers SET votes = votes + ? WHERE id = ? AND question_id = ?',
-      [delta, req.params.answerId, req.params.id]
+    const [[existingVote]] = await pool.execute(
+      'SELECT vote_type FROM answer_votes WHERE user_id = ? AND answer_id = ?',
+      [req.user.id, req.params.answerId]
     );
 
-    if (answer.user_id && answer.user_id !== req.user.id) {
+    let voteChange = 0;
+    if (existingVote) {
+      if (existingVote.vote_type === delta) {
+        // Bỏ vote
+        await pool.execute('DELETE FROM answer_votes WHERE user_id = ? AND answer_id = ?', [req.user.id, req.params.answerId]);
+        voteChange = -delta;
+      } else {
+        // Đổi vote
+        await pool.execute('UPDATE answer_votes SET vote_type = ? WHERE user_id = ? AND answer_id = ?', [delta, req.user.id, req.params.answerId]);
+        voteChange = delta * 2;
+      }
+    } else {
+      // Vote mới
+      await pool.execute('INSERT INTO answer_votes (user_id, answer_id, vote_type) VALUES (?, ?, ?)', [req.user.id, req.params.answerId, delta]);
+      voteChange = delta;
+    }
+
+    if (voteChange !== 0) {
+      await pool.execute(
+        'UPDATE answers SET votes = votes + ? WHERE id = ? AND question_id = ?',
+        [voteChange, req.params.answerId, req.params.id]
+      );
+    }
+
+    if (voteChange !== -delta && answer.user_id && answer.user_id !== req.user.id) {
       const action = type === 'up' ? 'upvote' : 'downvote';
       await createNotification(
         answer.user_id,
@@ -336,8 +424,8 @@ router.post('/:id/answers/:answerId/vote', authMiddleware, async (req, res) => {
     }
 
     const [[updated]] = await pool.execute('SELECT votes FROM answers WHERE id = ?', [req.params.answerId]);
-
-    res.json({ success: true, votes: updated.votes });
+    const user_vote_type = existingVote && existingVote.vote_type === delta ? 0 : delta;
+    res.json({ success: true, votes: updated.votes, user_vote_type });
   } catch (err) {
     console.error('POST /answers/:answerId/vote:', err.message);
     res.status(500).json({ success: false, message: 'Lỗi server.' });
