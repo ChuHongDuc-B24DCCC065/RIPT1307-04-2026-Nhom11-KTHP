@@ -131,7 +131,7 @@ router.get('/:id', async (req, res) => {
     res.json({ success: true, data: { ...question, answers: answersWithComments } });
   } catch (err) {
     console.error('GET /questions/:id:', err.message);
-    res.status(500).json({ success: false, message: 'Lỗi server.' });
+    res.status(500).json({ success: false, message: 'Lỗi Database: ' + err.message });
   }
 });
 
