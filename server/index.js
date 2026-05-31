@@ -163,6 +163,27 @@ app.post('/api/reset-password', async (req, res) => {
     }
 });
 
+// --- API TẠM THỜI ĐỂ FIX DATABASE ---
+app.get('/api/fix-db', async (req, res) => {
+    try {
+        try { await pool.execute('ALTER TABLE questions ADD COLUMN views INT DEFAULT 0'); } catch(e) {}
+        try { await pool.execute('ALTER TABLE answers ADD COLUMN is_accepted TINYINT(1) DEFAULT 0'); } catch(e) {}
+        try { await pool.execute('ALTER TABLE answers ADD COLUMN votes INT DEFAULT 0'); } catch(e) {}
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS comments (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                content TEXT NOT NULL,
+                answer_id INT NOT NULL,
+                user_id INT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        res.json({ success: true, message: "Đã tạo bảng/cột còn thiếu thành công! Bạn có thể vào lại web." });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Lỗi: " + err.message });
+    }
+});
+
 // Import admin routes
 const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminRoutes);
