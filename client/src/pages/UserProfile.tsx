@@ -10,7 +10,7 @@ import {
   MessageOutlined, InboxOutlined, PhoneOutlined, BankOutlined, 
   GlobalOutlined, BookOutlined, EyeOutlined,
   LikeOutlined, CommentOutlined, ClockCircleOutlined,
-  TeamOutlined, UserDeleteOutlined, IdcardOutlined
+  TeamOutlined, UserDeleteOutlined, IdcardOutlined, TrophyOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -817,6 +817,11 @@ const UserProfile: React.FC = () => {
                         <Space size={4}>
                           <TeamOutlined />
                           <Text style={{ color: '#64748b' }}>{followCounts.followers} người theo dõi</Text>
+                        </Space>
+                        <Text type="secondary">·</Text>
+                        <Space size={4}>
+                          <TrophyOutlined style={{ color: '#f59e0b' }} />
+                          <Text style={{ color: '#64748b' }}>{user.reputation || 0} điểm uy tín</Text>
                         </Space>
                       </div>
                     </div>

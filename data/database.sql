@@ -57,3 +57,32 @@ CREATE TABLE reports (
         REFERENCES questions (id)
         ON DELETE CASCADE
 );
+
+USE defaultdb;
+-- 1. Thêm cột reputation (điểm uy tín) vào bảng users hiện có
+ALTER TABLE users 
+ADD COLUMN reputation INT DEFAULT 0;
+
+-- 2. Tạo bảng question_votes để lưu trữ lịch sử vote câu hỏi
+CREATE TABLE IF NOT EXISTS question_votes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    question_id INT NOT NULL,
+    vote_type INT NOT NULL, -- 1 cho upvote, -1 cho downvote
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_question (user_id, question_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+);
+
+-- 3. Tạo bảng answer_votes để lưu trữ lịch sử vote câu trả lời
+CREATE TABLE IF NOT EXISTS answer_votes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    answer_id INT NOT NULL,
+    vote_type INT NOT NULL, -- 1 cho upvote, -1 cho downvote
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_answer (user_id, answer_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (answer_id) REFERENCES answers(id) ON DELETE CASCADE
+);

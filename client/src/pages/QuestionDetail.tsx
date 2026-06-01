@@ -37,6 +37,7 @@ interface Answer {
   created_at: string;
   comments: Comment[];
   user_vote_type?: number;
+  author_reputation?: number;
 }
 
 interface Question {
@@ -52,6 +53,7 @@ interface Question {
   answers: Answer[];
   answer_count?: number;
   user_vote_type?: number;
+  author_reputation?: number;
 }
 
 // --- Helper: Format thời gian tương đối ---
@@ -85,8 +87,10 @@ interface UserDetails {
   badgeBg: string;
   points: number;
 }
-const getUserDetails = (username: string): UserDetails => {
+const getUserDetails = (username: string, actualPoints?: number): UserDetails => {
   const name = username ? username.trim() : '';
+  const pts = actualPoints !== undefined ? actualPoints : 350;
+  
   if (name.toLowerCase() === 'minh phúc' || name.toLowerCase() === 'minhphuc') {
     return {
       title: 'Senior Frontend Engineer',
@@ -129,7 +133,7 @@ const getUserDetails = (username: string): UserDetails => {
     badge: 'Thành viên',
     badgeColor: '#64748b',
     badgeBg: '#f1f5f9',
-    points: 350
+    points: pts
   };
 };
 
@@ -407,7 +411,7 @@ const QuestionDetail: React.FC = () => {
     }
   }) : [];
 
-  const authorDetails = getUserDetails(question.author);
+  const authorDetails = getUserDetails(question.author, question.author_reputation);
   const isLiked = question?.user_vote_type === 1;
   const isDisliked = question?.user_vote_type === -1;
 
@@ -676,7 +680,7 @@ const QuestionDetail: React.FC = () => {
               dataSource={sortedAnswers}
               renderItem={(answer) => {
                 const isAccepted = answer.is_accepted === 1;
-                const answerAuthorDetails = getUserDetails(answer.author);
+                const answerAuthorDetails = getUserDetails(answer.author, answer.author_reputation);
                 return (
                   <Card
                     key={answer.id}

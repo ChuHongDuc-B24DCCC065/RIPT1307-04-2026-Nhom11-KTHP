@@ -7,7 +7,7 @@ const { authMiddleware } = require('../middleware/auth');
 router.get('/profile', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      `SELECT u.id, u.username, u.email, u.role, 
+      `SELECT u.id, u.username, u.email, u.role, u.reputation, 
               p.full_name as fullName, p.phone as phoneNumber, p.school, p.bio, p.website, p.avatar, p.class_name
        FROM users u 
        LEFT JOIN user_profile p ON u.id = p.user_id 

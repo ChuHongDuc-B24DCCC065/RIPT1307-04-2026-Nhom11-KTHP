@@ -103,7 +103,7 @@ router.get('/user/questions', authMiddleware, async (req, res) => {  try {
 router.get('/:id', async (req, res) => {
   try {
     const [[question]] = await pool.execute(
-      `SELECT q.*, u.username AS author
+      `SELECT q.*, u.username AS author, u.reputation AS author_reputation
        FROM questions q
        LEFT JOIN users u ON u.id = q.user_id
        WHERE q.id = ?`,
@@ -124,7 +124,7 @@ router.get('/:id', async (req, res) => {
     }
 
     const [answers] = await pool.execute(
-      `SELECT a.*, u.username AS author
+      `SELECT a.*, u.username AS author, u.reputation AS author_reputation
        FROM answers a
        LEFT JOIN users u ON u.id = a.user_id
        WHERE a.question_id = ?
@@ -351,6 +351,11 @@ router.post('/:id/vote', authMiddleware, async (req, res) => {
 
     if (voteChange !== 0) {
       await pool.execute('UPDATE questions SET votes = votes + ? WHERE id = ?', [voteChange, req.params.id]);
+      
+      // Cập nhật điểm uy tín (reputation) cho tác giả câu hỏi
+      if (question.user_id) {
+        await pool.execute('UPDATE users SET reputation = reputation + ? WHERE id = ?', [voteChange, question.user_id]);
+      }
     }
     
     // Gửi thông báo nếu có tương tác mới (không gửi nếu bỏ vote)
@@ -412,6 +417,11 @@ router.post('/:id/answers/:answerId/vote', authMiddleware, async (req, res) => {
         'UPDATE answers SET votes = votes + ? WHERE id = ? AND question_id = ?',
         [voteChange, req.params.answerId, req.params.id]
       );
+      
+      // Cập nhật điểm uy tín (reputation) cho tác giả câu trả lời
+      if (answer.user_id) {
+        await pool.execute('UPDATE users SET reputation = reputation + ? WHERE id = ?', [voteChange, answer.user_id]);
+      }
     }
 
     if (voteChange !== -delta && answer.user_id && answer.user_id !== req.user.id) {
