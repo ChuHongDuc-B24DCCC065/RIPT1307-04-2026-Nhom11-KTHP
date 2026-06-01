@@ -8,9 +8,9 @@ import {
   UserOutlined, MailOutlined, LockOutlined, CameraOutlined, 
   SaveOutlined, SafetyCertificateOutlined, DownOutlined, 
   MessageOutlined, InboxOutlined, PhoneOutlined, BankOutlined, 
-  GlobalOutlined, BookOutlined, EditOutlined, EyeOutlined,
-  LikeOutlined, CommentOutlined, ClockCircleOutlined, SettingOutlined,
-  TeamOutlined, UserAddOutlined, UserDeleteOutlined, IdcardOutlined
+  GlobalOutlined, BookOutlined, EyeOutlined,
+  LikeOutlined, CommentOutlined, ClockCircleOutlined,
+  TeamOutlined, UserDeleteOutlined, IdcardOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
