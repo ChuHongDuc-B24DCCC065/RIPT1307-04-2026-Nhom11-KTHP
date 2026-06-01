@@ -97,6 +97,8 @@ const AppContent: React.FC = () => {
   const isNewestActive = location.search.includes('newest');
   const isDiscussionsActive = location.pathname === '/discussions';
 
+  const isAdmin = location.pathname.startsWith('/admin');
+  const hideSidebar = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname) || isAdmin;
   const hideLayout = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
 
   return (
@@ -116,6 +118,7 @@ const AppContent: React.FC = () => {
         </Link>
 
         {/* Ô Tìm Kiếm ở giữa */}
+        {!isAdmin && (
         <form onSubmit={handleSearch} className="app-search-form">
           <Input
             placeholder="Tìm kiếm câu hỏi, chủ đề..."
@@ -125,6 +128,7 @@ const AppContent: React.FC = () => {
             className="premium-search-input transition-all app-search-input"
           />
         </form>
+        )}
 
         {/* Các nút bấm bên phải */}
         <div className="app-header-actions">
@@ -172,7 +176,7 @@ const AppContent: React.FC = () => {
       <Layout className="app-main-layout">
         
         {/* SIDEBAR TRÁI */}
-        {!hideLayout && (
+        {!hideSidebar && (
         <Sider 
           width={280} 
           theme="light"
@@ -264,7 +268,7 @@ const AppContent: React.FC = () => {
         )}
 
         {/* MAIN CONTENT AREA */}
-        <Content className={`app-content ${hideLayout ? 'hide-layout' : ''}`}>
+        <Content className={`app-content ${hideLayout ? 'hide-layout' : ''} ${isAdmin ? 'admin-content-wrapper' : ''}`}>
           <Routes>
             <Route path="/" element={<HomePage />} />   
             <Route path="/welcome" element={<LandingPage />} /> 
@@ -280,6 +284,46 @@ const AppContent: React.FC = () => {
             
             <Route 
               path="/admin" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/users" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/posts" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/broadcast" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/tags" 
               element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminPage />

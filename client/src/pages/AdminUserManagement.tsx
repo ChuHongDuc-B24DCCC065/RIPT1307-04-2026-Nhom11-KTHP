@@ -27,7 +27,7 @@ interface User {
   id: string;
   username: string;
   email: string;
-  role: 'student' | 'lecturer' | 'admin';
+  role: 'student' | 'teacher' | 'admin';
   createdAt: string;
   status: 'active' | 'banned';
 }
@@ -141,7 +141,7 @@ const AdminUserManagement: React.FC = () => {
     switch (role) {
       case 'admin':
         return <Tag color="purple">Admin</Tag>;
-      case 'lecturer':
+      case 'teacher':
         return <Tag color="blue">Giảng viên</Tag>;
       case 'student':
         return <Tag color="green">Sinh viên</Tag>;
@@ -244,7 +244,7 @@ const AdminUserManagement: React.FC = () => {
             options={[
               { value: 'all', label: 'Tất cả vai trò' },
               { value: 'student', label: 'Sinh viên' },
-              { value: 'lecturer', label: 'Giảng viên' },
+              { value: 'teacher', label: 'Giảng viên' },
               { value: 'admin', label: 'Admin' },
             ]}
           />
@@ -292,7 +292,7 @@ const AdminUserManagement: React.FC = () => {
           style={{ width: '100%' }}
           options={[
             { value: 'student', label: 'Sinh viên' },
-            { value: 'lecturer', label: 'Giảng viên' },
+            { value: 'teacher', label: 'Giảng viên' },
             { value: 'admin', label: 'Admin' },
           ]}
         />
