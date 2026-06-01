@@ -30,6 +30,7 @@ import {
   CommentOutlined
 } from '@ant-design/icons';
 import './App.css';
+import { StudentChatbot } from './components/StudentChatbot';
 
 const { Header, Content, Sider } = Layout;
 
@@ -289,6 +290,7 @@ const AppContent: React.FC = () => {
         </Content>
 
       </Layout>
+      <StudentChatbot />
     </Layout>
   );
 };
