@@ -187,3 +187,15 @@
   padding: 0;
   min-height: 100vh;
 }
+
+/* Ensure the admin page's Sider children container is white */
+.admin-sider .ant-layout-sider-children {
+  background-color: #ffffff !important;
+}
+
+/* Style for admin content wrapper inside App.tsx to reset padding and fit layout */
+.app-content.admin-content-wrapper {
+  padding: 0;
+  min-height: calc(100vh - 72px);
+  background: #f8fafc;
+}

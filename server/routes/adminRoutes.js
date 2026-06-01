@@ -110,16 +110,42 @@ router.get("/detailed-stats", async (req, res) => {
 // ─────────────────────────────────────────
 router.get("/users", async (req, res) => {
   try {
-    console.log("Fetching users list...");
+    const { search, role, status } = req.query;
+    console.log("Fetching users list with filters:", { search, role, status });
     
-    const [users] = await pool.query("SELECT * FROM users");
+    let query = "SELECT * FROM users";
+    const queryParams = [];
+    const whereClauses = [];
+    
+    if (search) {
+      whereClauses.push("(username LIKE ? OR email LIKE ?)");
+      queryParams.push(`%${search}%`, `%${search}%`);
+    }
+    
+    if (role && role !== 'all') {
+      whereClauses.push("role = ?");
+      queryParams.push(role);
+    }
+    
+    if (status && status !== 'all') {
+      whereClauses.push("status = ?");
+      queryParams.push(status);
+    }
+    
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(" AND ")}`;
+    }
+    
+    query += " ORDER BY id DESC";
+    
+    const [users] = await pool.query(query, queryParams);
     
     const formattedUsers = users.map(u => ({
         id: u.id,
         username: u.username,
         email: u.email,
         role: u.role,
-        created_at: u.created_at || u.createdAt || null,
+        createdAt: u.created_at || u.createdAt || null,
         status: u.status || 'active'
     }));
     
@@ -136,15 +162,53 @@ router.get("/users", async (req, res) => {
 // ─────────────────────────────────────────
 router.get("/posts", async (req, res) => {
   try {
-    console.log("Fetching posts list...");
+    const { search, status, startDate, endDate } = req.query;
+    console.log("Fetching posts list with filters:", { search, status, startDate, endDate });
     
-    const [posts] = await pool.query("SELECT * FROM questions");
+    let query = `
+      SELECT q.*, COUNT(r.id) AS reportCount
+      FROM questions q
+      LEFT JOIN reports r ON q.id = r.question_id
+    `;
+    
+    const queryParams = [];
+    const whereClauses = [];
+    
+    if (search) {
+      whereClauses.push("(q.title LIKE ? OR q.author LIKE ?)");
+      queryParams.push(`%${search}%`, `%${search}%`);
+    }
+    
+    if (status && status !== 'all') {
+      whereClauses.push("q.status = ?");
+      queryParams.push(status);
+    }
+    
+    if (startDate && endDate) {
+      whereClauses.push("q.created_at >= ? AND q.created_at <= ?");
+      queryParams.push(new Date(startDate), new Date(endDate));
+    }
+    
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(" AND ")}`;
+    }
+    
+    query += `
+      GROUP BY q.id
+      ORDER BY q.id DESC
+    `;
+    
+    const [posts] = await pool.query(query, queryParams);
     
     const formattedPosts = posts.map(p => ({
         id: p.id,
         title: p.title,
         author: p.author || 'Unknown',
-        createdAt: p.created_at || p.createdAt || null
+        createdAt: p.created_at || p.createdAt || null,
+        views: p.views || 0,
+        votes: p.votes || 0,
+        reports: p.reportCount || 0,
+        status: p.status || 'public'
     }));
     
     console.log(`Found ${formattedPosts.length} posts`);
@@ -175,6 +239,28 @@ router.put("/users/:id/status", async (req, res) => {
     res.json({ message: `Đã ${action.toLowerCase()} user id = ${id} thành công.` });
   } catch (error) {
     console.error("Lỗi PUT /users/:id/status:", error);
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+});
+
+// ─────────────────────────────────────────
+// Cập nhật trạng thái (Public/Hidden) Post
+// ─────────────────────────────────────────
+router.put("/posts/:id/status", async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body; // 'public' hoặc 'hidden' or 'violation'
+
+  try {
+    const [result] = await pool.query("UPDATE questions SET status = ? WHERE id = ?", [status, id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: `Không tìm thấy bài viết với id = ${id}.` });
+    }
+
+    const action = status === 'hidden' ? 'Ẩn' : 'Hiện';
+    res.json({ message: `Đã ${action.toLowerCase()} bài viết id = ${id} thành công.` });
+  } catch (error) {
+    console.error("Lỗi PUT /posts/:id/status:", error);
     res.status(500).json({ message: "Lỗi server: " + error.message });
   }
 });
