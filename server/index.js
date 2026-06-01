@@ -93,7 +93,8 @@ app.post('/api/login', async (req, res) => {
                 id: user.id,
                 username: user.username,
                 role: user.role,
-                email: user.email
+                email: user.email,
+                reputation: user.reputation || 0
             }
         });
 
