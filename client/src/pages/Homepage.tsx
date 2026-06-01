@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { List, Tag, Space, Button, Row, Col, Typography, Card, message, Empty, Skeleton, Input } from 'antd';
-import { MessageOutlined, LikeOutlined, UserOutlined, ClockCircleOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons';
+import { MessageOutlined, LikeOutlined, LikeFilled, UserOutlined, ClockCircleOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/vi';
+
+dayjs.extend(relativeTime);
+dayjs.locale('vi');
 
 const { Title, Text } = Typography;
 
@@ -13,19 +19,14 @@ interface Question {
   description: string;
   tags: string;           // DB trả về chuỗi "reactjs,nodejs"
   author: string;         // Từ LEFT JOIN users
+  user_id: number;
   votes: number;
-  answer_count: number;   // Từ subquery đếm answers
+  answer_count?: number;   // Từ subquery đếm answers
   created_at: string;
+  user_vote_type?: number;
 }
 
-// --- Helper: Format thời gian tương đối ---
-const formatTime = (dateStr: string): string => {
-  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (diff < 60)    return `${diff} giây trước`;
-  if (diff < 3600)  return `${Math.floor(diff / 60)} phút trước`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
-  return `${Math.floor(diff / 86400)} ngày trước`;
-};
+// --- Helper: Không cần formatTime nữa vì đã dùng dayjs ---
 
 // --- MOCK DATA GIẢ CHO TRANG CHỦ ---
 const MOCK_QUESTION: Question = {
@@ -34,6 +35,7 @@ const MOCK_QUESTION: Question = {
   description: "Chào mọi người, hiện tại mình đang nâng cấp dự án từ React 18 lên React 19 và gặp phải lỗi Hydration mismatch. Mình không rõ tại sao lỗi này lại xuất hiện vì ở version trước chạy rất bình thường.",
   tags: "ReactJS,Frontend,TypeScript,Web Performance",
   author: "Nguyen Van A",
+  user_id: 1,
   votes: 128,
   answer_count: 3,
   created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 giờ trước
@@ -47,14 +49,25 @@ const HomePage: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [likedQuestions, setLikedQuestions] = useState<Record<number, boolean>>({});
 
   // --- Gọi API lấy danh sách câu hỏi ---
   const fetchQuestions = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions`);
-      const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
-      setQuestions([MOCK_QUESTION, ...data]);
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions?page=1&limit=50`, { headers });
+      const fetchedQuestions = Array.isArray(res.data) ? res.data : (res.data.data || []);
+      setQuestions(fetchedQuestions);
+      
+      const initialLikes: Record<number, boolean> = {};
+      fetchedQuestions.forEach((q: Question) => {
+        if (q.user_vote_type === 1) {
+          initialLikes[q.id] = true;
+        }
+      });
+      setLikedQuestions(initialLikes);
     } catch (error) {
       console.error('Lỗi tải câu hỏi:', error);
       // Hiển thị mock data nếu API lỗi
@@ -74,6 +87,51 @@ const HomePage: React.FC = () => {
       navigate('/login');
     } else {
       navigate('/create-question');
+    }
+  };
+
+  const handleLike = async (e: React.MouseEvent, question: Question) => {
+    e.stopPropagation(); // Ngăn chặn sự kiện click lan ra (chuyển trang)
+    if (!user) {
+      message.warning('Bạn cần đăng nhập để thích câu hỏi!');
+      navigate('/login');
+      return;
+    }
+
+    const isLiked = !!likedQuestions[question.id];
+    
+    // Cập nhật giao diện lập tức (Optimistic UI update)
+    setLikedQuestions(prev => ({ ...prev, [question.id]: !isLiked }));
+    setQuestions(prev => prev.map(q => 
+      q.id === question.id 
+        ? { ...q, votes: (q.votes || 0) + (isLiked ? -1 : 1) } 
+        : q
+    ));
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/${question.id}/vote`,
+        { type: 'up' }, // Nút Like trên trang chủ luôn gửi 'up' (backend sẽ tự động toggle)
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Cập nhật lại state chuẩn xác từ backend trả về
+      setLikedQuestions(prev => ({ ...prev, [question.id]: res.data.user_vote_type === 1 }));
+      setQuestions(prev => prev.map(q => 
+        q.id === question.id 
+          ? { ...q, votes: res.data.votes } 
+          : q
+      ));
+    } catch (error) {
+      // Phục hồi lại trạng thái nếu gọi API lỗi
+      setLikedQuestions(prev => ({ ...prev, [question.id]: isLiked }));
+      setQuestions(prev => prev.map(q => 
+        q.id === question.id 
+          ? { ...q, votes: (q.votes || 0) + (isLiked ? 1 : -1) } 
+          : q
+      ));
+      message.error('Lỗi khi thực hiện thao tác Thích!');
     }
   };
 
@@ -267,9 +325,23 @@ const HomePage: React.FC = () => {
                 <List.Item
                   style={{ padding: 0 }}
                   actions={[
-                    <Space key="votes" style={{ color: '#4f46e5', fontWeight: 500 }}><LikeOutlined /> {item.votes ?? 0} Thích</Space>,
+                    <Space 
+                      key="votes" 
+                      onClick={(e) => handleLike(e, item)}
+                      style={{ 
+                        color: likedQuestions[item.id] ? '#1890ff' : '#4f46e5', 
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        background: likedQuestions[item.id] ? '#e6f7ff' : 'transparent',
+                        transition: 'all 0.3s'
+                      }}
+                    >
+                      {likedQuestions[item.id] ? <LikeFilled /> : <LikeOutlined />} {item.votes ?? 0} Thích
+                    </Space>,
                     <Space key="answers" style={{ color: '#059669', fontWeight: 500 }}><MessageOutlined /> {item.answer_count ?? 0} Trả lời</Space>,
-                    <Space key="time" style={{ color: '#64748b' }}><ClockCircleOutlined /> {item.created_at ? formatTime(item.created_at) : 'Vừa xong'}</Space>,
+                    <Space key="time" style={{ color: '#64748b' }}><ClockCircleOutlined /> {item.created_at ? dayjs(item.created_at).fromNow() : 'Vừa xong'}</Space>,
                   ]}
                 >
                   <List.Item.Meta

@@ -9,6 +9,7 @@ const pool = mysql.createPool({
     ssl: {
         rejectUnauthorized: false // Bắt buộc phải có khi dùng Aiven
     },
+    timezone: 'Z',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0

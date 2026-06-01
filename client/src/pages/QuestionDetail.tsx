@@ -36,6 +36,7 @@ interface Answer {
   author: string;       // Từ LEFT JOIN users
   created_at: string;
   comments: Comment[];
+  user_vote_type?: number;
 }
 
 interface Question {
@@ -50,11 +51,13 @@ interface Question {
   created_at: string;
   answers: Answer[];
   answer_count?: number;
+  user_vote_type?: number;
 }
 
 // --- Helper: Format thời gian tương đối ---
 const formatTime = (dateStr: string): string => {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 0)     return 'Vừa xong';
   if (diff < 60)    return `${diff} giây trước`;
   if (diff < 3600)  return `${Math.floor(diff / 60)} phút trước`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
@@ -146,8 +149,6 @@ const QuestionDetail: React.FC = () => {
   const [loading, setLoading]   = useState(true);
   const [answerText, setAnswerText]             = useState('');
   const [submitting, setSubmitting]             = useState(false);
-  const [isLiked, setIsLiked]                   = useState(false);
-  const [isDisliked, setIsDisliked]             = useState(false);
   const [commentTexts, setCommentTexts]         = useState<Record<number, string>>({});
   const [showComment, setShowComment]           = useState<Record<number, boolean>>({});
   const [submittingComment, setSubmittingComment] = useState<number | null>(null);
@@ -159,7 +160,9 @@ const QuestionDetail: React.FC = () => {
   const fetchQuestion = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/questions/${id}`);
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await axios.get(`${API}/questions/${id}`, { headers });
       setQuestion(res.data.data);
     } catch (err: any) {
       if (err.response?.status === 404) {
@@ -183,7 +186,12 @@ const QuestionDetail: React.FC = () => {
     }
   };
 
+  const fetchedIdRef = useRef<string | null>(null);
+
   useEffect(() => {
+    if (fetchedIdRef.current === id) return;
+    fetchedIdRef.current = id || null;
+    
     fetchQuestion();
     fetchAllQuestions();
   }, [id]);
@@ -201,16 +209,14 @@ const QuestionDetail: React.FC = () => {
         { type },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setQuestion(prev => prev ? { ...prev, votes: res.data.votes } : prev);
+      setQuestion(prev => prev ? { ...prev, votes: res.data.votes, user_vote_type: res.data.user_vote_type } : prev);
       
-      if (type === 'up') {
-        setIsLiked(!isLiked);
-        setIsDisliked(false);
-        message.success(isLiked ? 'Đã bỏ thích câu hỏi!' : 'Đã thích câu hỏi!');
+      if (res.data.user_vote_type === 1) {
+        message.success('Đã thích câu hỏi!');
+      } else if (res.data.user_vote_type === -1) {
+        message.success('Đã không thích câu hỏi!');
       } else {
-        setIsDisliked(!isDisliked);
-        setIsLiked(false);
-        message.success(isDisliked ? 'Đã bỏ không thích!' : 'Đã phản hồi không thích câu hỏi!');
+        message.success('Đã bỏ đánh giá!');
       }
     } catch {
       message.error('Không thể thực hiện đánh giá câu hỏi!');
@@ -234,11 +240,18 @@ const QuestionDetail: React.FC = () => {
         return {
           ...prev,
           answers: prev.answers.map(a =>
-            a.id === answerId ? { ...a, votes: res.data.votes } : a
+            a.id === answerId ? { ...a, votes: res.data.votes, user_vote_type: res.data.user_vote_type } : a
           )
         };
       });
-      message.success(type === 'up' ? 'Đã thích câu trả lời!' : 'Đã gửi phản hồi đánh giá!');
+      
+      if (res.data.user_vote_type === 1) {
+        message.success('Đã thích câu trả lời!');
+      } else if (res.data.user_vote_type === -1) {
+        message.success('Đã gửi phản hồi không hữu ích!');
+      } else {
+        message.success('Đã bỏ đánh giá câu trả lời!');
+      }
     } catch {
       message.error('Không thể bình chọn câu trả lời!');
     }
@@ -395,6 +408,8 @@ const QuestionDetail: React.FC = () => {
   }) : [];
 
   const authorDetails = getUserDetails(question.author);
+  const isLiked = question?.user_vote_type === 1;
+  const isDisliked = question?.user_vote_type === -1;
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 8px 40px 8px' }}>
@@ -512,9 +527,11 @@ const QuestionDetail: React.FC = () => {
                 </div>
 
                 {/* Nội dung chi tiết */}
-                <Paragraph className="premium-description" style={{ fontSize: 15.5, lineHeight: '1.8', color: '#334155', marginBottom: 28 }}>
-                  {question.description}
-                </Paragraph>
+                <div 
+                  className="premium-description ql-editor custom-quill-content" 
+                  style={{ fontSize: 15.5, lineHeight: '1.8', color: '#334155', marginBottom: 28 }}
+                  dangerouslySetInnerHTML={{ __html: question.description }}
+                />
 
                 {/* Thẻ tags & Actions */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
@@ -566,6 +583,69 @@ const QuestionDetail: React.FC = () => {
             </Row>
           </Card>
 
+          {/* ===== Viết Câu Trả Lời Mới ===== */}
+          <div ref={answerEditorRef}>
+            <Card
+              title={
+                <Title level={4} style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <ThunderboltOutlined style={{ color: '#eab308' }} />
+                  Đóng góp câu trả lời của bạn
+                </Title>
+              }
+              bordered={false}
+              className="premium-card animated-hover-card"
+              style={{ 
+                borderRadius: '24px', 
+                padding: '12px 16px 20px 16px',
+                marginBottom: 28
+              }}
+            >
+              {user ? (
+                <>
+                  <TextArea
+                    rows={5}
+                    placeholder="Nhập câu trả lời chi tiết, mã nguồn minh họa và giải pháp đầy đủ để giúp đỡ cộng đồng..."
+                    value={answerText}
+                    onChange={(e: any) => setAnswerText(e.target.value)}
+                    style={{ marginBottom: 20, fontSize: 15, borderRadius: '14px', padding: '14px', border: '1px solid #e2e8f0', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.01)' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text type="secondary" style={{ fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <InfoCircleOutlined style={{ color: '#6366f1' }} />
+                      Vui lòng duy trì văn hóa giao tiếp văn minh, tôn trọng.
+                    </Text>
+                    <Button
+                      type="primary"
+                      icon={<SendOutlined />}
+                      onClick={handlePostAnswer}
+                      loading={submitting}
+                      size="large"
+                      style={{
+                        borderRadius: '12px',
+                        height: '44px',
+                        fontWeight: 600,
+                        padding: '0 24px',
+                        background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                        borderColor: '#6366f1',
+                        boxShadow: '0 6px 16px rgba(99, 102, 241, 0.25)'
+                      }}
+                    >
+                      Gửi câu trả lời của bạn
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                  <Text type="secondary" style={{ fontSize: '15px' }}>Bạn cần </Text>
+                  <Button type="link" onClick={() => navigate('/login')} style={{ padding: 0, fontSize: '15px', fontWeight: 700, color: '#6366f1' }}>
+                    đăng nhập
+                  </Button>
+                  <Text type="secondary" style={{ fontSize: '15px' }}> để đóng góp câu trả lời cho câu hỏi này.</Text>
+                </div>
+              )}
+            </Card>
+          </div>
+
           {/* ===== Danh Sách Câu Trả Lời ===== */}
           <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Title level={3} style={{ margin: 0, fontSize: '19px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -589,9 +669,6 @@ const QuestionDetail: React.FC = () => {
           {sortedAnswers.length === 0 ? (
             <Card style={{ borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.01)', textAlign: 'center', padding: '40px 24px', marginBottom: 28 }}>
               <Empty description="Chưa có câu trả lời nào cho câu hỏi này. Hãy là người đầu tiên giúp đỡ!" style={{ padding: '16px' }} />
-              <Button type="primary" icon={<ThunderboltOutlined />} onClick={scrollToEditor} style={{ marginTop: 12, borderRadius: 10, height: 38, background: '#6366f1' }}>
-                Đóng góp câu trả lời ngay
-              </Button>
             </Card>
           ) : (
             <List
@@ -617,20 +694,20 @@ const QuestionDetail: React.FC = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                           <Tooltip title="Câu trả lời hữu ích">
                             <Button
-                              icon={<LikeOutlined />}
+                              icon={answer.user_vote_type === 1 ? <LikeFilled /> : <LikeOutlined />}
                               size="small"
                               shape="circle"
-                              style={{ backgroundColor: '#f1f5f9', border: 'none', color: '#475569' }}
+                              style={{ backgroundColor: answer.user_vote_type === 1 ? '#e6f7ff' : '#f1f5f9', border: 'none', color: answer.user_vote_type === 1 ? '#6366f1' : '#475569' }}
                               onClick={() => handleVoteAnswer(answer.id, 'up')}
                             />
                           </Tooltip>
                           <Text strong style={{ color: '#1e293b', fontSize: 15 }}>{answer.votes}</Text>
                           <Tooltip title="Không hữu ích">
                             <Button
-                              icon={<DislikeOutlined />}
+                              icon={answer.user_vote_type === -1 ? <DislikeFilled /> : <DislikeOutlined />}
                               size="small"
                               shape="circle"
-                              style={{ backgroundColor: '#f1f5f9', border: 'none', color: '#475569' }}
+                              style={{ backgroundColor: answer.user_vote_type === -1 ? '#fee2e2' : '#f1f5f9', border: 'none', color: answer.user_vote_type === -1 ? '#ef4444' : '#475569' }}
                               onClick={() => handleVoteAnswer(answer.id, 'down')}
                             />
                           </Tooltip>
@@ -782,69 +859,6 @@ const QuestionDetail: React.FC = () => {
               }}
             />
           )}
-
-          {/* ===== Viết Câu Trả Lời Mới ===== */}
-          <div ref={answerEditorRef}>
-            <Card
-              title={
-                <Title level={4} style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <ThunderboltOutlined style={{ color: '#eab308' }} />
-                  Đóng góp câu trả lời của bạn
-                </Title>
-              }
-              bordered={false}
-              className="premium-card animated-hover-card"
-              style={{ 
-                borderRadius: '24px', 
-                padding: '12px 16px 20px 16px',
-                marginTop: 28
-              }}
-            >
-              {user ? (
-                <>
-                  <TextArea
-                    rows={5}
-                    placeholder="Nhập câu trả lời chi tiết, mã nguồn minh họa và giải pháp đầy đủ để giúp đỡ cộng đồng..."
-                    value={answerText}
-                    onChange={(e: any) => setAnswerText(e.target.value)}
-                    style={{ marginBottom: 20, fontSize: 15, borderRadius: '14px', padding: '14px', border: '1px solid #e2e8f0', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.01)' }}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text type="secondary" style={{ fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <InfoCircleOutlined style={{ color: '#6366f1' }} />
-                      Vui lòng duy trì văn hóa giao tiếp văn minh, tôn trọng.
-                    </Text>
-                    <Button
-                      type="primary"
-                      icon={<SendOutlined />}
-                      onClick={handlePostAnswer}
-                      loading={submitting}
-                      size="large"
-                      style={{
-                        borderRadius: '12px',
-                        height: '44px',
-                        fontWeight: 600,
-                        padding: '0 24px',
-                        background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                        borderColor: '#6366f1',
-                        boxShadow: '0 6px 16px rgba(99, 102, 241, 0.25)'
-                      }}
-                    >
-                      Gửi câu trả lời của bạn
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                  <Text type="secondary" style={{ fontSize: '15px' }}>Bạn cần </Text>
-                  <Button type="link" onClick={() => navigate('/login')} style={{ padding: 0, fontSize: '15px', fontWeight: 700, color: '#6366f1' }}>
-                    đăng nhập
-                  </Button>
-                  <Text type="secondary" style={{ fontSize: '15px' }}> để đóng góp câu trả lời cho câu hỏi này.</Text>
-                </div>
-              )}
-            </Card>
-          </div>
         </Col>
 
         {/* ======================================================== */}
