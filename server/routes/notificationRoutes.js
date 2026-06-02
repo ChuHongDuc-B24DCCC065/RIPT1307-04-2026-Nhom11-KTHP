@@ -17,6 +17,20 @@ router.get('/', authMiddleware, async (req, res) => {
     }
 });
 
+// PUT /notifications/read-all - Đánh dấu tất cả là đã đọc
+router.put('/read-all', authMiddleware, async (req, res) => {
+    try {
+        await pool.execute(
+            'UPDATE notifications SET is_read = 1 WHERE user_id_nhan = ? AND is_read = 0',
+            [req.user.id]
+        );
+        res.json({ success: true, message: 'Đã đánh dấu đọc tất cả.' });
+    } catch (err) {
+        console.error('PUT /notifications/read-all:', err.message);
+        res.status(500).json({ success: false, message: 'Lỗi server.' });
+    }
+});
+
 // PUT /notifications/:id/read - Đánh dấu đã đọc
 router.put('/:id/read', authMiddleware, async (req, res) => {
     try {
