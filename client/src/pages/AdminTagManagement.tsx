@@ -11,7 +11,7 @@ import {
   message 
 } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -28,36 +28,6 @@ const AdminTagManagement: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [form] = Form.useForm();
-
-  // Tạo axios instance với interceptor tương tự AdminPage
-  const axiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  });
-
-  axiosInstance.interceptors.request.use(
-    (config) => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    },
-    (error) => Promise.reject(error)
-  );
-
-  axiosInstance.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      if (error.response?.status === 401) {
-        localStorage.removeItem('token');
-        message.error('Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!');
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 1500);
-      }
-      return Promise.reject(error);
-    }
-  );
 
   const fetchData = async () => {
     setLoading(true);

@@ -34,6 +34,19 @@ import { StudentChatbot } from './components/StudentChatbot';
 
 const { Header, Content, Sider } = Layout;
 
+const getAvatarGradient = (name: string) => {
+  const gradients = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+  ];
+  const index = (name || 'A').charCodeAt(0) % gradients.length;
+  return gradients[index];
+};
+
 // Component Layout con để sử dụng được hooks của react-router-dom
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -149,10 +162,19 @@ const AppContent: React.FC = () => {
                 <Avatar 
                   size={40} 
                   className="app-avatar"
-                  icon={!parsedUser.avatar && <UserOutlined />}
                   src={parsedUser.avatar}
+                  onError={() => true}
+                  style={{
+                    background: getAvatarGradient(parsedUser.fullName || parsedUser.username || 'U'),
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    border: '2px solid #e2e8f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
                 >
-                  {parsedUser.username?.charAt(0).toUpperCase()}
+                  {(parsedUser.fullName || parsedUser.username || 'U').charAt(0).toUpperCase()}
                 </Avatar>
                 <div className="status-indicator-dot" />
               </div>
