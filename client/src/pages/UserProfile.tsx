@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ConfigProvider, Typography, Form, Input, Button, Upload, 
-  Row, Col, Space, Avatar, message, Flex, Divider, Card, Layout, Tabs, List, Dropdown, Tag, Segmented, Empty, Tooltip
+  Row, Col, Space, Avatar, message, Flex, Divider, Card, Layout, Tabs, List, Dropdown, Tag, Segmented, Empty, Tooltip,
+  Descriptions
 } from 'antd';
 import type { MenuProps } from 'antd';
 import { 
@@ -10,7 +11,8 @@ import {
   MessageOutlined, InboxOutlined, PhoneOutlined, BankOutlined, 
   GlobalOutlined, BookOutlined, EyeOutlined,
   LikeOutlined, CommentOutlined, ClockCircleOutlined,
-  TeamOutlined, UserDeleteOutlined, IdcardOutlined, TrophyOutlined
+  TeamOutlined, UserDeleteOutlined, IdcardOutlined, TrophyOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -72,6 +74,7 @@ const UserProfile: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('about');
+  const [isEditing, setIsEditing] = useState(false);
 
   // State cho "Giới thiệu" - theo dõi thay đổi form
   const [hasChanges, setHasChanges] = useState(false);
@@ -224,6 +227,7 @@ const UserProfile: React.FC = () => {
       // Reset initial values to current
       setInitialValues(values);
       setHasChanges(false);
+      setIsEditing(false);
     } catch {
       message.error("Không thể cập nhật thông tin!");
     } finally {
@@ -283,113 +287,211 @@ const UserProfile: React.FC = () => {
   };
 
   // ======== TAB: GIỚI THIỆU ========
-  const renderAboutTab = () => (
-    <Card 
-      styles={{ body: { padding: '32px' } }} 
-      style={cardStyle}
-    >
-      <div style={{ marginBottom: 16 }}>
-        <Flex align="center" gap="small" style={{ marginBottom: 24 }}>
-          <div style={{ 
-            width: 40, height: 40, borderRadius: '50%', 
-            backgroundColor: '#eef2ff', color: '#6366f1', 
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 20
-          }}>
-            <UserOutlined />
-          </div>
-          <div>
-            <Title level={4} style={{ margin: 0, fontWeight: 600 }}>Thông tin cơ bản</Title>
-            <Text type="secondary" style={{ fontSize: 13 }}>Quản lý thông tin cá nhân của bạn</Text>
-          </div>
-        </Flex>
-
-        <Row gutter={[16, 16]}>
-          <Col xs={24} md={12}>
-            <Form.Item 
-              name="fullName" 
-              label={<span style={{ fontWeight: 500 }}>Họ và tên</span>}
-              rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
-            >
-              <Input prefix={<UserOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập họ và tên" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item 
-              name="email" 
-              label={<span style={{ fontWeight: 500 }}>Địa chỉ Email</span>}
-              extra={<span style={{ fontSize: 13, color: '#94a3b8' }}>Email không thể thay đổi sau khi đăng ký</span>}
-            >
-              <Input prefix={<MailOutlined style={{ color: '#bfbfbf' }}/>} size="large" disabled />
-            </Form.Item>
-          </Col>
+  const renderAboutTab = () => {
+    const renderViewItem = (label: string, value: React.ReactNode, isLast: boolean = false) => (
+      <div style={{ padding: '4px 0' }}>
+        <Row gutter={[0, 4]}>
           <Col span={24}>
-            <Form.Item 
-              name="bio" 
-              label={<span style={{ fontWeight: 500 }}>Giới thiệu bản thân</span>}
-            >
-              <TextArea 
-                rows={3} 
-                placeholder="Viết vài dòng giới thiệu về bạn..."
-                style={{ borderRadius: 10 }}
-                showCount
-                maxLength={500}
-              />
-            </Form.Item>
+            <Text style={{ color: '#64748b', fontSize: '13px', fontWeight: 500, letterSpacing: '0.2px' }}>{label}</Text>
           </Col>
-          <Col xs={24} md={12}>
-            <Form.Item 
-              name="phoneNumber" 
-              label={<span style={{ fontWeight: 500 }}>Số điện thoại</span>}
-            >
-              <Input prefix={<PhoneOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập số điện thoại" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item 
-              name="school" 
-              label={<span style={{ fontWeight: 500 }}>Trường học</span>}
-            >
-              <Input prefix={<BankOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập tên trường" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item 
-              name="class_name" 
-              label={<span style={{ fontWeight: 500 }}>Lớp</span>}
-            >
-              <Input prefix={<IdcardOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập tên lớp" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item 
-              name="website" 
-              label={<span style={{ fontWeight: 500 }}>Website / GitHub</span>}
-            >
-              <Input prefix={<GlobalOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="https://github.com/username" />
-            </Form.Item>
+          <Col span={24} style={{ marginTop: '2px' }}>
+            {value}
           </Col>
         </Row>
+        {!isLast && <Divider style={{ margin: '14px 0', borderColor: '#f1f5f9' }} />}
       </div>
+    );
 
-      {/* Nút Hủy / Lưu chỉ hiện khi có thay đổi */}
-      {hasChanges && (
-        <>
-          <Divider style={{ margin: '24px 0 20px 0' }} />
-          <Flex justify="space-between" align="center" wrap="wrap" gap="middle">
-            <Space style={{ color: '#64748b', fontSize: 14 }}>
-              <SafetyCertificateOutlined style={{ color: '#10b981', fontSize: 18 }} />
-              Mọi thay đổi sẽ được cập nhật tức thì sau khi lưu.
-            </Space>
-            <Space size="middle">
-              <Button type="text" onClick={() => { form.setFieldsValue(initialValues); setHasChanges(false); }} size="large">Hủy thay đổi</Button>
-              <Button type="primary" htmlType="submit" loading={loading} size="large" icon={<SaveOutlined />}>Lưu thông tin</Button>
-            </Space>
+    return (
+      <Card 
+        styles={{ body: { padding: '32px' } }} 
+        style={cardStyle}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Flex justify="space-between" align="center" style={{ marginBottom: 24 }}>
+            <Flex align="center" gap="small">
+              <div style={{ 
+                width: 40, height: 40, borderRadius: '50%', 
+                backgroundColor: '#eef2ff', color: '#6366f1', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 20
+              }}>
+                <UserOutlined />
+              </div>
+              <div>
+                <Title level={4} style={{ margin: 0, fontWeight: 600 }}>Thông tin cơ bản</Title>
+                <Text type="secondary" style={{ fontSize: 13 }}>Quản lý thông tin cá nhân của bạn</Text>
+              </div>
+            </Flex>
+            {!isEditing && (
+              <Button 
+                type="primary" 
+                icon={<EditOutlined />} 
+                onClick={() => setIsEditing(true)}
+                style={{ borderRadius: 10, background: '#6366f1', borderColor: '#6366f1' }}
+              >
+                Chỉnh sửa hồ sơ
+              </Button>
+            )}
           </Flex>
-        </>
-      )}
-    </Card>
-  );
+
+          {!isEditing ? (
+            <div style={{ background: '#ffffff', padding: '8px 4px' }}>
+              {renderViewItem(
+                "Họ và tên",
+                <Text strong style={{ color: '#0f172a', fontSize: '15.5px' }}>
+                  {user.fullName || user.username || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                </Text>
+              )}
+              {renderViewItem(
+                "Địa chỉ Email",
+                <Text style={{ color: '#334155', fontSize: '15px' }}>
+                  {user.email || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                </Text>
+              )}
+              {renderViewItem(
+                "Số điện thoại",
+                <Text style={{ color: '#334155', fontSize: '15px' }}>
+                  {user.phoneNumber || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                </Text>
+              )}
+              {renderViewItem(
+                "Trường học",
+                <Text style={{ color: '#334155', fontSize: '15px' }}>
+                  {user.school || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                </Text>
+              )}
+              {renderViewItem(
+                "Lớp",
+                <Text style={{ color: '#334155', fontSize: '15px' }}>
+                  {user.class_name || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                </Text>
+              )}
+              {renderViewItem(
+                "Website / GitHub",
+                user.website ? (
+                  <a href={user.website} target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1', fontWeight: 600, fontSize: '15px' }}>
+                    {user.website}
+                  </a>
+                ) : (
+                  <Text type="secondary" italic>Chưa cập nhật</Text>
+                )
+              )}
+              {renderViewItem(
+                "Giới thiệu bản thân",
+                <Paragraph style={{ color: '#334155', fontSize: '15px', lineHeight: '1.65', margin: 0, whiteSpace: 'pre-wrap' }}>
+                  {user.bio || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                </Paragraph>,
+                true
+              )}
+            </div>
+          ) : (
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={12}>
+                <Form.Item 
+                  name="fullName" 
+                  label={<span style={{ fontWeight: 500 }}>Họ và tên</span>}
+                  rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
+                >
+                  <Input prefix={<UserOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập họ và tên" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item 
+                  name="email" 
+                  label={<span style={{ fontWeight: 500 }}>Địa chỉ Email</span>}
+                  extra={<span style={{ fontSize: 13, color: '#94a3b8' }}>Email không thể thay đổi sau khi đăng ký</span>}
+                >
+                  <Input prefix={<MailOutlined style={{ color: '#bfbfbf' }}/>} size="large" disabled />
+                </Form.Item>
+              </Col>
+              <Col span={24}>
+                <Form.Item 
+                  name="bio" 
+                  label={<span style={{ fontWeight: 500 }}>Giới thiệu bản thân</span>}
+                >
+                  <TextArea 
+                    rows={3} 
+                    placeholder="Viết vài dòng giới thiệu về bạn..."
+                    style={{ borderRadius: 10 }}
+                    showCount
+                    maxLength={500}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item 
+                  name="phoneNumber" 
+                  label={<span style={{ fontWeight: 500 }}>Số điện thoại</span>}
+                >
+                  <Input prefix={<PhoneOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập số điện thoại" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item 
+                  name="school" 
+                  label={<span style={{ fontWeight: 500 }}>Trường học</span>}
+                >
+                  <Input prefix={<BankOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập tên trường" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item 
+                  name="class_name" 
+                  label={<span style={{ fontWeight: 500 }}>Lớp</span>}
+                >
+                  <Input prefix={<IdcardOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập tên lớp" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item 
+                  name="website" 
+                  label={<span style={{ fontWeight: 500 }}>Website / GitHub</span>}
+                >
+                  <Input prefix={<GlobalOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="https://github.com/username" />
+                </Form.Item>
+              </Col>
+            </Row>
+          )}
+        </div>
+
+        {isEditing && (
+          <>
+            <Divider style={{ margin: '24px 0 20px 0' }} />
+            <Flex justify="space-between" align="center" wrap="wrap" gap="middle">
+              <Space style={{ color: '#64748b', fontSize: 14 }}>
+                <SafetyCertificateOutlined style={{ color: '#10b981', fontSize: 18 }} />
+                Mọi thay đổi sẽ được cập nhật tức thì sau khi lưu.
+              </Space>
+              <Space size="middle">
+                <Button 
+                  type="text" 
+                  onClick={() => { 
+                    form.setFieldsValue(initialValues); 
+                    setHasChanges(false); 
+                    setIsEditing(false); 
+                  }} 
+                  size="large"
+                >
+                  Hủy thay đổi
+                </Button>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  loading={loading} 
+                  size="large" 
+                  icon={<SaveOutlined />}
+                  style={{ background: '#6366f1', borderColor: '#6366f1' }}
+                >
+                  Lưu thông tin
+                </Button>
+              </Space>
+            </Flex>
+          </>
+        )}
+      </Card>
+    );
+  };
 
   // ======== TAB: CÂU HỎI CỦA TÔI ========
   const renderQuestionsTab = () => (
@@ -781,10 +883,21 @@ const UserProfile: React.FC = () => {
                     <div style={{ position: 'relative' }}>
                       <Avatar 
                         size={130} 
-                        icon={<UserOutlined />} 
                         src={user.avatar}
-                        style={{ border: '4px solid #ffffff', backgroundColor: '#f0f0f0', color: '#ccc' }} 
-                      />
+                        onError={() => true}
+                        style={{ 
+                          border: '4px solid #ffffff', 
+                          background: getAvatarGradient(user.fullName || user.username), 
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: '48px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }} 
+                      >
+                        {(user.fullName || user.username || 'U').charAt(0).toUpperCase()}
+                      </Avatar>
                       <div style={{
                         position: 'absolute',
                         bottom: 6,

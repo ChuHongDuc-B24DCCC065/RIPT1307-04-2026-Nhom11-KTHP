@@ -12,7 +12,7 @@ import {
   MailOutlined,
   TagOutlined
 } from '@ant-design/icons';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AdminDashboard from './AdminDashboard';
 import AdminEmailBroadcast from './AdminEmailBroadcast';
@@ -41,40 +41,6 @@ const AdminPage: React.FC = () => {
   }
 
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
-
-  // Tạo axios instance với interceptor
-  const axiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  });
-
-  // Interceptor để tự động thêm token
-  axiosInstance.interceptors.request.use(
-    (config) => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
-
-  
-  axiosInstance.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      if (error.response?.status === 401) {
-        localStorage.removeItem('token');
-        message.error('Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!');
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 1500);
-      }
-      return Promise.reject(error);
-    }
-  );
 
   const fetchData = async () => {
     try {

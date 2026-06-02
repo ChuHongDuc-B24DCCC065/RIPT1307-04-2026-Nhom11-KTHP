@@ -3,9 +3,48 @@ import { Form, Input, Button, Card, Typography, Select, message, Space, Spin } f
 import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
+import './CreateQuestion.css';
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
+
+const modules = {
+  toolbar: [
+    ['bold', 'italic'],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    ['link', 'image']
+  ],
+};
+
+interface EditorWithCounterProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+  modules?: any;
+}
+
+const EditorWithCounter: React.FC<EditorWithCounterProps> = ({ value, onChange, placeholder, modules }) => {
+  const plainText = (value || '').replace(/(<([^>]+)>)/gi, "").replace(/&nbsp;/gi, " ").trim();
+  const charCount = plainText.length;
+  const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <ReactQuill 
+        theme="snow"
+        value={value}
+        onChange={onChange}
+        modules={modules}
+        placeholder={placeholder}
+        className="custom-quill"
+      />
+      <div className="editor-counter-badge">
+        Số từ: {wordCount} | Ký tự: {charCount}
+      </div>
+    </div>
+  );
+};
 
 const EditQuestion: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -140,11 +179,19 @@ const EditQuestion: React.FC = () => {
             name="description"
             rules={[
               { required: true, message: 'Vui lòng nhập nội dung chi tiết!' },
+              {
+                validator: (_, value) => {
+                  if (!value || value.trim() === '' || value === '<p><br></p>') {
+                    return Promise.reject(new Error('Vui lòng nhập nội dung chi tiết!'));
+                  }
+                  return Promise.resolve();
+                }
+              }
             ]}
           >
-            <TextArea 
-              rows={8} 
+            <EditorWithCounter 
               placeholder="Mô tả chi tiết vấn đề, những gì bạn đã thử và kết quả mong muốn..." 
+              modules={modules}
             />
           </Form.Item>
 

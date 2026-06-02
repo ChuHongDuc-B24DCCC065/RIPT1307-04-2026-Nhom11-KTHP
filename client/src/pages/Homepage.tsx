@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { List, Tag, Space, Button, Row, Col, Typography, Card, message, Empty, Skeleton, Input } from 'antd';
+import { List, Tag, Space, Button, Row, Col, Typography, Card, message, Empty, Skeleton, Input, Pagination } from 'antd';
 import { MessageOutlined, LikeOutlined, LikeFilled, UserOutlined, ClockCircleOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -51,15 +51,27 @@ const HomePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [likedQuestions, setLikedQuestions] = useState<Record<number, boolean>>({});
 
+  // State quản lý phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalQuestions, setTotalQuestions] = useState(0);
+
   // --- Gọi API lấy danh sách câu hỏi ---
   const fetchQuestions = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions?page=1&limit=50`, { headers });
-      const fetchedQuestions = Array.isArray(res.data) ? res.data : (res.data.data || []);
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions?page=${currentPage}&limit=${pageSize}`,
+        { headers }
+      );
+      
+      const fetchedQuestions = res.data?.success ? res.data.data : (Array.isArray(res.data) ? res.data : (res.data?.data || []));
       setQuestions(fetchedQuestions);
+      
+      const total = res.data?.pagination?.total ?? (res.data?.total || fetchedQuestions.length);
+      setTotalQuestions(Number(total));
       
       const initialLikes: Record<number, boolean> = {};
       fetchedQuestions.forEach((q: Question) => {
@@ -72,6 +84,7 @@ const HomePage: React.FC = () => {
       console.error('Lỗi tải câu hỏi:', error);
       // Hiển thị mock data nếu API lỗi
       setQuestions([MOCK_QUESTION]);
+      setTotalQuestions(1);
     } finally {
       setLoading(false);
     }
@@ -79,7 +92,7 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     fetchQuestions();
-  }, []);
+  }, [currentPage, pageSize]);
 
   const handleCreateQuestion = () => {
     if (!user) {
@@ -307,100 +320,123 @@ const HomePage: React.FC = () => {
           <Empty description={searchQuery ? "Không tìm thấy câu hỏi nào phù hợp!" : "Chưa có câu hỏi nào. Hãy là người đầu tiên đặt câu hỏi!"} />
         </Card>
       ) : (
-        <List
-          itemLayout="vertical"
-          size="large"
-          dataSource={filteredQuestions}
-          renderItem={(item) => {
-            const tagList = item.tags
-              ? item.tags.split(',').map(t => t.trim()).filter(Boolean)
-              : [];
-            return (
-              <Card
-                className="premium-card transition-all"
-                key={item.id}
-                style={{ marginBottom: 18, cursor: 'pointer' }}
-                onClick={() => navigate(`/questions/${item.id}`)}
-              >
-                <List.Item
-                  style={{ padding: 0 }}
-                  actions={[
-                    <Space 
-                      key="votes" 
-                      onClick={(e) => handleLike(e, item)}
-                      style={{ 
-                        color: likedQuestions[item.id] ? '#1890ff' : '#4f46e5', 
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        background: likedQuestions[item.id] ? '#e6f7ff' : 'transparent',
-                        transition: 'all 0.3s'
-                      }}
-                    >
-                      {likedQuestions[item.id] ? <LikeFilled /> : <LikeOutlined />} {item.votes ?? 0} Thích
-                    </Space>,
-                    <Space key="answers" style={{ color: '#059669', fontWeight: 500 }}><MessageOutlined /> {item.answer_count ?? 0} Trả lời</Space>,
-                    <Space key="time" style={{ color: '#64748b' }}><ClockCircleOutlined /> {item.created_at ? dayjs(item.created_at).fromNow() : 'Vừa xong'}</Space>,
-                  ]}
+        <>
+          <List
+            itemLayout="vertical"
+            size="large"
+            dataSource={filteredQuestions}
+            renderItem={(item) => {
+              const tagList = item.tags
+                ? item.tags.split(',').map(t => t.trim()).filter(Boolean)
+                : [];
+              return (
+                <Card
+                  className="premium-card transition-all"
+                  key={item.id}
+                  style={{ marginBottom: 18, cursor: 'pointer' }}
+                  onClick={() => navigate(`/questions/${item.id}`)}
                 >
-                  <List.Item.Meta
-                    title={
-                      <a
-                        href={`/questions/${item.id}`}
-                        style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', transition: 'color 0.2s ease' }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          navigate(`/questions/${item.id}`);
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = '#6366f1')}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = '#1e293b')}
-                      >
-                        {item.title}
-                      </a>
-                    }
-                    description={
-                      <Space size="middle" style={{ marginTop: '4px' }}>
-                        <Space size="small">
-                          <UserOutlined style={{ color: '#94a3b8' }} />
-                          <Text strong style={{ color: '#475569', fontSize: '13px' }}>{item.author || 'Ẩn danh'}</Text>
-                        </Space>
-                      </Space>
-                    }
-                  />
-                  {/* Tóm tắt nội dung */}
-                  <div style={{ margin: '14px 0', color: '#475569', fontSize: '14.5px', lineHeight: '1.6' }}>
-                    {item.description && item.description.length > 150
-                      ? `${item.description.replace(/<[^>]*>/g, '').substring(0, 150)}...`
-                      : item.description.replace(/<[^>]*>/g, '')}
-                  </div>
-                  {/* Thẻ tags */}
-                  <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {tagList.map(tag => (
-                      <Tag 
-                        color="purple" 
-                        key={tag} 
+                  <List.Item
+                    style={{ padding: 0 }}
+                    actions={[
+                      <Space 
+                        key="votes" 
+                        onClick={(e) => handleLike(e, item)}
                         style={{ 
-                          cursor: 'pointer', 
-                          borderRadius: '6px', 
-                          padding: '3px 10px', 
-                          fontSize: '12px',
+                          color: likedQuestions[item.id] ? '#1890ff' : '#4f46e5', 
                           fontWeight: 500,
-                          backgroundColor: '#f3e8ff',
-                          color: '#7c3aed',
-                          border: 'none'
+                          cursor: 'pointer',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          background: likedQuestions[item.id] ? '#e6f7ff' : 'transparent',
+                          transition: 'all 0.3s'
                         }}
-                        onClick={() => navigate(`/search?tag=${tag}`)}
                       >
-                        #{tag}
-                      </Tag>
-                    ))}
-                  </div>
-                </List.Item>
-              </Card>
-            );
-          }}
-        />
+                        {likedQuestions[item.id] ? <LikeFilled /> : <LikeOutlined />} {item.votes ?? 0} Thích
+                      </Space>,
+                      <Space key="answers" style={{ color: '#059669', fontWeight: 500 }}><MessageOutlined /> {item.answer_count ?? 0} Trả lời</Space>,
+                      <Space key="time" style={{ color: '#64748b' }}><ClockCircleOutlined /> {item.created_at ? dayjs(item.created_at).fromNow() : 'Vừa xong'}</Space>,
+                    ]}
+                  >
+                    <List.Item.Meta
+                      title={
+                        <a
+                          href={`/questions/${item.id}`}
+                          style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', transition: 'color 0.2s ease' }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(`/questions/${item.id}`);
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#6366f1')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = '#1e293b')}
+                        >
+                          {item.title}
+                        </a>
+                      }
+                      description={
+                        <Space size="middle" style={{ marginTop: '4px' }}>
+                          <Space size="small">
+                            <UserOutlined style={{ color: '#94a3b8' }} />
+                            <Text strong style={{ color: '#475569', fontSize: '13px' }}>{item.author || 'Ẩn danh'}</Text>
+                          </Space>
+                        </Space>
+                      }
+                    />
+                    {/* Tóm tắt nội dung */}
+                    <div style={{ margin: '14px 0', color: '#475569', fontSize: '14.5px', lineHeight: '1.6' }}>
+                      {item.description && item.description.length > 150
+                        ? `${item.description.replace(/<[^>]*>/g, '').substring(0, 150)}...`
+                        : item.description.replace(/<[^>]*>/g, '')}
+                    </div>
+                    {/* Thẻ tags */}
+                    <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {tagList.map(tag => (
+                        <Tag 
+                          color="purple" 
+                          key={tag} 
+                          style={{ 
+                            cursor: 'pointer', 
+                            borderRadius: '6px', 
+                            padding: '3px 10px', 
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            backgroundColor: '#f3e8ff',
+                            color: '#7c3aed',
+                            border: 'none'
+                          }}
+                          onClick={() => navigate(`/search?tag=${tag}`)}
+                        >
+                          #{tag}
+                        </Tag>
+                      ))}
+                    </div>
+                  </List.Item>
+                </Card>
+              );
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px', marginBottom: '20px' }}>
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={totalQuestions}
+              onChange={(page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              showSizeChanger
+              pageSizeOptions={['5', '10', '20', '50']}
+              style={{
+                background: '#ffffff',
+                padding: '10px 20px',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+              }}
+            />
+          </div>
+        </>
       )}
     </div>
   );
