@@ -12,7 +12,6 @@ import {
   MailOutlined,
   TagOutlined
 } from '@ant-design/icons';
-import axiosInstance from '../utils/axiosConfig';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AdminDashboard from './AdminDashboard';
 import AdminEmailBroadcast from './AdminEmailBroadcast';

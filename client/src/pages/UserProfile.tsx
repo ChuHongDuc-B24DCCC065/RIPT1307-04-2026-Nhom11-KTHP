@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ConfigProvider, Typography, Form, Input, Button, Upload, 
-  Row, Col, Space, Avatar, message, Flex, Divider, Card, Layout, Tabs, List, Dropdown, Tag, Segmented, Empty, Tooltip,
-  Descriptions
+  Row, Col, Space, Avatar, message, Flex, Divider, Card, Layout, Tabs, List, Dropdown, Tag, Segmented, Empty, Tooltip
 } from 'antd';
 import type { MenuProps } from 'antd';
 import { 
@@ -77,7 +76,7 @@ const UserProfile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
 
   // State cho "Giới thiệu" - theo dõi thay đổi form
-  const [hasChanges, setHasChanges] = useState(false);
+  const [, setHasChanges] = useState(false);
   const [initialValues, setInitialValues] = useState<Record<string, any>>({});
 
   // State cho "Câu hỏi của tôi"
