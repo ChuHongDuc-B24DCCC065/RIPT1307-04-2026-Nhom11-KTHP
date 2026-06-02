@@ -18,7 +18,9 @@ import {
   EyeOutlined,
   DeleteOutlined,
   EyeInvisibleOutlined,
-  StopOutlined
+  StopOutlined,
+  CheckOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -35,7 +37,7 @@ interface Post {
   views: number;
   votes: number;
   reports: number;
-  status: 'public' | 'hidden' | 'violation';
+  status: 'approved' | 'pending' | 'hidden' | 'rejected' | string;
 }
 
 interface Comment {
@@ -128,12 +130,22 @@ const AdminPostManagement: React.FC = () => {
 
   const togglePostStatus = async (id: string, currentStatus: string) => {
     try {
-      const newStatus = currentStatus === 'hidden' ? 'public' : 'hidden';
+      const newStatus = currentStatus === 'hidden' ? 'approved' : 'hidden';
       await axiosInstance.put(`/admin/posts/${id}/status`, { status: newStatus });
       message.success(`Đã ${newStatus === 'hidden' ? 'ẩn' : 'hiện'} bài viết!`);
       fetchData();
     } catch (error) {
       message.error('Thao tác thất bại!');
+    }
+  };
+
+  const updatePostStatus = async (id: string, newStatus: string) => {
+    try {
+      await axiosInstance.put(`/admin/posts/${id}/status`, { status: newStatus });
+      message.success(`Đã cập nhật trạng thái bài viết thành ${newStatus}!`);
+      fetchData();
+    } catch (error) {
+      message.error('Cập nhật trạng thái thất bại!');
     }
   };
 
@@ -170,12 +182,17 @@ const AdminPostManagement: React.FC = () => {
 
   const getStatusTag = (status: string) => {
     switch (status) {
+      case 'approved':
       case 'public':
         return <Tag color="success">Công khai</Tag>;
       case 'hidden':
         return <Tag color="default">Bị ẩn</Tag>;
       case 'violation':
         return <Tag color="error">Vi phạm</Tag>;
+      case 'pending':
+        return <Tag color="warning">Chờ duyệt</Tag>;
+      case 'rejected':
+        return <Tag color="error">Từ chối</Tag>;
       default:
         return <Tag>{status}</Tag>;
     }
@@ -231,20 +248,40 @@ const AdminPostManagement: React.FC = () => {
               onClick={() => window.open(`/questions/${record.id}`, '_blank')}
             />
           </Tooltip>
-          <Tooltip title={record.status === 'hidden' ? "Hiện bài viết" : "Ẩn bài viết"}>
-            <Popconfirm
-              title={`Bạn có chắc muốn ${record.status === 'hidden' ? 'hiện' : 'ẩn'} bài viết này?`}
-              onConfirm={() => togglePostStatus(record.id, record.status)}
-              okText="Đồng ý"
-              cancelText="Hủy"
-            >
-              <Button 
-                type="text" 
-                danger={record.status !== 'hidden'} 
-                icon={record.status === 'hidden' ? <EyeOutlined /> : <EyeInvisibleOutlined />} 
-              />
-            </Popconfirm>
-          </Tooltip>
+          {record.status === 'pending' && (
+            <>
+              <Tooltip title="Duyệt bài">
+                <Button 
+                  type="text" 
+                  icon={<CheckOutlined style={{ color: 'green' }} />} 
+                  onClick={() => updatePostStatus(record.id, 'approved')}
+                />
+              </Tooltip>
+              <Tooltip title="Từ chối">
+                <Button 
+                  type="text" 
+                  icon={<CloseOutlined style={{ color: 'red' }} />} 
+                  onClick={() => updatePostStatus(record.id, 'rejected')}
+                />
+              </Tooltip>
+            </>
+          )}
+          {record.status !== 'pending' && (
+            <Tooltip title={record.status === 'hidden' ? "Hiện bài viết" : "Ẩn bài viết"}>
+              <Popconfirm
+                title={`Bạn có chắc muốn ${record.status === 'hidden' ? 'hiện' : 'ẩn'} bài viết này?`}
+                onConfirm={() => togglePostStatus(record.id, record.status)}
+                okText="Đồng ý"
+                cancelText="Hủy"
+              >
+                <Button 
+                  type="text" 
+                  danger={record.status !== 'hidden'} 
+                  icon={record.status === 'hidden' ? <EyeOutlined /> : <EyeInvisibleOutlined />} 
+                />
+              </Popconfirm>
+            </Tooltip>
+          )}
           <Tooltip title="Xóa vĩnh viễn">
             <Popconfirm 
               title="CẢNH BÁO: Bạn có chắc chắn muốn xóa vĩnh viễn bài viết này?" 
@@ -360,8 +397,10 @@ const AdminPostManagement: React.FC = () => {
             style={{ width: 150 }}
             options={[
               { value: 'all', label: 'Tất cả trạng thái' },
-              { value: 'public', label: 'Công khai' },
+              { value: 'approved', label: 'Công khai' },
+              { value: 'pending', label: 'Chờ duyệt' },
               { value: 'hidden', label: 'Bị ẩn' },
+              { value: 'rejected', label: 'Từ chối' },
               { value: 'violation', label: 'Vi phạm' },
             ]}
           />
