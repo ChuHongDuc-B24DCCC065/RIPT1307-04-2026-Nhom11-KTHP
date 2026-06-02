@@ -126,7 +126,7 @@ export const NotificationBell: React.FC = () => {
       open={open}
       onOpenChange={setOpen}
       placement="bottomRight"
-      styles={{ body: { padding: 0 } }} // Xóa padding mặc định của Popover để custom layout
+      styles={{ container: { padding: 0 } }} // Xóa padding mặc định của Popover để custom layout
     >
       <Badge count={unreadCount} size="small" color="#ef4444" offset={[-2, 2]}>
         <div className="bell-icon-wrapper">
