@@ -191,7 +191,7 @@ const HomePage: React.FC = () => {
           <Row gutter={[20, 20]}>
             <Col xs={24} md={12}>
               <Card 
-                bordered={false} 
+                variant="borderless" 
                 style={{ 
                   background: '#ffffff', 
                   border: '1px solid #f1f5f9', 
@@ -238,7 +238,7 @@ const HomePage: React.FC = () => {
             
             <Col xs={24} md={12}>
               <Card 
-                bordered={false} 
+                variant="borderless" 
                 style={{ 
                   background: '#ffffff', 
                   border: '1px solid #f1f5f9', 
