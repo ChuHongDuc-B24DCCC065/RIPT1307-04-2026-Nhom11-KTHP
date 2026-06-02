@@ -10,7 +10,7 @@ import {
   ArrowLeftOutlined, SendOutlined, CheckCircleFilled,
   EyeOutlined, ShareAltOutlined, FlagOutlined,
   ThunderboltOutlined, GlobalOutlined, InfoCircleOutlined,
-  FireOutlined, PlusOutlined
+  FireOutlined, PlusOutlined, CheckOutlined
 } from '@ant-design/icons';
 
 import axios from 'axios';
@@ -264,6 +264,18 @@ const QuestionDetail: React.FC = () => {
 
   // --- Chấp nhận câu trả lời (chỉ tác giả) ---
   const handleAcceptAnswer = async (answerId: number) => {
+    // Optimistic UI update
+    setQuestion(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        answers: prev.answers.map(a => ({
+          ...a,
+          is_accepted: a.id === answerId ? 1 : 0
+        }))
+      };
+    });
+
     try {
       await axios.patch(
         `${API}/questions/${id}/answers/${answerId}/accept`,
@@ -274,6 +286,7 @@ const QuestionDetail: React.FC = () => {
       fetchQuestion();
     } catch {
       message.error('Không thể chấp nhận câu trả lời!');
+      fetchQuestion(); // Revert state to actual DB value
     }
   };
 
@@ -401,9 +414,12 @@ const QuestionDetail: React.FC = () => {
 
   // Sắp xếp các câu trả lời
   const sortedAnswers = question.answers ? [...question.answers].sort((a, b) => {
+    const aAccepted = a.is_accepted === 1;
+    const bAccepted = b.is_accepted === 1;
+    
     // Câu trả lời được tác giả chấp nhận luôn đưa lên đầu
-    if (a.is_accepted !== b.is_accepted) {
-      return b.is_accepted - a.is_accepted;
+    if (aAccepted !== bAccepted) {
+      return bAccepted ? 1 : -1;
     }
     if (sortBy === 'votes') {
       return b.votes - a.votes;
@@ -700,7 +716,10 @@ const QuestionDetail: React.FC = () => {
                     style={{
                       borderRadius: '20px',
                       padding: '8px 12px',
-                      marginBottom: 20
+                      marginBottom: 20,
+                      border: isAccepted ? '2px solid #bbf7d0' : 'none',
+                      backgroundColor: isAccepted ? '#f0fdf4' : '#ffffff',
+                      boxShadow: isAccepted ? '0 10px 15px -3px rgba(34, 197, 94, 0.05)' : 'none'
                     }}
                   >
                     <Row gutter={16} wrap={false}>
@@ -728,15 +747,16 @@ const QuestionDetail: React.FC = () => {
                           </Tooltip>
                           
                           {/* Nút chấp nhận câu trả lời (chỉ tác giả câu hỏi) */}
-                          {isOwner && (
-                            <Tooltip title={isAccepted ? 'Hủy chấp nhận giải pháp này' : 'Chấp nhận làm giải pháp tốt nhất'}>
+                          {isOwner ? (
+                            <Tooltip title={isAccepted ? 'Hủy đánh dấu câu trả lời đúng nhất' : 'Đánh dấu câu trả lời đúng nhất'}>
                               <Button
-                                icon={<CheckCircleFilled />}
+                                icon={<CheckOutlined />}
                                 size="small"
                                 shape="circle"
                                 type={isAccepted ? 'primary' : 'default'}
                                 style={{ 
-                                  color: isAccepted ? '#22c55e' : '#cbd5e1', 
+                                  color: isAccepted ? '#ffffff' : '#cbd5e1', 
+                                  backgroundColor: isAccepted ? '#22c55e' : 'transparent',
                                   marginTop: 12,
                                   borderColor: isAccepted ? '#22c55e' : '#e2e8f0',
                                   boxShadow: isAccepted ? '0 0 8px rgba(34, 197, 94, 0.4)' : 'none'
@@ -744,6 +764,12 @@ const QuestionDetail: React.FC = () => {
                                 onClick={() => handleAcceptAnswer(answer.id)}
                               />
                             </Tooltip>
+                          ) : (
+                            isAccepted && (
+                              <Tooltip title="Giải pháp được chấp nhận">
+                                <CheckCircleFilled style={{ color: '#22c55e', fontSize: '20px', marginTop: 12 }} />
+                              </Tooltip>
+                            )
                           )}
                         </div>
                       </Col>
@@ -751,8 +777,11 @@ const QuestionDetail: React.FC = () => {
                       {/* Nội dung câu trả lời */}
                       <Col flex="auto" style={{ paddingLeft: 12 }}>
                         {isAccepted && (
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#dcfce7', color: '#15803d', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, marginBottom: 12 }}>
-                            <CheckCircleFilled /> GIẢI PHÁP ĐƯỢC CHẤP NHẬN
+                          <div style={{ marginBottom: 12 }}>
+                            <Tag color="success" style={{ padding: '4px 12px', borderRadius: '6px', fontWeight: 600, fontSize: '13px' }}>
+                              <CheckCircleFilled style={{ marginRight: 6 }} />
+                              Câu trả lời hay nhất
+                            </Tag>
                           </div>
                         )}
                         

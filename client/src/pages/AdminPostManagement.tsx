@@ -86,8 +86,8 @@ const AdminPostManagement: React.FC = () => {
         if (searchQuery) params.append('search', searchQuery);
         if (statusFilter !== 'all') params.append('status', statusFilter);
         if (dateRange && dateRange[0] && dateRange[1]) {
-          params.append('startDate', dateRange[0].toISOString());
-          params.append('endDate', dateRange[1].toISOString());
+          params.append('startDate', dateRange[0].startOf('day').toISOString());
+          params.append('endDate', dateRange[1].endOf('day').toISOString());
         }
 
         const res = await axiosInstance.get(`/admin/posts?${params.toString()}`);

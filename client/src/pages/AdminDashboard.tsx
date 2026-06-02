@@ -200,7 +200,7 @@ const AdminDashboard: React.FC = () => {
             <Card
               bordered={false}
               style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-              bodyStyle={{ padding: '20px' }}
+              styles={{ body: { padding: '20px' } }}
             >
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
                 <div style={{ 
@@ -236,7 +236,7 @@ const AdminDashboard: React.FC = () => {
               boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
               backgroundColor: statsData?.pendingReportsCount > 20 ? '#fff1f0' : '#fff'
             }}
-            bodyStyle={{ padding: '20px' }}
+            styles={{ body: { padding: '20px' } }}
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
               <div style={{ 
@@ -270,7 +270,7 @@ const AdminDashboard: React.FC = () => {
             title={<Text strong style={{ fontSize: 16 }}>Danh sách Tăng trưởng (7 ngày qua)</Text>}
             bordered={false} 
             style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-            bodyStyle={{ padding: 0 }}
+            styles={{ body: { padding: 0 } }}
           >
             <Table 
               columns={growthColumns} 
@@ -317,7 +317,7 @@ const AdminDashboard: React.FC = () => {
             title={<Text strong style={{ fontSize: 16 }}>Bài viết mới nhất (AD10)</Text>}
             bordered={false} 
             style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-            bodyStyle={{ padding: 0 }}
+            styles={{ body: { padding: 0 } }}
           >
             <Table 
               columns={latestPostColumns} 
@@ -339,7 +339,7 @@ const AdminDashboard: React.FC = () => {
             }
             bordered={false} 
             style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-            bodyStyle={{ padding: 0 }}
+            styles={{ body: { padding: 0 } }}
           >
             <Table 
               columns={pendingReportColumns} 
