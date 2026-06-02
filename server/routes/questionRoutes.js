@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
   const tag    = req.query.tag ? req.query.tag.toLowerCase() : null;
 
   try {
-    let where = 'WHERE 1=1';
+    let where = "WHERE (q.status = 'approved' OR q.status = 'public' OR q.status IS NULL)";
     const params = [];
 
     if (search) {
@@ -113,10 +113,23 @@ router.get('/:id', async (req, res) => {
     if (!question)
       return res.status(404).json({ success: false, message: 'Không tìm thấy câu hỏi.' });
 
+    const userId = getUserIdFromHeader(req);
+    
+    // Kiểm tra trạng thái phê duyệt
+    if (question.status && question.status !== 'approved' && question.status !== 'public') {
+      if (!userId) return res.status(403).json({ success: false, message: 'Bài viết đang chờ duyệt hoặc bị ẩn.' });
+      
+      const [[currentUser]] = await pool.execute('SELECT role FROM users WHERE id = ?', [userId]);
+      const isAdmin = currentUser && currentUser.role === 'admin';
+      
+      if (question.user_id !== userId && !isAdmin) {
+         return res.status(403).json({ success: false, message: 'Bài viết đang chờ duyệt hoặc bị ẩn.' });
+      }
+    }
+
     await pool.execute('UPDATE questions SET views = views + 1 WHERE id = ?', [req.params.id]);
     question.views += 1;
 
-    const userId = getUserIdFromHeader(req);
     let questionUserVoteType = 0;
     if (userId) {
       const [[qv]] = await pool.execute('SELECT vote_type FROM question_votes WHERE user_id = ? AND question_id = ?', [userId, req.params.id]);
@@ -182,20 +195,27 @@ router.post('/', authMiddleware, async (req, res) => {
 
   try {
     let authorName = req.user.username;
-    if (!authorName) {
-      const [[user]] = await pool.execute('SELECT username FROM users WHERE id = ?', [req.user.id]);
-      authorName = user ? user.username : 'Unknown';
+    let userReputation = 0;
+    
+    const [[user]] = await pool.execute('SELECT username, reputation FROM users WHERE id = ?', [req.user.id]);
+    if (user) {
+      authorName = user.username;
+      userReputation = user.reputation || 0;
+    } else {
+      authorName = 'Unknown';
     }
 
+    const initialStatus = userReputation < 50 ? 'pending' : 'approved';
+
     const [result] = await pool.execute(
-      'INSERT INTO questions (title, description, tags, user_id, author) VALUES (?, ?, ?, ?, ?)',
-      [title.trim(), description.trim(), tagStr, req.user.id, authorName]
+      'INSERT INTO questions (title, description, tags, user_id, author, status) VALUES (?, ?, ?, ?, ?, ?)',
+      [title.trim(), description.trim(), tagStr, req.user.id, authorName, initialStatus]
     );
 
     res.status(201).json({
       success: true,
-      message: 'Đã đăng câu hỏi thành công!',
-      data: { id: result.insertId, title, description, tags: tagStr.split(',') },
+      message: initialStatus === 'pending' ? 'Bài viết của bạn đang chờ phê duyệt vì điểm uy tín chưa đủ (< 50).' : 'Đã đăng câu hỏi thành công!',
+      data: { id: result.insertId, title, description, tags: tagStr.split(','), status: initialStatus },
     });
   } catch (err) {
     console.error('POST /questions:', err.message);
