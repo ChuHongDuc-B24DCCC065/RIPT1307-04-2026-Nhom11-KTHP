@@ -59,7 +59,11 @@ const CreateQuestion: React.FC = () => {
       });
 
       if (res.status === 201 || res.status === 200) {
-        message.success("Đăng câu hỏi thành công!");
+        if (res.data.data && res.data.data.status === 'pending') {
+          message.warning(res.data.message || "Bài viết của bạn đang chờ phê duyệt vì điểm uy tín chưa đủ.", 5);
+        } else {
+          message.success(res.data.message || "Đăng câu hỏi thành công!");
+        }
         form.resetFields();
         setContent('');
         navigate('/');

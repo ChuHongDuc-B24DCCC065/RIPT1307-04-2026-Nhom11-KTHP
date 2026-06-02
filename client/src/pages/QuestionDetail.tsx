@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Card, Typography, Tag, Space, Button, Divider,
-  List, Avatar, Input, message, Row, Col, Skeleton, Empty, Select, Tooltip
+  List, Avatar, Input, message, Row, Col, Skeleton, Empty, Select, Tooltip, Alert
 } from 'antd';
 import {
   LikeOutlined, LikeFilled, DislikeOutlined, DislikeFilled,
@@ -54,6 +54,7 @@ interface Question {
   answer_count?: number;
   user_vote_type?: number;
   author_reputation?: number;
+  status?: string;
 }
 
 // --- Helper: Format thời gian tương đối ---
@@ -454,6 +455,16 @@ const QuestionDetail: React.FC = () => {
           >
             Quay lại trang chủ
           </Button>
+
+          {question.status === 'pending' && (
+            <Alert
+              message="Bài viết đang chờ phê duyệt"
+              description="Bài viết này đang chờ Admin phê duyệt để hiển thị công khai. Chỉ bạn và Admin mới có thể nhìn thấy."
+              type="warning"
+              showIcon
+              style={{ marginBottom: 16, borderRadius: 12, border: '1px solid #fde047' }}
+            />
+          )}
 
           {/* ===== Card Chi Tiết Câu Hỏi ===== */}
           <Card 

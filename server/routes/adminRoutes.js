@@ -144,13 +144,35 @@ router.get("/posts", async (req, res) => {
         id: p.id,
         title: p.title,
         author: p.author || 'Unknown',
-        createdAt: p.created_at || p.createdAt || null
+        createdAt: p.created_at || p.createdAt || null,
+        status: p.status || 'approved'
     }));
     
     console.log(`Found ${formattedPosts.length} posts`);
     res.json({ posts: formattedPosts });
   } catch (error) {
     console.error("Error in /posts:", error);
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+});
+
+// ─────────────────────────────────────────
+// Cập nhật trạng thái (Duyệt/Ẩn) Post
+// ─────────────────────────────────────────
+router.put("/posts/:id/status", async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body; // 'approved', 'pending', 'hidden', 'rejected'
+
+  try {
+    const [result] = await pool.query("UPDATE questions SET status = ? WHERE id = ?", [status, id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: `Không tìm thấy bài viết với id = ${id}.` });
+    }
+
+    res.json({ message: `Đã cập nhật trạng thái bài viết thành ${status}.` });
+  } catch (error) {
+    console.error("Lỗi PUT /posts/:id/status:", error);
     res.status(500).json({ message: "Lỗi server: " + error.message });
   }
 });
