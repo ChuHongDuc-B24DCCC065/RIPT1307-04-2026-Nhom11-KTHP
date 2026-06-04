@@ -167,7 +167,7 @@ const AdminTagManagement: React.FC = () => {
         onOk={() => form.submit()}
         okText="Lưu"
         cancelText="Hủy"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}

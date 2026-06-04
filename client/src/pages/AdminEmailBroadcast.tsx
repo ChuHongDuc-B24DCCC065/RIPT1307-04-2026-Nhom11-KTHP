@@ -151,7 +151,7 @@ const AdminEmailBroadcast: React.FC = () => {
         {/* Khu vực soạn thảo */}
         <Card 
           title={<Text strong style={{ fontSize: 16 }}>Soạn thảo thông báo</Text>} 
-          bordered={false}
+          variant="borderless"
           style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
         >
           <Form 
@@ -243,7 +243,7 @@ const AdminEmailBroadcast: React.FC = () => {
               <Text strong style={{ fontSize: 16 }}>Lịch sử gửi (Broadcast History)</Text>
             </Space>
           }
-          bordered={false}
+          variant="borderless"
           style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
           styles={{ body: { padding: 0 } }}
         >

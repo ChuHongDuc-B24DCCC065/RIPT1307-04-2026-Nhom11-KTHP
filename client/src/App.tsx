@@ -223,7 +223,7 @@ const AppContent: React.FC = () => {
               onClick={() => navigate('/discussions')}
             >
               <CommentOutlined className="sidebar-menu-icon" />
-              <span>Thảo luận cộng đồng</span>
+              <span>Thảo luận cộng đồng</span> 
             </div>
 
             <div 
