@@ -5,16 +5,21 @@ const { authMiddleware, teacherMiddleware, teacherOrAdminMiddleware } = require(
 const { createNotification } = require('../utils/notification');
 const jwt = require('jsonwebtoken');
 
-const getUserIdFromHeader = (req) => {
+const getUserFromHeader = (req) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return null;
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'bi_mat_quoc_gia');
-    return decoded.id;
+    return decoded;
   } catch (e) {
     return null;
   }
+};
+
+const getUserIdFromHeader = (req) => {
+  const user = getUserFromHeader(req);
+  return user ? user.id : null;
 };
 
 const normalizeTags = (tags) => {
@@ -35,6 +40,13 @@ router.get('/', async (req, res) => {
     let where = "WHERE (q.status = 'approved' OR q.status = 'public' OR q.status IS NULL)";
     const params = [];
 
+    // Chỉ hiển thị bài ẩn tạm thời (is_temp_hidden = 1) cho giảng viên và admin
+    const currentUser = getUserFromHeader(req);
+    const hasModeratorAccess = currentUser && (currentUser.role === 'teacher' || currentUser.role === 'admin');
+    if (!hasModeratorAccess) {
+      where += ' AND q.is_temp_hidden = 0';
+    }
+
     if (search) {
       where += ' AND (q.title LIKE ? OR q.description LIKE ?)';
       params.push(search, search);
@@ -50,7 +62,7 @@ router.get('/', async (req, res) => {
       params
     );
 
-    const userId = getUserIdFromHeader(req);
+    const userId = currentUser ? currentUser.id : null;
     const rowParams = userId ? [userId, ...params] : params;
 
     // ✅ LIMIT và OFFSET nhúng thẳng vào chuỗi SQL
@@ -62,7 +74,7 @@ router.get('/', async (req, res) => {
        LEFT JOIN users u ON u.id = q.user_id
        ${userId ? `LEFT JOIN question_votes qv ON qv.question_id = q.id AND qv.user_id = ?` : ''}
        ${where}
-       ORDER BY q.is_announcement DESC, q.pinned_order DESC, q.created_at DESC
+       ORDER BY q.is_announcement DESC, q.post_type = 'announcement' DESC, (q.post_type = 'assignment' AND (q.deadline IS NULL OR q.deadline > NOW())) DESC, q.pinned_order DESC, q.created_at DESC
        LIMIT ${limit} OFFSET ${offset}`,
       rowParams
     );
@@ -193,7 +205,7 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', authMiddleware, async (req, res) => {
-  const { title, description, tags, is_announcement } = req.body;
+  const { title, description, tags, post_type, deadline, attachment_url, attachment_name } = req.body;
 
   if (!title || !title.trim())
     return res.status(400).json({ success: false, message: 'Vui lòng nhập tiêu đề câu hỏi.' });
@@ -204,6 +216,11 @@ router.post('/', authMiddleware, async (req, res) => {
   const tagStr = normalizeTags(tags).slice(0, 5).join(',');
   if (!tagStr)
     return res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất một thẻ.' });
+
+  const finalPostType = post_type || 'question';
+  if (['announcement', 'assignment', 'material'].includes(finalPostType) && req.user.role !== 'teacher' && req.user.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Chỉ giảng viên hoặc admin mới được đăng loại bài viết này.' });
+  }
 
   try {
     let authorName = req.user.username;
@@ -218,19 +235,30 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 
     const initialStatus = userReputation < 50 ? 'pending' : 'approved';
-    // Giảng viên tạo thông báo luôn được duyệt và gắn flag
-    const isTeacherAnnouncement = is_announcement && req.user.role === 'teacher' ? 1 : 0;
-    const finalStatus = isTeacherAnnouncement ? 'approved' : initialStatus;
+    const isTeacherAnnouncement = finalPostType === 'announcement' ? 1 : 0;
+    const finalStatus = (isTeacherAnnouncement || req.user.role === 'teacher') ? 'approved' : initialStatus;
 
     const [result] = await pool.execute(
-      'INSERT INTO questions (title, description, tags, user_id, author, status, is_announcement) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [title.trim(), description.trim(), tagStr, req.user.id, authorName, finalStatus, isTeacherAnnouncement]
+      'INSERT INTO questions (title, description, tags, user_id, author, status, is_announcement, post_type, deadline, attachment_url, attachment_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        title.trim(), 
+        description.trim(), 
+        tagStr, 
+        req.user.id, 
+        authorName, 
+        finalStatus, 
+        isTeacherAnnouncement, 
+        finalPostType, 
+        deadline ? new Date(deadline) : null,
+        attachment_url || null,
+        attachment_name || null
+      ]
     );
 
     res.status(201).json({
       success: true,
-      message: initialStatus === 'pending' ? 'Bài viết của bạn đang chờ phê duyệt vì điểm uy tín chưa đủ (< 50).' : 'Đã đăng câu hỏi thành công!',
-      data: { id: result.insertId, title, description, tags: tagStr.split(','), status: initialStatus },
+      message: initialStatus === 'pending' && req.user.role !== 'teacher' ? 'Bài viết của bạn đang chờ phê duyệt vì điểm uy tín chưa đủ (< 50).' : 'Đã đăng bài thành công!',
+      data: { id: result.insertId, title, description, tags: tagStr.split(','), status: finalStatus, post_type: finalPostType, attachment_url, attachment_name },
     });
   } catch (err) {
     console.error('POST /questions:', err.message);
@@ -239,13 +267,13 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 router.put('/:id', authMiddleware, async (req, res) => {
-  const { title, description, tags } = req.body;
+  const { title, description, tags, post_type, deadline, attachment_url, attachment_name } = req.body;
 
   try {
     const [[question]] = await pool.execute('SELECT * FROM questions WHERE id = ?', [req.params.id]);
 
     if (!question)
-      return res.status(404).json({ success: false, message: 'Không tìm thấy câu hỏi.' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy bài viết.' });
 
     if (question.user_id !== req.user.id && req.user.role !== 'admin')
       return res.status(403).json({ success: false, message: 'Không có quyền chỉnh sửa.' });
@@ -253,10 +281,19 @@ router.put('/:id', authMiddleware, async (req, res) => {
     const newTitle = (title       || question.title).trim();
     const newDesc  = (description || question.description).trim();
     const newTags  = tags ? normalizeTags(tags).slice(0, 5).join(',') : question.tags;
+    
+    const newPostType = post_type || question.post_type;
+    const newDeadline = deadline !== undefined ? (deadline ? new Date(deadline) : null) : question.deadline;
+    const newAttachmentUrl = attachment_url !== undefined ? attachment_url : question.attachment_url;
+    const newAttachmentName = attachment_name !== undefined ? attachment_name : question.attachment_name;
+
+    if (['announcement', 'assignment', 'material'].includes(newPostType) && req.user.role !== 'teacher' && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Chỉ giảng viên hoặc admin mới được chỉnh sửa thành loại bài đăng này.' });
+    }
 
     await pool.execute(
-      'UPDATE questions SET title = ?, description = ?, tags = ?, updated_at = NOW() WHERE id = ?',
-      [newTitle, newDesc, newTags, req.params.id]
+      'UPDATE questions SET title = ?, description = ?, tags = ?, post_type = ?, deadline = ?, attachment_url = ?, attachment_name = ?, updated_at = NOW() WHERE id = ?',
+      [newTitle, newDesc, newTags, newPostType, newDeadline, newAttachmentUrl, newAttachmentName, req.params.id]
     );
 
     res.json({ success: true, message: 'Cập nhật thành công.' });
@@ -530,7 +567,8 @@ router.patch('/:id/answers/:answerId/teacher-verify', authMiddleware, teacherMid
       return res.status(404).json({ success: false, message: 'Không tìm thấy câu trả lời.' });
 
     const newStatus = answer.teacher_verified ? 0 : 1;
-    await pool.execute('UPDATE answers SET teacher_verified = ? WHERE id = ?', [newStatus, req.params.answerId]);
+    const verifiedBy = newStatus ? req.user.id : null;
+    await pool.execute('UPDATE answers SET teacher_verified = ?, verified_by_user_id = ? WHERE id = ?', [newStatus, verifiedBy, req.params.answerId]);
 
     // Thông báo cho tác giả câu trả lời
     if (newStatus === 1 && answer.user_id && answer.user_id !== req.user.id) {

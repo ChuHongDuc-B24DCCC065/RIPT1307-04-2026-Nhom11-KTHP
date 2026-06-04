@@ -26,6 +26,10 @@ interface Question {
   user_vote_type?: number;
   author_role?: string;
   is_announcement?: number;
+  post_type?: string;
+  deadline?: string;
+  attachment_url?: string;
+  attachment_name?: string;
 }
 
 // --- Helper: Không cần formatTime nữa vì đã dùng dayjs ---
@@ -384,8 +388,16 @@ const HomePage: React.FC = () => {
                               <Tag color="blue" style={{ borderRadius: 5, fontWeight: 600, fontSize: 10, padding: '0 6px', margin: 0 }}>👨‍🏫 GV</Tag>
                             )}
                           </Space>
-                          {item.is_announcement === 1 && (
+                          {(item.is_announcement === 1 || item.post_type === 'announcement') && (
                             <Tag color="gold" style={{ borderRadius: 5, fontWeight: 600, fontSize: 10, padding: '0 6px', margin: 0 }}>📢 Thông báo</Tag>
+                          )}
+                          {item.post_type === 'assignment' && (
+                            <Tag color="volcano" style={{ borderRadius: 5, fontWeight: 600, fontSize: 10, padding: '0 6px', margin: 0 }}>
+                              📝 Bài tập {item.deadline ? `(Hạn nộp: ${dayjs(item.deadline).format('DD/MM HH:mm')})` : ''}
+                            </Tag>
+                          )}
+                          {item.post_type === 'material' && (
+                            <Tag color="cyan" style={{ borderRadius: 5, fontWeight: 600, fontSize: 10, padding: '0 6px', margin: 0 }}>📚 Tài liệu học tập</Tag>
                           )}
                         </Space>
                       }

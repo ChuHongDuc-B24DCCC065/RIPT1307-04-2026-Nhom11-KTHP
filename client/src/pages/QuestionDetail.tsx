@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Card, Typography, Tag, Space, Button, Divider,
-  List, Avatar, Input, message, Row, Col, Skeleton, Empty, Select, Tooltip, Alert
+  List, Avatar, Input, message, Row, Col, Skeleton, Empty, Select, Tooltip, Alert, Modal, Switch, Form
 } from 'antd';
 import {
   LikeOutlined, LikeFilled, DislikeOutlined, DislikeFilled,
@@ -12,11 +12,17 @@ import {
   ThunderboltOutlined, GlobalOutlined, InfoCircleOutlined,
   FireOutlined, PlusOutlined, CheckOutlined,
   SafetyCertificateOutlined, LockOutlined, UnlockOutlined,
-  EyeInvisibleOutlined, FormOutlined
+  EyeInvisibleOutlined, FormOutlined, PaperClipOutlined
 } from '@ant-design/icons';
 
 import axios from 'axios';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/vi';
 import BookmarkButton from '../components/BookmarkButton';
+
+dayjs.extend(relativeTime);
+dayjs.locale('vi');
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
@@ -64,6 +70,10 @@ interface Question {
   is_closed?: number;
   is_announcement?: number;
   author_role?: string;
+  post_type?: string;
+  deadline?: string;
+  attachment_url?: string;
+  attachment_name?: string;
 }
 
 // --- Helper: Format thời gian tương đối ---
@@ -171,6 +181,10 @@ const QuestionDetail: React.FC = () => {
   const [teacherNoteText, setTeacherNoteText]   = useState<Record<number, string>>({});
   const [showTeacherNote, setShowTeacherNote]   = useState<Record<number, boolean>>({});
   const [followedAuthors, setFollowedAuthors]   = useState<Record<string, boolean>>({});
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportTempHide, setReportTempHide] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   // --- Lấy chi tiết câu hỏi từ API ---
   const fetchQuestion = async () => {
@@ -433,6 +447,40 @@ const QuestionDetail: React.FC = () => {
     message.success('Đã sao chép liên kết vào bộ nhớ tạm!');
   };
 
+  // --- Gửi báo cáo vi phạm ---
+  const handleSendReport = async () => {
+    if (!reportReason.trim()) {
+      message.error('Vui lòng chọn hoặc nhập lý do báo cáo!');
+      return;
+    }
+    setReportSubmitting(true);
+    try {
+      const res = await axios.post(
+        `${API}/reports`,
+        {
+          question_id: question?.id,
+          ly_do: reportReason,
+          temp_hide: reportTempHide
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data.success) {
+        message.success(res.data.message);
+        setReportModalVisible(false);
+        setReportReason('');
+        setReportTempHide(false);
+        fetchQuestion();
+        if (reportTempHide && isTeacher) {
+          navigate('/');
+        }
+      }
+    } catch (err: any) {
+      message.error(err.response?.data?.message || 'Gửi báo cáo thất bại!');
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
   // --- Cuộn tới khung trả lời ---
   const scrollToEditor = () => {
     if (answerEditorRef.current) {
@@ -655,12 +703,95 @@ const QuestionDetail: React.FC = () => {
                   )}
                 </div>
 
+                {/* Các nhãn thông tin đặc biệt của Giảng viên */}
+                {question.post_type === 'assignment' && (
+                  <Alert
+                    message={<Text strong style={{ fontSize: '15px', color: '#b91c1c' }}>📝 Bài tập môn học / Câu hỏi ôn tập có hạn nộp</Text>}
+                    description={
+                      <div style={{ marginTop: '4px' }}>
+                        <Text style={{ fontSize: '13.5px' }}>
+                          <b>Hạn chót: </b> 
+                          <span style={{ color: dayjs().isAfter(dayjs(question.deadline)) ? '#ef4444' : '#10b981', fontWeight: 600 }}>
+                            {dayjs(question.deadline).format('HH:mm [ngày] DD/MM/YYYY')} 
+                            ({dayjs().isAfter(dayjs(question.deadline)) ? 'Đã hết hạn nộp bài' : `Còn lại: ${dayjs(question.deadline).fromNow(true)}`})
+                          </span>
+                        </Text>
+                      </div>
+                    }
+                    type={dayjs().isAfter(dayjs(question.deadline)) ? "error" : "warning"}
+                    showIcon
+                    style={{ marginBottom: 20, borderRadius: 12 }}
+                  />
+                )}
+
+                {question.post_type === 'material' && (
+                  <Alert
+                    message={<Text strong style={{ fontSize: '15px', color: '#1e3a8a' }}>📚 Tài liệu học tập / Bài giảng chuyên ngành</Text>}
+                    description={<Text style={{ fontSize: '13.5px' }}>Tài liệu tham khảo chính thức được chia sẻ bởi Giảng viên.</Text>}
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 20, borderRadius: 12 }}
+                  />
+                )}
+
                 {/* Nội dung chi tiết */}
                 <div 
                   className="premium-description ql-editor custom-quill-content" 
                   style={{ fontSize: 15.5, lineHeight: '1.8', color: '#334155', marginBottom: 28 }}
                   dangerouslySetInnerHTML={{ __html: question.description }}
                 />
+
+                {/* Tài liệu đính kèm nếu có */}
+                {question.attachment_url && (
+                  <div style={{
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    marginBottom: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.01)'
+                  }}>
+                    <Space size="middle">
+                      <div style={{
+                        background: '#e0e7ff',
+                        color: '#4f46e5',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <PaperClipOutlined style={{ fontSize: '18px' }} />
+                      </div>
+                      <div>
+                        <Text strong style={{ display: 'block', fontSize: '14px', color: '#1e293b' }}>
+                          Tài liệu học tập / File đính kèm
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: '12.5px', color: '#64748b' }}>
+                          {question.attachment_name || 'Tài liệu học tập'}
+                        </Text>
+                      </div>
+                    </Space>
+                    <Button 
+                      type="primary" 
+                      href={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000'}${question.attachment_url}`}
+                      target="_blank"
+                      download
+                      style={{ 
+                        borderRadius: '8px',
+                        background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                        border: 'none',
+                        fontWeight: 600
+                      }}
+                    >
+                      Tải xuống
+                    </Button>
+                  </div>
+                )}
 
                 {/* Thẻ tags & Actions */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
@@ -702,7 +833,14 @@ const QuestionDetail: React.FC = () => {
                       type="text" 
                       icon={<FlagOutlined />} 
                       style={{ color: '#64748b', fontWeight: 500, borderRadius: 8 }}
-                      onClick={() => message.info('Đã ghi nhận báo cáo nội dung câu hỏi!')}
+                      onClick={() => {
+                        if (!user) {
+                          message.warning('Vui lòng đăng nhập để thực hiện báo cáo!');
+                          navigate('/login');
+                          return;
+                        }
+                        setReportModalVisible(true);
+                      }}
                     >
                       Báo cáo
                     </Button>
@@ -1330,6 +1468,61 @@ const QuestionDetail: React.FC = () => {
         </Col>
 
       </Row>
+
+      {/* Report Modal */}
+      <Modal
+        title={<span>⚠️ Báo cáo vi phạm nội dung</span>}
+        open={reportModalVisible}
+        onCancel={() => {
+          setReportModalVisible(false);
+          setReportReason('');
+          setReportTempHide(false);
+        }}
+        onOk={handleSendReport}
+        confirmLoading={reportSubmitting}
+        okText="Gửi báo cáo"
+        cancelText="Hủy"
+        okButtonProps={{ style: { borderRadius: '8px' } }}
+        cancelButtonProps={{ style: { borderRadius: '8px' } }}
+      >
+        <Form layout="vertical" style={{ marginTop: '16px' }}>
+          <Form.Item label="Lý do báo cáo" required>
+            <Select 
+              placeholder="Chọn lý do vi phạm" 
+              onChange={(val) => setReportReason(val)}
+              value={reportReason || undefined}
+            >
+              <Select.Option value="Kiến thức sai nghiêm trọng">Kiến thức sai nghiêm trọng / Sai lệch trầm trọng</Select.Option>
+              <Select.Option value="Vi phạm quy chế thi">Vi phạm quy chế thi cử / Học tập</Select.Option>
+              <Select.Option value="Ngôn từ không phù hợp">Ngôn từ không phù hợp / Thô tục</Select.Option>
+              <Select.Option value="Spam / Quảng cáo trái phép">Spam / Quảng cáo trái phép</Select.Option>
+              <Select.Option value="Lý do khác">Lý do khác</Select.Option>
+            </Select>
+          </Form.Item>
+          {reportReason === 'Lý do khác' && (
+            <Form.Item label="Chi tiết lý do khác" required>
+              <TextArea
+                rows={3}
+                placeholder="Nhập lý do chi tiết..."
+                onChange={(e) => setReportReason(e.target.value)}
+              />
+            </Form.Item>
+          )}
+          {isTeacher && (
+            <Form.Item style={{ marginBottom: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Switch
+                  checked={reportTempHide}
+                  onChange={(checked) => setReportTempHide(checked)}
+                />
+                <span style={{ fontWeight: 600, color: '#ef4444' }}>
+                  Ẩn tạm thời bài viết này ngay lập tức (Chờ Admin duyệt)
+                </span>
+              </div>
+            </Form.Item>
+          )}
+        </Form>
+      </Modal>
     </div>
   );
 };

@@ -16,6 +16,8 @@ interface Question {
   votes: number;
   answer_count: number;
   created_at: string;
+  attachment_url?: string;
+  attachment_name?: string;
 }
 
 // --- Helper: Format thời gian tương đối ---

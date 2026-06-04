@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Badge, Popover, List, Avatar, Typography, Button, Flex, theme, Spin, Empty, message, Tooltip } from 'antd';
+import { Badge, Popover, List, Avatar, Typography, Button, Flex, theme, Spin, Empty, message, Tooltip, Tag } from 'antd';
 import { BellOutlined, CheckOutlined, SyncOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/axiosConfig';
@@ -13,6 +13,7 @@ interface NotificationItem {
   link: string;
   isRead: boolean;
   time: string;
+  isTeacherBroadcast?: boolean;
   user: {
     name: string;
     avatar: string;
@@ -21,16 +22,29 @@ interface NotificationItem {
 
 // Hàm phân tách tên người gửi và hành động từ nội dung thông báo
 const parseNotificationContent = (fullContent: string) => {
+  if (fullContent.startsWith('[Từ Giảng viên')) {
+    const match = fullContent.match(/^\[Từ Giảng viên (\S+)\]\s+(.*)$/);
+    if (match) {
+      return {
+        username: match[1],
+        action: match[2],
+        isTeacherBroadcast: true
+      };
+    }
+  }
+
   const match = fullContent.match(/^(\S+)\s+(đã\s+.*)$/);
   if (match) {
     return {
       username: match[1],
       action: match[2],
+      isTeacherBroadcast: false
     };
   }
   return {
     username: 'Hệ thống',
     action: fullContent,
+    isTeacherBroadcast: false
   };
 };
 
@@ -79,6 +93,7 @@ export const NotificationBell: React.FC = () => {
             link: item.link || '/',
             isRead: item.is_read === 1,
             time: getRelativeTime(item.created_at),
+            isTeacherBroadcast: parsed.isTeacherBroadcast,
             user: {
               name: parsed.username,
               avatar: `https://api.dicebear.com/7.x/miniavs/svg?seed=${parsed.username}`,
@@ -240,6 +255,9 @@ export const NotificationBell: React.FC = () => {
                   avatar={<Avatar src={item.user.avatar} size="large" />}
                   title={
                     <Text style={{ fontSize: 14 }}>
+                      {item.isTeacherBroadcast && (
+                        <Tag color="purple" style={{ marginRight: 6 }}>Từ Giảng viên</Tag>
+                      )}
                       <Text strong>{item.user.name}</Text> {item.content}
                     </Text>
                   }

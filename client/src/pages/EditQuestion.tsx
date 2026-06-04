@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Typography, Select, message, Space, Spin } from 'antd';
-import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Typography, Select, message, Space, Spin, DatePicker, Upload } from 'antd';
+import { ArrowLeftOutlined, EditOutlined, UploadOutlined, PaperClipOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import dayjs from 'dayjs';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import './CreateQuestion.css';
@@ -52,12 +53,18 @@ const EditQuestion: React.FC = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [postType, setPostType] = useState('question');
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  const [attachmentName, setAttachmentName] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const fetchQuestion = async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/${id}`);
-        const question = res.data;
+        // server trả về data nằm trực tiếp trong response hoặc qua key data
+        const question = res.data.data || res.data;
 
         // Lấy thông tin user từ localStorage
         const userDataString = localStorage.getItem('user');
@@ -67,20 +74,20 @@ const EditQuestion: React.FC = () => {
           return;
         }
 
-        const currentUser = JSON.parse(userDataString);
+        const userObj = JSON.parse(userDataString);
+        setCurrentUser(userObj);
 
         // Kiểm tra quyền sở hữu
-        // Lưu ý: ID của người dùng trong question có thể nằm ở trường user_id hoặc cấu trúc lồng nhau tùy backend
         const questionUserId = question.user_id || (question.user && question.user.id) || (question.user && question.user._id);
-        const currentUserId = currentUser.id || currentUser._id;
+        const currentUserId = userObj.id || userObj._id;
 
-        if (questionUserId && questionUserId !== currentUserId && currentUser.role !== 'admin') {
+        if (questionUserId && questionUserId !== currentUserId && userObj.role !== 'admin') {
           message.error("Bạn không có quyền chỉnh sửa câu hỏi này!");
           navigate('/');
           return;
         }
 
-        // Xử lý chuỗi tags nếu trả về chuỗi "reactjs,nodejs"
+        // Xử lý chuỗi tags
         let processedTags = question.tags;
         if (typeof question.tags === 'string') {
           processedTags = question.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t !== '');
@@ -91,8 +98,13 @@ const EditQuestion: React.FC = () => {
         form.setFieldsValue({
           title: question.title,
           description: question.description,
-          tags: processedTags
+          tags: processedTags,
+          post_type: question.post_type || 'question',
+          deadline: question.deadline ? dayjs(question.deadline) : null
         });
+        setPostType(question.post_type || 'question');
+        setAttachmentUrl(question.attachment_url || null);
+        setAttachmentName(question.attachment_name || null);
 
       } catch (err: any) {
         console.error("Lỗi lấy thông tin câu hỏi:", err);
@@ -115,14 +127,18 @@ const EditQuestion: React.FC = () => {
       const res = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/${id}`, {
         title: values.title,
         description: values.description, 
-        tags: values.tags // Gửi mảng tags
+        tags: values.tags,
+        post_type: currentUser?.role === 'teacher' ? values.post_type : 'question',
+        deadline: currentUser?.role === 'teacher' && values.post_type === 'assignment' ? values.deadline : null,
+        attachment_url: currentUser?.role === 'teacher' ? attachmentUrl : null,
+        attachment_name: currentUser?.role === 'teacher' ? attachmentName : null
       }, {
         headers: { Authorization: `Bearer ${token}` } 
       });
 
       if (res.status === 200 || res.status === 204) {
         message.success("Cập nhật câu hỏi thành công!");
-        navigate(`/questions/${id}`); // Điều hướng về trang chi tiết câu hỏi
+        navigate(`/questions/${id}`);
       }
     } catch (err: any) {
       console.error("Lỗi cập nhật câu hỏi:", err);
@@ -163,7 +179,103 @@ const EditQuestion: React.FC = () => {
           layout="vertical"
           onFinish={onFinish}
           autoComplete="off"
+          onValuesChange={(changedValues) => {
+            if (changedValues.post_type) {
+              setPostType(changedValues.post_type);
+            }
+          }}
         >
+          {currentUser?.role === 'teacher' && (
+            <>
+              <Form.Item
+                name="post_type"
+                label="Loại bài đăng"
+                rules={[{ required: true, message: 'Vui lòng chọn loại bài viết!' }]}
+              >
+                <Select size="large" style={{ width: '100%' }}>
+                  <Select.Option value="question">❓ Câu hỏi thảo luận (Thảo luận chung)</Select.Option>
+                  <Select.Option value="announcement">📢 Thông báo học vụ (Ghim lên đầu)</Select.Option>
+                  <Select.Option value="assignment">📝 Bài tập / Câu hỏi ôn tập (Có hạn nộp)</Select.Option>
+                  <Select.Option value="material">📚 Tài liệu tham khảo (Chia sẻ slide, slide bài giảng)</Select.Option>
+                </Select>
+              </Form.Item>
+
+              {postType === 'assignment' && (
+                <Form.Item
+                  name="deadline"
+                  label="Hạn chót nộp bài (Deadline)"
+                  rules={[{ required: true, message: 'Vui lòng chọn hạn chót nộp bài!' }]}
+                >
+                  <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" size="large" style={{ width: '100%' }} />
+                </Form.Item>
+              )}
+
+              {/* Đính kèm tài liệu học vụ */}
+              <Form.Item
+                label="Đính kèm tài liệu / Thông báo học vụ"
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <Upload
+                    name="file"
+                    action={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/upload/document`}
+                    headers={{ Authorization: `Bearer ${localStorage.getItem('token')}` }}
+                    showUploadList={false}
+                    onChange={(info) => {
+                      if (info.file.status === 'uploading') {
+                        setUploading(true);
+                      }
+                      if (info.file.status === 'done') {
+                        setUploading(false);
+                        if (info.file.response?.success) {
+                          setAttachmentUrl(info.file.response.fileUrl);
+                          setAttachmentName(info.file.response.fileName);
+                          message.success('Đính kèm tài liệu thành công!');
+                        } else {
+                          message.error(info.file.response?.message || 'Tải file lên thất bại!');
+                        }
+                      } else if (info.file.status === 'error') {
+                        setUploading(false);
+                        message.error('Tải file lên thất bại! Vui lòng kiểm tra định dạng hoặc dung lượng file.');
+                      }
+                    }}
+                  >
+                    <Button icon={<UploadOutlined />} loading={uploading} disabled={uploading}>
+                      Chọn file đính kèm
+                    </Button>
+                  </Upload>
+                  
+                  {attachmentUrl && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: '#f8fafc',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      marginTop: '4px'
+                    }}>
+                      <span style={{ fontSize: 13, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <PaperClipOutlined style={{ color: '#4f46e5' }} />
+                        {attachmentName}
+                      </span>
+                      <Button 
+                        type="text" 
+                        danger 
+                        icon={<DeleteOutlined />} 
+                        size="small"
+                        onClick={() => {
+                          setAttachmentUrl(null);
+                          setAttachmentName(null);
+                          message.info('Đã gỡ file đính kèm.');
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </Form.Item>
+            </>
+          )}
           <Form.Item
             label="Tiêu đề câu hỏi"
             name="title"
