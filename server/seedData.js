@@ -79,8 +79,8 @@ async function seed() {
                 userIds.push(rows[0].id);
             } else {
                 const [result] = await pool.query(
-                    "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)",
-                    [u.username, u.email, defaultPassword, u.role]
+                    "INSERT INTO users (username, email, password, role, reputation) VALUES (?, ?, ?, ?, ?)",
+                    [u.username, u.email, defaultPassword, u.role, 100]
                 );
                 userIds.push(result.insertId);
             }

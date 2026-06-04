@@ -38,9 +38,9 @@ async function seedAdmin() {
     // 3. Insert admin vào bảng users
     console.log("📝 Đang tạo tài khoản Admin...");
     const [result] = await pool.query(
-      `INSERT INTO users (username, email, password, role)
-       VALUES (?, ?, ?, ?)`,
-      [ADMIN.username, ADMIN.email, hashedPassword, ADMIN.role]
+      `INSERT INTO users (username, email, password, role, reputation)
+       VALUES (?, ?, ?, ?, ?)`,
+      [ADMIN.username, ADMIN.email, hashedPassword, ADMIN.role, 100]
     );
 
     // 4. Thông báo kết quả
