@@ -36,8 +36,8 @@ app.post('/api/register', async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         await pool.execute(
-            'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
-            [username, email, hashedPassword, role || 'student']
+            'INSERT INTO users (username, email, password, role, reputation) VALUES (?, ?, ?, ?, ?)',
+            [username, email, hashedPassword, role || 'student', 100]
         );
         res.status(201).json({ message: "Đăng ký thành công!" });
     } catch (err) {
@@ -94,7 +94,7 @@ app.post('/api/login', async (req, res) => {
                 username: user.username,
                 role: user.role,
                 email: user.email,
-                reputation: user.reputation || 0
+                reputation: user.reputation ?? 100
             }
         });
 
@@ -177,6 +177,8 @@ app.get('/api/fix-db', async (req, res) => {
         try { await pool.execute('ALTER TABLE questions ADD COLUMN is_closed TINYINT(1) DEFAULT 0'); } catch(e) {}
         try { await pool.execute('ALTER TABLE questions ADD COLUMN is_announcement TINYINT(1) DEFAULT 0'); } catch(e) {}
         try { await pool.execute('ALTER TABLE questions ADD COLUMN pinned_order INT DEFAULT 0'); } catch(e) {}
+        try { await pool.execute('ALTER TABLE users ALTER COLUMN reputation SET DEFAULT 100'); } catch(e) {}
+        try { await pool.execute('UPDATE users SET reputation = 100 WHERE reputation = 0'); } catch(e) {}
         await pool.execute(`
             CREATE TABLE IF NOT EXISTS comments (
                 id INT AUTO_INCREMENT PRIMARY KEY,

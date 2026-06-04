@@ -383,4 +383,53 @@ router.get("/comments", async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────
+// API Tags Management
+// ─────────────────────────────────────────
+router.get("/tags", async (req, res) => {
+  try {
+    const [tags] = await pool.query("SELECT * FROM tags ORDER BY id DESC");
+    res.json({ tags });
+  } catch (error) {
+    console.error("Error GET /tags:", error);
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+});
+
+router.post("/tags", async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    if (!name) return res.status(400).json({ message: "Tên thẻ không được bỏ trống" });
+    const [result] = await pool.query("INSERT INTO tags (name, description) VALUES (?, ?)", [name, description || '']);
+    res.json({ message: "Thêm thẻ thành công", id: result.insertId });
+  } catch (error) {
+    console.error("Error POST /tags:", error);
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+});
+
+router.put("/tags/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
+    if (!name) return res.status(400).json({ message: "Tên thẻ không được bỏ trống" });
+    await pool.query("UPDATE tags SET name = ?, description = ? WHERE id = ?", [name, description || '', id]);
+    res.json({ message: "Cập nhật thẻ thành công" });
+  } catch (error) {
+    console.error("Error PUT /tags:", error);
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+});
+
+router.delete("/tags/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query("DELETE FROM tags WHERE id = ?", [id]);
+    res.json({ message: "Xóa thẻ thành công" });
+  } catch (error) {
+    console.error("Error DELETE /tags:", error);
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+});
+
 module.exports = router;

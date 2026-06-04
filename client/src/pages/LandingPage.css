@@ -1,0 +1,332 @@
+/* Premium Styles for Landing/Welcome Page */
+
+.landing-page-container {
+  text-align: center;
+  padding: 80px 24px;
+  background: #f8fafc;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Beautiful Floating Background Glows */
+.landing-bg-glow-1 {
+  position: absolute;
+  top: -10%;
+  left: -5%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0) 70%);
+  filter: blur(100px);
+  z-index: 1;
+  pointer-events: none;
+  animation: floatGlowLanding1 25s infinite alternate ease-in-out;
+}
+
+.landing-bg-glow-2 {
+  position: absolute;
+  bottom: -10%;
+  right: -5%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0) 70%);
+  filter: blur(100px);
+  z-index: 1;
+  pointer-events: none;
+  animation: floatGlowLanding2 25s infinite alternate ease-in-out;
+}
+
+@keyframes floatGlowLanding1 {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(6%, 8%) scale(1.1); }
+}
+
+@keyframes floatGlowLanding2 {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-6%, -8%) scale(1.1); }
+}
+
+/* Landing Page Grid Pattern overlay for depth */
+.landing-grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.landing-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Title and Hero Styling */
+.landing-title {
+  font-size: 52px !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -1px !important;
+  background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 20px !important;
+}
+
+.landing-subtitle {
+  font-size: 19px !important;
+  color: #64748b !important;
+  max-width: 700px;
+  margin: 0 auto 36px auto !important;
+  line-height: 1.6 !important;
+}
+
+/* Button Styling */
+.landing-btn-primary {
+  border-radius: 12px !important;
+  height: 48px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  padding: 0 28px !important;
+  background: #6366f1 !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin-right: 16px;
+}
+
+.landing-btn-primary:hover {
+  background: #4f46e5 !important;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35) !important;
+  transform: translateY(-2px);
+}
+
+.landing-btn-secondary {
+  border-radius: 12px !important;
+  height: 48px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  padding: 0 28px !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.landing-btn-secondary:hover {
+  border-color: #94a3b8 !important;
+  color: #1e293b !important;
+  background: #f8fafc !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Premium Feature Cards */
+.feature-cards-row {
+  margin-top: 80px !important;
+}
+
+.feature-card {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  border-radius: 24px !important;
+  padding: 36px 24px !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 
+              0 10px 15px -3px rgba(0, 0, 0, 0.02),
+              0 2px 10px rgba(0, 0, 0, 0.01) !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Icon Wrapper Styles */
+.feature-icon-wrapper {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.feature-icon {
+  font-size: 32px !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.feature-title {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  margin-top: 0 !important;
+  margin-bottom: 12px !important;
+  transition: color 0.3s ease;
+}
+
+.feature-description {
+  font-size: 14.5px !important;
+  color: #64748b !important;
+  line-height: 1.6 !important;
+  margin: 0 !important;
+}
+
+/* --- Q&A Card Specifics --- */
+.qna-card::before {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+.qna-card .feature-icon-wrapper {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.qna-card .feature-icon {
+  color: #3b82f6 !important;
+}
+
+/* Q&A Hover Effects */
+.qna-card:hover {
+  transform: translateY(-10px);
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.1),
+              0 10px 10px -5px rgba(59, 130, 246, 0.04) !important;
+}
+
+.qna-card:hover::before {
+  opacity: 1;
+}
+
+.qna-card:hover .feature-icon-wrapper {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+}
+
+.qna-card:hover .feature-icon {
+  color: #ffffff !important;
+  transform: scale(1.1) rotate(-8deg);
+}
+
+.qna-card:hover .feature-title {
+  color: #2563eb !important;
+}
+
+/* --- Community Card Specifics --- */
+.community-card::before {
+  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+}
+
+.community-card .feature-icon-wrapper {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.community-card .feature-icon {
+  color: #8b5cf6 !important;
+}
+
+/* Community Hover Effects */
+.community-card:hover {
+  transform: translateY(-10px);
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  box-shadow: 0 20px 25px -5px rgba(139, 92, 246, 0.1),
+              0 10px 10px -5px rgba(139, 92, 246, 0.04) !important;
+}
+
+.community-card:hover::before {
+  opacity: 1;
+}
+
+.community-card:hover .feature-icon-wrapper {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  box-shadow: 0 8px 16px rgba(139, 92, 246, 0.3);
+}
+
+.community-card:hover .feature-icon {
+  color: #ffffff !important;
+  transform: scale(1.1) translateY(-2px);
+}
+
+.community-card:hover .feature-title {
+  color: #7c3aed !important;
+}
+
+/* --- Study Card Specifics --- */
+.study-card::before {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+}
+
+.study-card .feature-icon-wrapper {
+  background: rgba(249, 115, 22, 0.08);
+}
+
+.study-card .feature-icon {
+  color: #f97316 !important;
+}
+
+/* Study Hover Effects */
+.study-card:hover {
+  transform: translateY(-10px);
+  border-color: rgba(249, 115, 22, 0.4) !important;
+  box-shadow: 0 20px 25px -5px rgba(249, 115, 22, 0.1),
+              0 10px 10px -5px rgba(249, 115, 22, 0.04) !important;
+}
+
+.study-card:hover::before {
+  opacity: 1;
+}
+
+.study-card:hover .feature-icon-wrapper {
+  background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+  box-shadow: 0 8px 16px rgba(249, 115, 22, 0.3);
+}
+
+.study-card:hover .feature-icon {
+  color: #ffffff !important;
+  transform: scale(1.1) translate(4px, -4px);
+}
+
+.study-card:hover .feature-title {
+  color: #ea580c !important;
+}
+
+/* Antd card body override */
+.feature-card .ant-card-body {
+  padding: 0 !important;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

@@ -61,7 +61,7 @@ CREATE TABLE reports (
 USE defaultdb;
 -- 1. Thêm cột reputation (điểm uy tín) vào bảng users hiện có
 ALTER TABLE users 
-ADD COLUMN reputation INT DEFAULT 0;
+ADD COLUMN reputation INT DEFAULT 100;
 
 -- 2. Tạo bảng question_votes để lưu trữ lịch sử vote câu hỏi
 CREATE TABLE IF NOT EXISTS question_votes (
