@@ -24,6 +24,8 @@ interface Question {
   answer_count?: number;   // Từ subquery đếm answers
   created_at: string;
   user_vote_type?: number;
+  author_role?: string;
+  is_announcement?: number;
 }
 
 // --- Helper: Không cần formatTime nữa vì đã dùng dayjs ---
@@ -378,7 +380,13 @@ const HomePage: React.FC = () => {
                           <Space size="small">
                             <UserOutlined style={{ color: '#94a3b8' }} />
                             <Text strong style={{ color: '#475569', fontSize: '13px' }}>{item.author || 'Ẩn danh'}</Text>
+                            {item.author_role === 'teacher' && (
+                              <Tag color="blue" style={{ borderRadius: 5, fontWeight: 600, fontSize: 10, padding: '0 6px', margin: 0 }}>👨‍🏫 GV</Tag>
+                            )}
                           </Space>
+                          {item.is_announcement === 1 && (
+                            <Tag color="gold" style={{ borderRadius: 5, fontWeight: 600, fontSize: 10, padding: '0 6px', margin: 0 }}>📢 Thông báo</Tag>
+                          )}
                         </Space>
                       }
                     />

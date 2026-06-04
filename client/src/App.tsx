@@ -90,6 +90,11 @@ const AppContent: React.FC = () => {
       label: <Link to="/admin">Quản trị hệ thống</Link>,
       icon: <SettingOutlined />
     }] : []),
+    ...(parsedUser?.role === 'teacher' ? [{
+      key: 'announcement',
+      label: <Link to="/create-question?type=announcement">Tạo Thông báo</Link>,
+      icon: <CommentOutlined />
+    }] : []),
     {
       type: 'divider' as const
     },

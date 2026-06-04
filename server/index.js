@@ -170,6 +170,13 @@ app.get('/api/fix-db', async (req, res) => {
         try { await pool.execute('ALTER TABLE questions ADD COLUMN views INT DEFAULT 0'); } catch(e) {}
         try { await pool.execute('ALTER TABLE answers ADD COLUMN is_accepted TINYINT(1) DEFAULT 0'); } catch(e) {}
         try { await pool.execute('ALTER TABLE answers ADD COLUMN votes INT DEFAULT 0'); } catch(e) {}
+        // Teacher feature columns
+        try { await pool.execute('ALTER TABLE answers ADD COLUMN teacher_verified TINYINT(1) DEFAULT 0'); } catch(e) {}
+        try { await pool.execute('ALTER TABLE answers ADD COLUMN is_hidden TINYINT(1) DEFAULT 0'); } catch(e) {}
+        try { await pool.execute('ALTER TABLE answers ADD COLUMN teacher_note TEXT DEFAULT NULL'); } catch(e) {}
+        try { await pool.execute('ALTER TABLE questions ADD COLUMN is_closed TINYINT(1) DEFAULT 0'); } catch(e) {}
+        try { await pool.execute('ALTER TABLE questions ADD COLUMN is_announcement TINYINT(1) DEFAULT 0'); } catch(e) {}
+        try { await pool.execute('ALTER TABLE questions ADD COLUMN pinned_order INT DEFAULT 0'); } catch(e) {}
         await pool.execute(`
             CREATE TABLE IF NOT EXISTS comments (
                 id INT AUTO_INCREMENT PRIMARY KEY,

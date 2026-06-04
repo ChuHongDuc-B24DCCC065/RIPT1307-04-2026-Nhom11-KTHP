@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, teacherMiddleware, teacherOrAdminMiddleware } = require('../middleware/auth');
 const { createNotification } = require('../utils/notification');
 const jwt = require('jsonwebtoken');
 
@@ -55,14 +55,14 @@ router.get('/', async (req, res) => {
 
     // ✅ LIMIT và OFFSET nhúng thẳng vào chuỗi SQL
     const [rows] = await pool.query(
-      `SELECT q.*, 
+      `SELECT q.*, u.role AS author_role,
               (SELECT COUNT(*) FROM answers a WHERE a.question_id = q.id) AS answer_count
               ${userId ? `, qv.vote_type AS user_vote_type` : ''}
        FROM questions q
        LEFT JOIN users u ON u.id = q.user_id
        ${userId ? `LEFT JOIN question_votes qv ON qv.question_id = q.id AND qv.user_id = ?` : ''}
        ${where}
-       ORDER BY q.created_at DESC
+       ORDER BY q.is_announcement DESC, q.pinned_order DESC, q.created_at DESC
        LIMIT ${limit} OFFSET ${offset}`,
       rowParams
     );
@@ -103,7 +103,7 @@ router.get('/user/questions', authMiddleware, async (req, res) => {  try {
 router.get('/:id', async (req, res) => {
   try {
     const [[question]] = await pool.execute(
-      `SELECT q.*, u.username AS author, u.reputation AS author_reputation
+      `SELECT q.*, u.username AS author, u.reputation AS author_reputation, u.role AS author_role
        FROM questions q
        LEFT JOIN users u ON u.id = q.user_id
        WHERE q.id = ?`,
@@ -136,19 +136,31 @@ router.get('/:id', async (req, res) => {
       if (qv) questionUserVoteType = qv.vote_type;
     }
 
+    // Lấy role của user đang xem để quyết định có hiển thị câu trả lời bị ẩn không
+    let viewerRole = null;
+    if (userId) {
+      const [[viewer]] = await pool.execute('SELECT role FROM users WHERE id = ?', [userId]);
+      if (viewer) viewerRole = viewer.role;
+    }
+
     const [answers] = await pool.execute(
-      `SELECT a.*, u.username AS author, u.reputation AS author_reputation
+      `SELECT a.*, u.username AS author, u.reputation AS author_reputation, u.role AS author_role
        FROM answers a
        LEFT JOIN users u ON u.id = a.user_id
        WHERE a.question_id = ?
-       ORDER BY a.is_accepted DESC, a.votes DESC, a.created_at ASC`,
+       ORDER BY a.is_accepted DESC, a.teacher_verified DESC, (u.role = 'teacher') DESC, a.votes DESC, a.created_at ASC`,
       [req.params.id]
     );
 
     // Lấy comments cho từng answer
-    let answersWithComments = answers.map(a => ({ ...a, comments: [] }));
-    if (answers.length > 0) {
-      const answerIds = answers.map(a => a.id);
+    // Lọc bỏ câu trả lời bị ẩn nếu viewer không phải teacher/admin
+    let filteredAnswers = answers;
+    if (viewerRole !== 'teacher' && viewerRole !== 'admin') {
+      filteredAnswers = answers.filter(a => !a.is_hidden);
+    }
+    let answersWithComments = filteredAnswers.map(a => ({ ...a, comments: [] }));
+    if (filteredAnswers.length > 0) {
+      const answerIds = filteredAnswers.map(a => a.id);
       const placeholders = answerIds.map(() => '?').join(',');
       const [comments] = await pool.query(
         `SELECT c.*, u.username AS author
@@ -163,7 +175,7 @@ router.get('/:id', async (req, res) => {
         if (!commentsMap[c.answer_id]) commentsMap[c.answer_id] = [];
         commentsMap[c.answer_id].push(c);
       });
-      answersWithComments = answers.map(a => ({ ...a, comments: commentsMap[a.id] || [], user_vote_type: 0 }));
+      answersWithComments = filteredAnswers.map(a => ({ ...a, comments: commentsMap[a.id] || [], user_vote_type: 0 }));
       
       if (userId) {
         const [avotes] = await pool.query(`SELECT answer_id, vote_type FROM answer_votes WHERE user_id = ? AND answer_id IN (${placeholders})`, [userId, ...answerIds]);
@@ -181,7 +193,7 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', authMiddleware, async (req, res) => {
-  const { title, description, tags } = req.body;
+  const { title, description, tags, is_announcement } = req.body;
 
   if (!title || !title.trim())
     return res.status(400).json({ success: false, message: 'Vui lòng nhập tiêu đề câu hỏi.' });
@@ -206,10 +218,13 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 
     const initialStatus = userReputation < 50 ? 'pending' : 'approved';
+    // Giảng viên tạo thông báo luôn được duyệt và gắn flag
+    const isTeacherAnnouncement = is_announcement && req.user.role === 'teacher' ? 1 : 0;
+    const finalStatus = isTeacherAnnouncement ? 'approved' : initialStatus;
 
     const [result] = await pool.execute(
-      'INSERT INTO questions (title, description, tags, user_id, author, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [title.trim(), description.trim(), tagStr, req.user.id, authorName, initialStatus]
+      'INSERT INTO questions (title, description, tags, user_id, author, status, is_announcement) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [title.trim(), description.trim(), tagStr, req.user.id, authorName, finalStatus, isTeacherAnnouncement]
     );
 
     res.status(201).json({
@@ -278,9 +293,14 @@ router.post('/:id/answers', authMiddleware, async (req, res) => {
     return res.status(400).json({ success: false, message: 'Vui lòng nhập câu trả lời.' });
 
   try {
-    const [[question]] = await pool.execute('SELECT id, user_id FROM questions WHERE id = ?', [req.params.id]);
+    const [[question]] = await pool.execute('SELECT id, user_id, is_closed FROM questions WHERE id = ?', [req.params.id]);
     if (!question)
       return res.status(404).json({ success: false, message: 'Không tìm thấy câu hỏi.' });
+
+    // Chặn trả lời khi luồng bị khóa
+    if (question.is_closed) {
+      return res.status(403).json({ success: false, message: 'Luồng thảo luận này đã bị khóa bởi Giảng viên.' });
+    }
 
     const [result] = await pool.execute(
       'INSERT INTO answers (content, question_id, user_id) VALUES (?, ?, ?)',
@@ -468,6 +488,12 @@ router.post('/:id/answers/:answerId/comments', authMiddleware, async (req, res) 
   if (!content || !content.trim())
     return res.status(400).json({ success: false, message: 'Vui lòng nhập nội dung bình luận.' });
   try {
+    // Chặn bình luận khi luồng bị khóa
+    const [[question]] = await pool.execute('SELECT is_closed FROM questions WHERE id = ?', [req.params.id]);
+    if (question && question.is_closed) {
+      return res.status(403).json({ success: false, message: 'Luồng thảo luận này đã bị khóa bởi Giảng viên.' });
+    }
+
     const [[answer]] = await pool.execute('SELECT user_id FROM answers WHERE id = ?', [req.params.answerId]);
 
     const [result] = await pool.execute(
@@ -490,6 +516,97 @@ router.post('/:id/answers/:answerId/comments', authMiddleware, async (req, res) 
     });
   } catch (err) {
     console.error('POST comment:', err.message);
+    res.status(500).json({ success: false, message: 'Lỗi server.' });
+  }
+});
+
+// ─── TEACHER ROLE APIs ───
+
+// Giảng viên xác nhận chuyên môn câu trả lời (tick xanh)
+router.patch('/:id/answers/:answerId/teacher-verify', authMiddleware, teacherMiddleware, async (req, res) => {
+  try {
+    const [[answer]] = await pool.execute('SELECT id, teacher_verified, user_id FROM answers WHERE id = ? AND question_id = ?', [req.params.answerId, req.params.id]);
+    if (!answer)
+      return res.status(404).json({ success: false, message: 'Không tìm thấy câu trả lời.' });
+
+    const newStatus = answer.teacher_verified ? 0 : 1;
+    await pool.execute('UPDATE answers SET teacher_verified = ? WHERE id = ?', [newStatus, req.params.answerId]);
+
+    // Thông báo cho tác giả câu trả lời
+    if (newStatus === 1 && answer.user_id && answer.user_id !== req.user.id) {
+      await createNotification(
+        answer.user_id,
+        `Giảng viên ${req.user.username} đã xác nhận chuyên môn câu trả lời của bạn! ✅`,
+        `/questions/${req.params.id}`
+      );
+    }
+
+    res.json({ success: true, teacher_verified: newStatus, message: newStatus ? 'Đã xác nhận chuyên môn!' : 'Đã bỏ xác nhận.' });
+  } catch (err) {
+    console.error('PATCH teacher-verify:', err.message);
+    res.status(500).json({ success: false, message: 'Lỗi server.' });
+  }
+});
+
+// Giảng viên/Admin đóng/mở luồng thảo luận
+router.patch('/:id/close', authMiddleware, teacherOrAdminMiddleware, async (req, res) => {
+  try {
+    const [[question]] = await pool.execute('SELECT id, is_closed FROM questions WHERE id = ?', [req.params.id]);
+    if (!question)
+      return res.status(404).json({ success: false, message: 'Không tìm thấy câu hỏi.' });
+
+    const newStatus = question.is_closed ? 0 : 1;
+    await pool.execute('UPDATE questions SET is_closed = ? WHERE id = ?', [newStatus, req.params.id]);
+
+    res.json({ success: true, is_closed: newStatus, message: newStatus ? 'Đã khóa luồng thảo luận!' : 'Đã mở khóa luồng thảo luận!' });
+  } catch (err) {
+    console.error('PATCH close:', err.message);
+    res.status(500).json({ success: false, message: 'Lỗi server.' });
+  }
+});
+
+// Giảng viên/Admin ẩn câu trả lời sai lệch
+router.patch('/:id/answers/:answerId/hide', authMiddleware, teacherOrAdminMiddleware, async (req, res) => {
+  try {
+    const [[answer]] = await pool.execute('SELECT id, is_hidden FROM answers WHERE id = ? AND question_id = ?', [req.params.answerId, req.params.id]);
+    if (!answer)
+      return res.status(404).json({ success: false, message: 'Không tìm thấy câu trả lời.' });
+
+    const newStatus = answer.is_hidden ? 0 : 1;
+    await pool.execute('UPDATE answers SET is_hidden = ? WHERE id = ?', [newStatus, req.params.answerId]);
+
+    res.json({ success: true, is_hidden: newStatus, message: newStatus ? 'Đã ẩn câu trả lời!' : 'Đã hiện lại câu trả lời!' });
+  } catch (err) {
+    console.error('PATCH hide:', err.message);
+    res.status(500).json({ success: false, message: 'Lỗi server.' });
+  }
+});
+
+// Giảng viên thêm nhận xét nhanh vào câu trả lời
+router.post('/:id/answers/:answerId/teacher-note', authMiddleware, teacherMiddleware, async (req, res) => {
+  const { note } = req.body;
+  if (!note || !note.trim())
+    return res.status(400).json({ success: false, message: 'Vui lòng nhập nội dung nhận xét.' });
+
+  try {
+    const [[answer]] = await pool.execute('SELECT id, user_id FROM answers WHERE id = ? AND question_id = ?', [req.params.answerId, req.params.id]);
+    if (!answer)
+      return res.status(404).json({ success: false, message: 'Không tìm thấy câu trả lời.' });
+
+    await pool.execute('UPDATE answers SET teacher_note = ? WHERE id = ?', [note.trim(), req.params.answerId]);
+
+    // Thông báo cho tác giả câu trả lời
+    if (answer.user_id && answer.user_id !== req.user.id) {
+      await createNotification(
+        answer.user_id,
+        `Giảng viên ${req.user.username} đã nhận xét về câu trả lời của bạn.`,
+        `/questions/${req.params.id}`
+      );
+    }
+
+    res.json({ success: true, message: 'Đã lưu nhận xét của giảng viên!', teacher_note: note.trim() });
+  } catch (err) {
+    console.error('POST teacher-note:', err.message);
     res.status(500).json({ success: false, message: 'Lỗi server.' });
   }
 });

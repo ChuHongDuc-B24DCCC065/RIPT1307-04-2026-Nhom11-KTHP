@@ -15,7 +15,7 @@ import {
   PlusOutlined
 } from '@ant-design/icons';
 import ReactQuill from 'react-quill-new';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import 'react-quill-new/dist/quill.snow.css';
 import './CreateQuestion.css';
@@ -26,6 +26,7 @@ const CreateQuestion: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [, setSelectedTags] = useState<string[]>(['React', 'Frontend']);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Đọc dữ liệu từ localStorage an toàn trong khối try-catch
   const parsedUser = useMemo(() => {
@@ -37,6 +38,8 @@ const CreateQuestion: React.FC = () => {
       return null;
     }
   }, []);
+
+  const isAnnouncement = searchParams.get('type') === 'announcement' && parsedUser?.role === 'teacher';
 
   const username = parsedUser?.username || 'bạn';
 
@@ -53,7 +56,8 @@ const CreateQuestion: React.FC = () => {
       const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions`, {
         title: values.title,
         description: content, 
-        tags: values.tags ? values.tags.join(',') : ''
+        tags: values.tags ? values.tags.join(',') : '',
+        ...(isAnnouncement ? { is_announcement: 1 } : {})
       }, {
         headers: { Authorization: `Bearer ${token}` } 
       });
@@ -144,9 +148,19 @@ const CreateQuestion: React.FC = () => {
 
           <Card variant="borderless" className="create-question-card">
             <div className="create-question-header">
-              <h1 className="create-question-title">Tạo bài viết mới</h1>
-              <p className="create-question-subtitle">Chia sẻ kiến thức hoặc đặt câu hỏi cho cộng đồng.</p>
+              <h1 className="create-question-title">{isAnnouncement ? '📢 Tạo Thông báo Giảng viên' : 'Tạo bài viết mới'}</h1>
+              <p className="create-question-subtitle">{isAnnouncement ? 'Bài thông báo sẽ được ghim cố định lên đầu trang theo tag môn học.' : 'Chia sẻ kiến thức hoặc đặt câu hỏi cho cộng đồng.'}</p>
             </div>
+
+            {isAnnouncement && (
+              <Alert
+                message="Chế độ Thông báo Giảng viên"
+                description="Bạn đang tạo bài thông báo của Giảng viên. Bài viết sẽ được ghim cố định trên đầu trang và hiển thị nhãn '📢 Thông báo' nổi bật."
+                type="info"
+                showIcon
+                style={{ marginBottom: 20, borderRadius: 12, border: '1px solid #bfdbfe' }}
+              />
+            )}
 
             <Form
               form={form}
