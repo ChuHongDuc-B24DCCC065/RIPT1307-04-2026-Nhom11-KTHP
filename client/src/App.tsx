@@ -22,8 +22,6 @@ import {
   SearchOutlined,
   PlusOutlined,
   HomeOutlined,
-  FireOutlined,
-  ClockCircleOutlined,
   UserOutlined,
   LogoutOutlined,
   SettingOutlined,
@@ -122,10 +120,6 @@ const AppContent: React.FC = () => {
   const sidebarTags = ['React', 'TypeScript', 'Next.js', 'Tailwind', 'Node.js', 'Python', 'AI/ML', 'DevOps'];
 
   // Xác định active menu item dựa vào pathname
-  const isHomeActive = location.pathname === '/' || location.pathname === '/welcome';
-  const isPopularActive = location.search.includes('popular') || (location.pathname === '/search' && location.search.includes('tag=popular'));
-  const isNewestActive = location.search.includes('newest');
-  const isDiscussionsActive = location.pathname === '/discussions';
 
   const isAdmin = location.pathname.startsWith('/admin');
   const hideSidebar = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname) || isAdmin;
