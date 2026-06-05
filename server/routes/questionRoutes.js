@@ -111,6 +111,60 @@ router.get('/user/questions', authMiddleware, async (req, res) => {  try {
     res.status(500).json({ success: false, message: 'Lỗi server.' });
   }
 });
+// GET /api/questions/tags/stats
+router.get('/tags/stats', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT tags FROM questions WHERE (status = 'approved' OR status = 'public' OR status IS NULL) AND is_temp_hidden = 0"
+    );
+    const tagCounts = {};
+    rows.forEach(row => {
+      if (row.tags) {
+        const tagsList = row.tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+        tagsList.forEach(tag => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        });
+      }
+    });
+    res.json({ success: true, data: tagCounts });
+  } catch (err) {
+    console.error('Lỗi GET /tags/stats:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/questions/tags/list - Lấy danh sách tags công khai kèm số lượng câu hỏi
+router.get('/tags/list', async (req, res) => {
+  try {
+    const [tags] = await pool.query("SELECT * FROM tags ORDER BY name ASC");
+    const [rows] = await pool.query(
+      "SELECT tags FROM questions WHERE (status = 'approved' OR status = 'public' OR status IS NULL) AND is_temp_hidden = 0"
+    );
+    const tagCounts = {};
+    rows.forEach(row => {
+      if (row.tags) {
+        const tagsList = row.tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+        tagsList.forEach(tag => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        });
+      }
+    });
+    const result = tags.map(t => {
+      const tagNameLower = t.name.toLowerCase();
+      return {
+        id: t.id,
+        name: t.name,
+        description: t.description || 'Không có mô tả cho thẻ này.',
+        created_at: t.created_at,
+        question_count: tagCounts[tagNameLower] || 0
+      };
+    });
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('GET /tags/list error:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
 router.get('/:id', async (req, res) => {
   try {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form, Input, Button, Card, message, Select, Typography } from 'antd';
+import { Form, Input, Button, Card, message, Select, Typography, Row, Col } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, TeamOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
@@ -13,7 +13,12 @@ const RegisterPage: React.FC = () => {
 
   const onFinish = async (values: any) => {
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/register`, values);
+      const { lastName, firstName, ...rest } = values;
+      const payload = {
+        ...rest,
+        username: `${lastName || ''} ${firstName || ''}`.trim(),
+      };
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/register`, payload);
       message.success('Đăng ký tài khoản thành công!');
       setTimeout(() => navigate('/login'), 1500);
     } catch (err: any) {
@@ -28,7 +33,7 @@ const RegisterPage: React.FC = () => {
       <div className="auth-bg-glow-1"></div>
       <div className="auth-bg-glow-2"></div>
 
-      <Card bordered={false} className="auth-card">
+      <Card variant="borderless" className="auth-card">
         <div className="auth-header">
           <div className="auth-logo-badge">D</div>
           <Title level={3} className="auth-title">Đăng ký tài khoản</Title>
@@ -38,16 +43,38 @@ const RegisterPage: React.FC = () => {
         <Form onFinish={onFinish} layout="vertical" initialValues={{ role: 'student' }}>
           
           <Form.Item 
-            name="username" 
-            label={<span className="auth-form-label">Tên đăng nhập</span>} 
-            rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
+            label={<span className="auth-form-label">Tên</span>} 
+            required
+            style={{ marginBottom: 0 }}
           >
-            <Input 
-              prefix={<UserOutlined />} 
-              placeholder="username" 
-              size="large"
-              className="auth-input-wrapper"
-            />
+            <Row gutter={12}>
+              <Col span={12}>
+                <Form.Item
+                  name="lastName"
+                  rules={[{ required: true, message: 'Vui lòng nhập họ!' }]}
+                >
+                  <Input 
+                    prefix={<UserOutlined />} 
+                    placeholder="Họ" 
+                    size="large"
+                    className="auth-input-wrapper"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="firstName"
+                  rules={[{ required: true, message: 'Vui lòng nhập tên!' }]}
+                >
+                  <Input 
+                    prefix={<UserOutlined />} 
+                    placeholder="Tên" 
+                    size="large"
+                    className="auth-input-wrapper"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
           </Form.Item>
 
           <Form.Item 

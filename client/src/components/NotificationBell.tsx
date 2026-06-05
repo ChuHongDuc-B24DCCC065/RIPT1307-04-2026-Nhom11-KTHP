@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Badge, Popover, List, Avatar, Typography, Button, Flex, theme, Spin, Empty, message, Tooltip, Tag } from 'antd';
+import { Badge, Popover, Avatar, Typography, Button, Flex, theme, Spin, Empty, message, Tooltip, Tag } from 'antd';
 import { BellOutlined, CheckOutlined, SyncOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/axiosConfig';
@@ -236,12 +236,10 @@ export const NotificationBell: React.FC = () => {
         </Flex>
       ) : (
         <>
-          <List
-            itemLayout="horizontal"
-            dataSource={displayedNotifications}
-            style={{ flex: 1, overflowY: 'auto' }}
-            renderItem={(item) => (
-              <List.Item
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {displayedNotifications.map((item) => (
+              <div
+                key={item.id}
                 onClick={() => handleItemClick(item)}
                 style={{
                   padding: '12px 16px',
@@ -249,23 +247,26 @@ export const NotificationBell: React.FC = () => {
                   borderBottom: `1px solid ${token.colorBorderSecondary}`,
                   cursor: 'pointer',
                   transition: 'background-color 0.3s',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px'
                 }}
               >
-                <List.Item.Meta
-                  avatar={<Avatar src={item.user.avatar} size="large" />}
-                  title={
-                    <Text style={{ fontSize: 14 }}>
-                      {item.isTeacherBroadcast && (
-                        <Tag color="purple" style={{ marginRight: 6 }}>Từ Giảng viên</Tag>
-                      )}
-                      <Text strong>{item.user.name}</Text> {item.content}
-                    </Text>
-                  }
-                  description={<Text type="secondary" style={{ fontSize: 12 }}>{item.time}</Text>}
-                />
-              </List.Item>
-            )}
-          />
+                <Avatar src={item.user.avatar} size="large" style={{ flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, lineHeight: '1.4' }}>
+                    {item.isTeacherBroadcast && (
+                      <Tag color="purple" style={{ marginRight: 6 }}>Từ Giảng viên</Tag>
+                    )}
+                    <Text strong>{item.user.name}</Text> {item.content}
+                  </div>
+                  <div style={{ marginTop: 4 }}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{item.time}</Text>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
           {visibleCount < notifications.length && (
             <div style={{ padding: '12px 16px', textAlign: 'center', borderTop: `1px solid ${token.colorBorderSecondary}` }}>
               <Button 

@@ -44,7 +44,7 @@ const ResetPasswordPage: React.FC = () => {
       <div className="auth-bg-glow-1"></div>
       <div className="auth-bg-glow-2"></div>
 
-      <Card bordered={false} className="auth-card">
+      <Card variant="borderless" className="auth-card">
         <div className="auth-header">
           <div className="auth-logo-badge">D</div>
           <Title level={3} className="auth-title">Đặt lại mật khẩu</Title>

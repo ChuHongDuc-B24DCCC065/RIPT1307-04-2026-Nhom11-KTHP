@@ -198,7 +198,7 @@ const AdminDashboard: React.FC = () => {
         {kpiCards.map((card, index) => (
           <Col span={5} xs={24} sm={12} lg={5} key={index}>
             <Card
-              bordered={false}
+              variant="borderless"
               style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
               styles={{ body: { padding: '20px' } }}
             >
@@ -230,7 +230,7 @@ const AdminDashboard: React.FC = () => {
         {/* Warning Card for Pending Reports */}
         <Col span={4} xs={24} sm={24} lg={4}>
           <Card
-            bordered={false}
+            variant="borderless"
             style={{ 
               borderRadius: '12px', 
               boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
@@ -268,7 +268,7 @@ const AdminDashboard: React.FC = () => {
         <Col span={16} xs={24} lg={16}>
           <Card 
             title={<Text strong style={{ fontSize: 16 }}>Danh sách Tăng trưởng (7 ngày qua)</Text>}
-            bordered={false} 
+            variant="borderless" 
             style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
             styles={{ body: { padding: 0 } }}
           >
@@ -286,10 +286,10 @@ const AdminDashboard: React.FC = () => {
         <Col span={8} xs={24} lg={8}>
           <Card 
             title={<Text strong style={{ fontSize: 16 }}>Thống kê Chủ đề (Tags)</Text>}
-            bordered={false} 
+            variant="borderless" 
             style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', height: '100%' }}
           >
-            <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <Space orientation="vertical" style={{ width: '100%' }} size="large">
               {(statsData?.tagDistribution || []).map((tag: any, idx: number) => (
                 <div key={idx}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -315,7 +315,7 @@ const AdminDashboard: React.FC = () => {
         <Col span={12} xs={24} lg={12}>
           <Card 
             title={<Text strong style={{ fontSize: 16 }}>Bài viết mới nhất (AD10)</Text>}
-            bordered={false} 
+            variant="borderless" 
             style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
             styles={{ body: { padding: 0 } }}
           >
@@ -337,7 +337,7 @@ const AdminDashboard: React.FC = () => {
                 <Text strong style={{ fontSize: 16 }}>Báo cáo chờ xử lý</Text>
               </Space>
             }
-            bordered={false} 
+            variant="borderless" 
             style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
             styles={{ body: { padding: 0 } }}
           >

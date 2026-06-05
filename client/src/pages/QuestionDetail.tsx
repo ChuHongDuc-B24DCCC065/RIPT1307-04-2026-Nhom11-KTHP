@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Card, Typography, Tag, Space, Button, Divider,
-  List, Avatar, Input, message, Row, Col, Skeleton, Empty, Select, Tooltip, Alert, Modal, Switch, Form
+  Avatar, Input, message, Row, Col, Skeleton, Empty, Select, Tooltip, Alert, Modal, Switch, Form
 } from 'antd';
 import {
   LikeOutlined, LikeFilled, DislikeOutlined, DislikeFilled,
@@ -185,6 +185,7 @@ const QuestionDetail: React.FC = () => {
   const [reportReason, setReportReason] = useState('');
   const [reportTempHide, setReportTempHide] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [tagCounts, setTagCounts] = useState<Record<string, number>>({});
 
   // --- Lấy chi tiết câu hỏi từ API ---
   const fetchQuestion = async () => {
@@ -218,12 +219,24 @@ const QuestionDetail: React.FC = () => {
 
   const fetchedIdRef = useRef<string | null>(null);
 
+  const fetchTagCounts = async () => {
+    try {
+      const res = await axios.get(`${API}/questions/tags/stats`);
+      if (res.data?.success) {
+        setTagCounts(res.data.data || {});
+      }
+    } catch (err) {
+      console.error('Lỗi tải thống kê tag:', err);
+    }
+  };
+
   useEffect(() => {
     if (fetchedIdRef.current === id) return;
     fetchedIdRef.current = id || null;
     
     fetchQuestion();
     fetchAllQuestions();
+    fetchTagCounts();
   }, [id]);
 
   // --- Vote câu hỏi ---
@@ -611,7 +624,7 @@ const QuestionDetail: React.FC = () => {
 
           {question.status === 'pending' && (
             <Alert
-              message="Bài viết đang chờ phê duyệt"
+              title="Bài viết đang chờ phê duyệt"
               description="Bài viết này đang chờ Admin phê duyệt để hiển thị công khai. Chỉ bạn và Admin mới có thể nhìn thấy."
               type="warning"
               showIcon
@@ -621,7 +634,7 @@ const QuestionDetail: React.FC = () => {
 
           {/* ===== Card Chi Tiết Câu Hỏi ===== */}
           <Card 
-            bordered={false} 
+            variant="borderless" 
             className="premium-card animated-hover-card"
             style={{ 
               marginBottom: 24, 
@@ -706,7 +719,7 @@ const QuestionDetail: React.FC = () => {
                 {/* Các nhãn thông tin đặc biệt của Giảng viên */}
                 {question.post_type === 'assignment' && (
                   <Alert
-                    message={<Text strong style={{ fontSize: '15px', color: '#b91c1c' }}>📝 Bài tập môn học / Câu hỏi ôn tập có hạn nộp</Text>}
+                    title={<Text strong style={{ fontSize: '15px', color: '#b91c1c' }}>📝 Bài tập môn học / Câu hỏi ôn tập có hạn nộp</Text>}
                     description={
                       <div style={{ marginTop: '4px' }}>
                         <Text style={{ fontSize: '13.5px' }}>
@@ -726,7 +739,7 @@ const QuestionDetail: React.FC = () => {
 
                 {question.post_type === 'material' && (
                   <Alert
-                    message={<Text strong style={{ fontSize: '15px', color: '#1e3a8a' }}>📚 Tài liệu học tập / Bài giảng chuyên ngành</Text>}
+                    title={<Text strong style={{ fontSize: '15px', color: '#1e3a8a' }}>📚 Tài liệu học tập / Bài giảng chuyên ngành</Text>}
                     description={<Text style={{ fontSize: '13.5px' }}>Tài liệu tham khảo chính thức được chia sẻ bởi Giảng viên.</Text>}
                     type="info"
                     showIcon
@@ -796,26 +809,30 @@ const QuestionDetail: React.FC = () => {
                 {/* Thẻ tags & Actions */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {tagList.map(tag => (
-                      <Tag 
-                        color="purple" 
-                        key={tag} 
-                        className="sidebar-tag transition-all"
-                        style={{ 
-                          borderRadius: '8px', 
-                          padding: '5px 14px', 
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          backgroundColor: '#f3e8ff',
-                          color: '#7c3aed',
-                          border: 'none',
-                          cursor: 'pointer'
-                        }}
-                        onClick={() => navigate(`/search?tag=${tag}`)}
-                      >
-                        #{tag}
-                      </Tag>
-                    ))}
+                    {tagList.map(tag => {
+                      const count = tagCounts[tag.toLowerCase()] || 0;
+                      return (
+                        <Tooltip key={tag} title={`Có ${count} câu hỏi gắn thẻ này`}>
+                          <Tag 
+                            color="purple" 
+                            className="sidebar-tag transition-all"
+                            style={{ 
+                              borderRadius: '8px', 
+                              padding: '5px 14px', 
+                              fontSize: '13px',
+                              fontWeight: 500,
+                              backgroundColor: '#f3e8ff',
+                              color: '#7c3aed',
+                              border: 'none',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => navigate(`/search?tag=${tag.toLowerCase()}`)}
+                          >
+                            #{tag}
+                          </Tag>
+                        </Tooltip>
+                      );
+                    })}
                   </div>
 
                   {/* Actions buttons */}
@@ -865,7 +882,7 @@ const QuestionDetail: React.FC = () => {
           <div ref={answerEditorRef}>
             {question.is_closed === 1 ? (
               <Alert
-                message="Luồng thảo luận đã bị khóa"
+                title="Luồng thảo luận đã bị khóa"
                 description="Giảng viên đã khóa luồng thảo luận này. Không thể viết thêm câu trả lời hoặc bình luận mới."
                 type="info"
                 showIcon
@@ -880,7 +897,7 @@ const QuestionDetail: React.FC = () => {
                   Đóng góp câu trả lời của bạn
                 </Title>
               }
-              bordered={false}
+              variant="borderless"
               className="premium-card animated-hover-card"
               style={{ 
                 borderRadius: '24px', 
@@ -960,10 +977,7 @@ const QuestionDetail: React.FC = () => {
               <Empty description="Chưa có câu trả lời nào cho câu hỏi này. Hãy là người đầu tiên giúp đỡ!" style={{ padding: '16px' }} />
             </Card>
           ) : (
-            <List
-              itemLayout="vertical"
-              dataSource={sortedAnswers}
-              renderItem={(answer) => {
+            sortedAnswers.map((answer) => {
                 const isAccepted = answer.is_accepted === 1;
                 const isVerified = answer.teacher_verified === 1;
                 const isHidden = answer.is_hidden === 1;
@@ -972,7 +986,7 @@ const QuestionDetail: React.FC = () => {
                 return (
                   <Card
                     key={answer.id}
-                    bordered={false}
+                    variant="borderless"
                     className={`premium-card animated-hover-card ${isAccepted ? 'glow-accepted' : ''}`}
                     style={{
                       borderRadius: '20px',
@@ -1283,8 +1297,7 @@ const QuestionDetail: React.FC = () => {
                     </Row>
                   </Card>
                 );
-              }}
-            />
+              })
           )}
         </Col>
 
@@ -1300,7 +1313,7 @@ const QuestionDetail: React.FC = () => {
                 THỐNG KÊ CÂU HỎI
               </div>
             }
-            bordered={false}
+            variant="borderless"
             className="premium-card animated-hover-card"
             style={{ borderRadius: '20px', marginBottom: 20, padding: '4px' }}
           >
@@ -1339,7 +1352,7 @@ const QuestionDetail: React.FC = () => {
                 NGƯỜI ĐĂNG
               </div>
             }
-            bordered={false}
+            variant="borderless"
             className="premium-card animated-hover-card"
             style={{ borderRadius: '20px', marginBottom: 20, padding: '6px' }}
           >
@@ -1406,7 +1419,7 @@ const QuestionDetail: React.FC = () => {
                   CÂU HỎI LIÊN QUAN
                 </div>
               }
-              bordered={false}
+              variant="borderless"
               className="premium-card animated-hover-card"
               style={{ borderRadius: '20px', marginBottom: 20, padding: '4px' }}
             >
@@ -1433,7 +1446,7 @@ const QuestionDetail: React.FC = () => {
 
           {/* WIDGET 4: BẠN CÓ GIẢI PHÁP TỐT HƠN? */}
           <Card
-            bordered={false}
+            variant="borderless"
             className="glow-cta"
             style={{ 
               borderRadius: '20px', 

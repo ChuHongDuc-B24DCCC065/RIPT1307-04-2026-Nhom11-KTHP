@@ -430,7 +430,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
       {/* Grid Stats */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={12} sm={6}>
-          <Card bordered={false} hoverable style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
+          <Card variant="borderless" hoverable style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
             <Statistic 
               title={<span style={{ color: '#8c8c8c' }}>Sinh viên theo dõi</span>}
               value={stats?.followersCount ?? 0} 
@@ -440,7 +440,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
           </Card>
         </Col>
         <Col xs={12} sm={6}>
-          <Card bordered={false} hoverable style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
+          <Card variant="borderless" hoverable style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
             <Statistic 
               title={<span style={{ color: '#8c8c8c' }}>Bài viết đã đăng</span>}
               value={stats?.questionsCount ?? 0} 
@@ -450,7 +450,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
           </Card>
         </Col>
         <Col xs={12} sm={6}>
-          <Card bordered={false} hoverable style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
+          <Card variant="borderless" hoverable style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
             <Statistic 
               title={<span style={{ color: '#8c8c8c' }}>Câu trả lời đã duyệt</span>}
               value={stats?.verifiedCount ?? 0} 
@@ -460,7 +460,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
           </Card>
         </Col>
         <Col xs={12} sm={6}>
-          <Card bordered={false} hoverable style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
+          <Card variant="borderless" hoverable style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
             <Statistic 
               title={<span style={{ color: '#8c8c8c' }}>Luồng thảo luận đã khóa</span>}
               value={stats?.closedCount ?? 0} 
@@ -472,7 +472,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
       </Row>
 
       {/* Tabs Chức năng */}
-      <Card bordered={false} style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
+      <Card variant="borderless" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
         <Tabs 
           activeKey={activeTab} 
           onChange={(key) => {
@@ -490,7 +490,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
                 </span>
               ),
               children: (
-                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <Space orientation="vertical" size="large" style={{ width: '100%' }}>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                       <Title level={4} style={{ margin: 0 }}>🙋‍♂️ Câu hỏi chưa có câu trả lời (Chờ hỗ trợ)</Title>
@@ -549,6 +549,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
             },
             {
               key: 'broadcast',
+              forceRender: true,
               label: (
                 <span>
                   <BellOutlined />
@@ -557,7 +558,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
               ),
               children: (
                 <div style={{ maxWidth: 700, margin: '0 auto', padding: '16px 0' }}>
-                  <Card bordered style={{ borderRadius: '12px', background: '#fcfcff' }}>
+                  <Card style={{ borderRadius: '12px', background: '#fcfcff' }}>
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
                       <div style={{ background: '#e0e7ff', padding: '10px', borderRadius: '50%', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '44px', width: '44px' }}>
                         <BellOutlined style={{ fontSize: '20px' }} />
@@ -611,6 +612,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
             },
             {
               key: 'office-hours',
+              forceRender: true,
               label: (
                 <span>
                   <CalendarOutlined />
@@ -619,7 +621,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
               ),
               children: (
                 <div style={{ maxWidth: 600, margin: '0 auto', padding: '16px 0' }}>
-                  <Card bordered style={{ borderRadius: '12px' }}>
+                  <Card style={{ borderRadius: '12px' }}>
                     <Title level={4} style={{ marginBottom: '8px' }}>⚙️ Cài đặt khung giờ trực tuyến hỗ trợ</Title>
                     <Paragraph type="secondary">
                       Khi bật chế độ này, sinh viên sẽ thấy chấm xanh trực tuyến "Office Hours" nhấp nháy trên avatar và bài viết của bạn. Họ sẽ biết bạn đang sẵn sàng trực tuyến để trả lời nhanh thắc mắc.

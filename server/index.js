@@ -19,9 +19,39 @@ const pool = require('./config/db');
 
 // Test connection (đã có trong config/db.js)
 pool.getConnection()
-    .then(conn => {
+    .then(async conn => {
         console.log("✅ Main DB: Đã kết nối MySQL thành công!");
         conn.release();
+        // Tự động khởi tạo bảng tags và seed dữ liệu
+        try {
+            await pool.execute(`
+                CREATE TABLE IF NOT EXISTS tags (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(100) NOT NULL UNIQUE,
+                    description TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            const [existingTags] = await pool.execute("SELECT COUNT(*) AS count FROM tags");
+            if (existingTags[0].count === 0) {
+                const seedTags = [
+                    ['react', 'Thư viện JavaScript phổ biến để xây dựng giao diện người dùng.'],
+                    ['typescript', 'Siêu ngôn ngữ của JavaScript hỗ trợ kiểu dữ liệu tĩnh mạnh mẽ.'],
+                    ['next.js', 'React framework cho phát triển production hỗ trợ SSR và SSG.'],
+                    ['tailwind', 'Utility-first CSS framework giúp xây dựng giao diện nhanh chóng.'],
+                    ['node.js', 'Môi trường runtime JavaScript phía máy chủ xây dựng trên V8.'],
+                    ['python', 'Ngôn ngữ lập trình đa năng, dễ học, mạnh mẽ trong AI/ML và Data Science.'],
+                    ['ai/ml', 'Trí tuệ nhân tạo và học máy - những đột phá công nghệ mới.'],
+                    ['devops', 'Văn hóa và phương pháp kết hợp phát triển phần mềm (Dev) với vận hành (Ops).']
+                ];
+                for (const t of seedTags) {
+                    await pool.execute("INSERT INTO tags (name, description) VALUES (?, ?)", t);
+                }
+                console.log("🌱 Seeded 8 tags successfully!");
+            }
+        } catch (dbErr) {
+            console.error("❌ Lỗi khởi tạo bảng tags:", dbErr.message);
+        }
     })
     .catch(err => console.log("❌ Main DB: Lỗi kết nối MySQL: ", err));
 
@@ -188,6 +218,31 @@ app.get('/api/fix-db', async (req, res) => {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        // Khởi tạo bảng tags và seed trong fix-db
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS tags (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL UNIQUE,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        const [existingTags] = await pool.execute("SELECT COUNT(*) AS count FROM tags");
+        if (existingTags[0].count === 0) {
+            const seedTags = [
+                ['react', 'Thư viện JavaScript phổ biến để xây dựng giao diện người dùng.'],
+                ['typescript', 'Siêu ngôn ngữ của JavaScript hỗ trợ kiểu dữ liệu tĩnh mạnh mẽ.'],
+                ['next.js', 'React framework cho phát triển production hỗ trợ SSR và SSG.'],
+                ['tailwind', 'Utility-first CSS framework giúp xây dựng giao diện nhanh chóng.'],
+                ['node.js', 'Môi trường runtime JavaScript phía máy chủ xây dựng trên V8.'],
+                ['python', 'Ngôn ngữ lập trình đa năng, dễ học, mạnh mẽ trong AI/ML và Data Science.'],
+                ['ai/ml', 'Trí tuệ nhân tạo và học máy - những đột phá công nghệ mới.'],
+                ['devops', 'Văn hóa và phương pháp kết hợp phát triển phần mềm (Dev) với vận hành (Ops).']
+            ];
+            for (const t of seedTags) {
+                await pool.execute("INSERT INTO tags (name, description) VALUES (?, ?)", t);
+            }
+        }
         res.json({ success: true, message: "Đã tạo bảng/cột còn thiếu thành công! Bạn có thể vào lại web." });
     } catch (err) {
         res.status(500).json({ success: false, message: "Lỗi: " + err.message });
