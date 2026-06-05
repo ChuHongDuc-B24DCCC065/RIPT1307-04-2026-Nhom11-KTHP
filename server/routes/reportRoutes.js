@@ -23,17 +23,29 @@ function verifyToken(req, res, next) {
 router.post('/', verifyToken, async (req, res) => {
     try {
         // Lấy thông tin từ request body
-        const { question_id, ly_do } = req.body;
+        const { question_id, ly_do, temp_hide } = req.body;
         const user_id_report = req.user.id;
+        const isTeacher = req.user.role === 'teacher';
+        const priority = isTeacher ? 'high' : 'normal';
+
+        // Nếu là giảng viên và có yêu cầu ẩn tạm thời
+        if (temp_hide && isTeacher) {
+            await pool.execute(
+                "UPDATE questions SET is_temp_hidden = 1 WHERE id = ?",
+                [question_id]
+            );
+        }
 
         const [result] = await pool.query(
-            "INSERT INTO reports (user_id_report, question_id, ly_do, trang_thai) VALUES (?, ?, ?, 'pending')",
-            [user_id_report, question_id, ly_do]
+            "INSERT INTO reports (user_id_report, question_id, ly_do, trang_thai, priority) VALUES (?, ?, ?, 'pending', ?)",
+            [user_id_report, question_id, ly_do, priority]
         );
 
         res.status(201).json({ 
             success: true, 
-            message: "Đã gửi báo cáo thành công!", 
+            message: temp_hide && isTeacher 
+                ? "Đã gửi báo cáo và ẩn tạm thời câu hỏi thành công!" 
+                : "Đã gửi báo cáo thành công!", 
             reportId: result.insertId 
         });
     } catch (error) {

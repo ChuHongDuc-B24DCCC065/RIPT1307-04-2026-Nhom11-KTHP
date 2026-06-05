@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ConfigProvider, Typography, Form, Input, Button, Upload, 
-  Row, Col, Space, Avatar, message, Flex, Divider, Card, Layout, Tabs, List, Dropdown, Tag, Segmented, Empty, Tooltip
+  Row, Col, Space, Avatar, message, Flex, Divider, Card, Layout, Tabs, List, Dropdown, Tag, Segmented, Empty, Tooltip, Badge
 } from 'antd';
 import type { MenuProps } from 'antd';
 import { 
@@ -119,7 +119,11 @@ const UserProfile: React.FC = () => {
             phoneNumber: fetchedUser.phoneNumber || '',
             school: fetchedUser.school || '',
             website: fetchedUser.website || '',
-            class_name: fetchedUser.class_name || ''
+            class_name: fetchedUser.class_name || '',
+            academic_title: fetchedUser.academic_title || '',
+            department: fetchedUser.department || '',
+            major: fetchedUser.major || '',
+            teacher_code: fetchedUser.teacher_code || '',
           };
           form.setFieldsValue(vals);
           setInitialValues(vals);
@@ -204,6 +208,10 @@ const UserProfile: React.FC = () => {
         bio: values.bio,
         website: values.website,
         className: values.class_name,
+        academicTitle: values.academic_title,
+        department: values.department,
+        major: values.major,
+        teacherCode: values.teacher_code,
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -218,6 +226,10 @@ const UserProfile: React.FC = () => {
         bio: values.bio,
         website: values.website,
         class_name: values.class_name,
+        academic_title: values.academic_title,
+        department: values.department,
+        major: values.major,
+        teacher_code: values.teacher_code,
       };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
@@ -360,11 +372,47 @@ const UserProfile: React.FC = () => {
                   {user.school || <Text type="secondary" italic>Chưa cập nhật</Text>}
                 </Text>
               )}
-              {renderViewItem(
-                "Lớp",
-                <Text style={{ color: '#334155', fontSize: '15px' }}>
-                  {user.class_name || <Text type="secondary" italic>Chưa cập nhật</Text>}
-                </Text>
+              {user.role !== 'teacher' ? (
+                renderViewItem(
+                  "Lớp",
+                  <Text style={{ color: '#334155', fontSize: '15px' }}>
+                    {user.class_name || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                  </Text>
+                )
+              ) : (
+                <>
+                  {renderViewItem(
+                    "Mã giảng viên",
+                    <Text style={{ color: '#334155', fontSize: '15px' }}>
+                      {user.teacher_code || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                    </Text>
+                  )}
+                  {renderViewItem(
+                    "Học hàm / Học vị",
+                    <Text style={{ color: '#334155', fontSize: '15px' }}>
+                      {user.academic_title || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                    </Text>
+                  )}
+                  {renderViewItem(
+                    "Khoa / Bộ môn công tác",
+                    <Text style={{ color: '#334155', fontSize: '15px' }}>
+                      {user.department || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                    </Text>
+                  )}
+                  {renderViewItem(
+                    "Chuyên ngành giảng dạy",
+                    <Text style={{ color: '#334155', fontSize: '15px' }}>
+                      {user.major || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                    </Text>
+                  )}
+                  {renderViewItem(
+                    "Trạng thái hỗ trợ (Office Hours)",
+                    <Space size="middle">
+                      <Badge status={user.is_available ? 'processing' : 'default'} text={user.is_available ? 'Đang sẵn sàng trực tuyến hỗ trợ' : 'Ngoại tuyến'} />
+                      {user.office_hours && <Text type="secondary">(Lịch trực: {user.office_hours})</Text>}
+                    </Space>
+                  )}
+                </>
               )}
               {renderViewItem(
                 "Website / GitHub",
@@ -434,14 +482,51 @@ const UserProfile: React.FC = () => {
                   <Input prefix={<BankOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập tên trường" />
                 </Form.Item>
               </Col>
-              <Col xs={24} md={12}>
-                <Form.Item 
-                  name="class_name" 
-                  label={<span style={{ fontWeight: 500 }}>Lớp</span>}
-                >
-                  <Input prefix={<IdcardOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập tên lớp" />
-                </Form.Item>
-              </Col>
+              {user.role !== 'teacher' ? (
+                <Col xs={24} md={12}>
+                  <Form.Item 
+                    name="class_name" 
+                    label={<span style={{ fontWeight: 500 }}>Lớp</span>}
+                  >
+                    <Input prefix={<IdcardOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập tên lớp" />
+                  </Form.Item>
+                </Col>
+              ) : (
+                <>
+                  <Col xs={24} md={12}>
+                    <Form.Item 
+                      name="teacher_code" 
+                      label={<span style={{ fontWeight: 500 }}>Mã giảng viên</span>}
+                    >
+                      <Input prefix={<IdcardOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập mã giảng viên" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item 
+                      name="academic_title" 
+                      label={<span style={{ fontWeight: 500 }}>Học hàm / Học vị</span>}
+                    >
+                      <Input prefix={<BookOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Ví dụ: Tiến sĩ, Thạc sĩ..." />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item 
+                      name="department" 
+                      label={<span style={{ fontWeight: 500 }}>Khoa / Bộ môn công tác</span>}
+                    >
+                      <Input prefix={<BankOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Ví dụ: Khoa CNTT1..." />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item 
+                      name="major" 
+                      label={<span style={{ fontWeight: 500 }}>Chuyên ngành giảng dạy</span>}
+                    >
+                      <Input prefix={<GlobalOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Ví dụ: Kỹ thuật phần mềm..." />
+                    </Form.Item>
+                  </Col>
+                </>
+              )}
               <Col xs={24} md={12}>
                 <Form.Item 
                   name="website" 
@@ -863,7 +948,11 @@ const UserProfile: React.FC = () => {
                 phoneNumber: user.phoneNumber || '',
                 school: user.school || '',
                 website: user.website || '',
-                class_name: user.class_name || ''
+                class_name: user.class_name || '',
+                academic_title: user.academic_title || '',
+                department: user.department || '',
+                major: user.major || '',
+                teacher_code: user.teacher_code || ''
               }}
             >
               {/* Vùng chứa Header và Tabs Bar */}
@@ -919,8 +1008,13 @@ const UserProfile: React.FC = () => {
                     <div style={{ paddingBottom: 16, marginTop: 60 }}>
                       <Title level={2} style={{ margin: 0, marginBottom: 8, fontWeight: 700, lineHeight: 1.2 }}>
                         {user.fullName || user.username}
+                        {user.role === 'teacher' && (
+                          <Tag color="blue" style={{ marginLeft: 8, verticalAlign: 'middle', fontSize: '14px', padding: '2px 8px', borderRadius: '6px' }}>
+                            👨‍🏫 Giảng viên
+                          </Tag>
+                        )}
                       </Title>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, color: '#64748b' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', color: '#64748b' }}>
                         <Space size={4}>
                           <MailOutlined />
                           <Text style={{ color: '#64748b' }}>{user.email || 'Chưa cập nhật email'}</Text>
@@ -933,7 +1027,12 @@ const UserProfile: React.FC = () => {
                         <Text type="secondary">·</Text>
                         <Space size={4}>
                           <TrophyOutlined style={{ color: '#f59e0b' }} />
-                          <Text style={{ color: '#64748b' }}>{user.reputation || 0} điểm uy tín</Text>
+                          <Text style={{ color: '#64748b' }}>
+                            {user.role === 'teacher' 
+                              ? `${user.expert_score || 0} điểm đóng góp chuyên môn`
+                              : `${user.reputation || 0} điểm uy tín`
+                            }
+                          </Text>
                         </Space>
                       </div>
                     </div>

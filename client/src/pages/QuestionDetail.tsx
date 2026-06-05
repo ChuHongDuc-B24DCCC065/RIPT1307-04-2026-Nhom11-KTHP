@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Card, Typography, Tag, Space, Button, Divider,
-  List, Avatar, Input, message, Row, Col, Skeleton, Empty, Select, Tooltip, Alert
+  List, Avatar, Input, message, Row, Col, Skeleton, Empty, Select, Tooltip, Alert, Modal, Switch, Form
 } from 'antd';
 import {
   LikeOutlined, LikeFilled, DislikeOutlined, DislikeFilled,
@@ -10,11 +10,19 @@ import {
   ArrowLeftOutlined, SendOutlined, CheckCircleFilled,
   EyeOutlined, ShareAltOutlined, FlagOutlined,
   ThunderboltOutlined, GlobalOutlined, InfoCircleOutlined,
-  FireOutlined, PlusOutlined, CheckOutlined
+  FireOutlined, PlusOutlined, CheckOutlined,
+  SafetyCertificateOutlined, LockOutlined, UnlockOutlined,
+  EyeInvisibleOutlined, FormOutlined, PaperClipOutlined
 } from '@ant-design/icons';
 
 import axios from 'axios';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/vi';
 import BookmarkButton from '../components/BookmarkButton';
+
+dayjs.extend(relativeTime);
+dayjs.locale('vi');
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
@@ -38,6 +46,10 @@ interface Answer {
   comments: Comment[];
   user_vote_type?: number;
   author_reputation?: number;
+  author_role?: string;
+  teacher_verified?: number;
+  is_hidden?: number;
+  teacher_note?: string;
 }
 
 interface Question {
@@ -55,6 +67,13 @@ interface Question {
   user_vote_type?: number;
   author_reputation?: number;
   status?: string;
+  is_closed?: number;
+  is_announcement?: number;
+  author_role?: string;
+  post_type?: string;
+  deadline?: string;
+  attachment_url?: string;
+  attachment_name?: string;
 }
 
 // --- Helper: Format thời gian tương đối ---
@@ -159,7 +178,13 @@ const QuestionDetail: React.FC = () => {
   const [submittingComment, setSubmittingComment] = useState<number | null>(null);
   const [sortBy, setSortBy]                     = useState<'votes' | 'newest'>('votes');
   const [allQuestions, setAllQuestions]         = useState<Question[]>([]);
+  const [teacherNoteText, setTeacherNoteText]   = useState<Record<number, string>>({});
+  const [showTeacherNote, setShowTeacherNote]   = useState<Record<number, boolean>>({});
   const [followedAuthors, setFollowedAuthors]   = useState<Record<string, boolean>>({});
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportTempHide, setReportTempHide] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   // --- Lấy chi tiết câu hỏi từ API ---
   const fetchQuestion = async () => {
@@ -352,10 +377,108 @@ const QuestionDetail: React.FC = () => {
     });
   };
 
+  // --- [TEACHER] Xác nhận chuyên môn ---
+  const handleTeacherVerify = async (answerId: number) => {
+    try {
+      const res = await axios.patch(
+        `${API}/questions/${id}/answers/${answerId}/teacher-verify`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      message.success(res.data.message);
+      fetchQuestion();
+    } catch (err: any) {
+      message.error(err.response?.data?.message || 'Lỗi khi xác nhận chuyên môn!');
+    }
+  };
+
+  // --- [TEACHER] Đóng/Mở luồng thảo luận ---
+  const handleCloseThread = async () => {
+    try {
+      const res = await axios.patch(
+        `${API}/questions/${id}/close`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      message.success(res.data.message);
+      fetchQuestion();
+    } catch (err: any) {
+      message.error(err.response?.data?.message || 'Lỗi khi khóa luồng thảo luận!');
+    }
+  };
+
+  // --- [TEACHER] Ẩn câu trả lời sai lệch ---
+  const handleHideAnswer = async (answerId: number) => {
+    try {
+      const res = await axios.patch(
+        `${API}/questions/${id}/answers/${answerId}/hide`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      message.success(res.data.message);
+      fetchQuestion();
+    } catch (err: any) {
+      message.error(err.response?.data?.message || 'Lỗi khi ẩn câu trả lời!');
+    }
+  };
+
+  // --- [TEACHER] Nhận xét nhanh ---
+  const handleTeacherNote = async (answerId: number) => {
+    const note = teacherNoteText[answerId]?.trim();
+    if (!note) return;
+    try {
+      const res = await axios.post(
+        `${API}/questions/${id}/answers/${answerId}/teacher-note`,
+        { note },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      message.success(res.data.message);
+      setTeacherNoteText(prev => ({ ...prev, [answerId]: '' }));
+      setShowTeacherNote(prev => ({ ...prev, [answerId]: false }));
+      fetchQuestion();
+    } catch (err: any) {
+      message.error(err.response?.data?.message || 'Lỗi khi gửi nhận xét!');
+    }
+  };
+
   // --- Chia sẻ câu hỏi ---
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     message.success('Đã sao chép liên kết vào bộ nhớ tạm!');
+  };
+
+  // --- Gửi báo cáo vi phạm ---
+  const handleSendReport = async () => {
+    if (!reportReason.trim()) {
+      message.error('Vui lòng chọn hoặc nhập lý do báo cáo!');
+      return;
+    }
+    setReportSubmitting(true);
+    try {
+      const res = await axios.post(
+        `${API}/reports`,
+        {
+          question_id: question?.id,
+          ly_do: reportReason,
+          temp_hide: reportTempHide
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data.success) {
+        message.success(res.data.message);
+        setReportModalVisible(false);
+        setReportReason('');
+        setReportTempHide(false);
+        fetchQuestion();
+        if (reportTempHide && isTeacher) {
+          navigate('/');
+        }
+      }
+    } catch (err: any) {
+      message.error(err.response?.data?.message || 'Gửi báo cáo thất bại!');
+    } finally {
+      setReportSubmitting(false);
+    }
   };
 
   // --- Cuộn tới khung trả lời ---
@@ -366,6 +489,8 @@ const QuestionDetail: React.FC = () => {
   };
 
   const isOwner = user && question ? user.id === question.user_id : false;
+  const isTeacher = user?.role === 'teacher';
+  const isTeacherOrAdmin = user?.role === 'teacher' || user?.role === 'admin';
   const tagList = question && question.tags ? question.tags.split(',').map(t => t.trim()) : [];
 
   if (loading) {
@@ -412,7 +537,7 @@ const QuestionDetail: React.FC = () => {
     })
     .slice(0, 4);
 
-  // Sắp xếp các câu trả lời
+  // Sắp xếp các câu trả lời (ưu tiên: accepted > teacher_verified > giảng viên > votes)
   const sortedAnswers = question.answers ? [...question.answers].sort((a, b) => {
     const aAccepted = a.is_accepted === 1;
     const bAccepted = b.is_accepted === 1;
@@ -420,6 +545,18 @@ const QuestionDetail: React.FC = () => {
     // Câu trả lời được tác giả chấp nhận luôn đưa lên đầu
     if (aAccepted !== bAccepted) {
       return bAccepted ? 1 : -1;
+    }
+    // Câu trả lời được giảng viên xác nhận ưu tiên tiếp theo
+    const aVerified = a.teacher_verified === 1;
+    const bVerified = b.teacher_verified === 1;
+    if (aVerified !== bVerified) {
+      return bVerified ? 1 : -1;
+    }
+    // Câu trả lời của giảng viên ưu tiên tiếp
+    const aIsTeacher = a.author_role === 'teacher';
+    const bIsTeacher = b.author_role === 'teacher';
+    if (aIsTeacher !== bIsTeacher) {
+      return bIsTeacher ? 1 : -1;
     }
     if (sortBy === 'votes') {
       return b.votes - a.votes;
@@ -550,12 +687,52 @@ const QuestionDetail: React.FC = () => {
                 </div>
 
                 {/* Meta info bar */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', margin: '14px 0 20px 0', borderBottom: '1px dashed #f1f5f9', paddingBottom: 16 }}>
-                  <Space><UserOutlined style={{ color: '#94a3b8' }} /> <Text strong style={{ color: '#475569', fontSize: 13.5 }}>{question.author}</Text></Space>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', margin: '14px 0 20px 0', borderBottom: '1px dashed #f1f5f9', paddingBottom: 16, alignItems: 'center' }}>
+                  <Space>
+                    <UserOutlined style={{ color: '#94a3b8' }} />
+                    <Text strong style={{ color: '#475569', fontSize: 13.5 }}>{question.author}</Text>
+                    {question.author_role === 'teacher' && (
+                      <Tag color="blue" style={{ borderRadius: 6, fontWeight: 600, fontSize: 11, padding: '0 8px', margin: 0 }}>👨‍🏫 Giảng viên</Tag>
+                    )}
+                  </Space>
                   <Space><ClockCircleOutlined style={{ color: '#94a3b8' }} /> <Text type="secondary" style={{ fontSize: 13 }}>{formatTime(question.created_at)}</Text></Space>
                   <Space><EyeOutlined style={{ color: '#94a3b8' }} /> <Text type="secondary" style={{ fontSize: 13 }}>{question.views ?? 0} lượt xem</Text></Space>
                   <Space><MessageOutlined style={{ color: '#94a3b8' }} /> <Text type="secondary" style={{ fontSize: 13 }}>{question.answers?.length ?? 0} trả lời</Text></Space>
+                  {question.is_closed === 1 && (
+                    <Tag color="red" style={{ borderRadius: 6, fontWeight: 600, fontSize: 11, padding: '0 8px', margin: 0 }}><LockOutlined /> Đã khóa</Tag>
+                  )}
                 </div>
+
+                {/* Các nhãn thông tin đặc biệt của Giảng viên */}
+                {question.post_type === 'assignment' && (
+                  <Alert
+                    message={<Text strong style={{ fontSize: '15px', color: '#b91c1c' }}>📝 Bài tập môn học / Câu hỏi ôn tập có hạn nộp</Text>}
+                    description={
+                      <div style={{ marginTop: '4px' }}>
+                        <Text style={{ fontSize: '13.5px' }}>
+                          <b>Hạn chót: </b> 
+                          <span style={{ color: dayjs().isAfter(dayjs(question.deadline)) ? '#ef4444' : '#10b981', fontWeight: 600 }}>
+                            {dayjs(question.deadline).format('HH:mm [ngày] DD/MM/YYYY')} 
+                            ({dayjs().isAfter(dayjs(question.deadline)) ? 'Đã hết hạn nộp bài' : `Còn lại: ${dayjs(question.deadline).fromNow(true)}`})
+                          </span>
+                        </Text>
+                      </div>
+                    }
+                    type={dayjs().isAfter(dayjs(question.deadline)) ? "error" : "warning"}
+                    showIcon
+                    style={{ marginBottom: 20, borderRadius: 12 }}
+                  />
+                )}
+
+                {question.post_type === 'material' && (
+                  <Alert
+                    message={<Text strong style={{ fontSize: '15px', color: '#1e3a8a' }}>📚 Tài liệu học tập / Bài giảng chuyên ngành</Text>}
+                    description={<Text style={{ fontSize: '13.5px' }}>Tài liệu tham khảo chính thức được chia sẻ bởi Giảng viên.</Text>}
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 20, borderRadius: 12 }}
+                  />
+                )}
 
                 {/* Nội dung chi tiết */}
                 <div 
@@ -563,6 +740,58 @@ const QuestionDetail: React.FC = () => {
                   style={{ fontSize: 15.5, lineHeight: '1.8', color: '#334155', marginBottom: 28 }}
                   dangerouslySetInnerHTML={{ __html: question.description }}
                 />
+
+                {/* Tài liệu đính kèm nếu có */}
+                {question.attachment_url && (
+                  <div style={{
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    marginBottom: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.01)'
+                  }}>
+                    <Space size="middle">
+                      <div style={{
+                        background: '#e0e7ff',
+                        color: '#4f46e5',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <PaperClipOutlined style={{ fontSize: '18px' }} />
+                      </div>
+                      <div>
+                        <Text strong style={{ display: 'block', fontSize: '14px', color: '#1e293b' }}>
+                          Tài liệu học tập / File đính kèm
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: '12.5px', color: '#64748b' }}>
+                          {question.attachment_name || 'Tài liệu học tập'}
+                        </Text>
+                      </div>
+                    </Space>
+                    <Button 
+                      type="primary" 
+                      href={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000'}${question.attachment_url}`}
+                      target="_blank"
+                      download
+                      style={{ 
+                        borderRadius: '8px',
+                        background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                        border: 'none',
+                        fontWeight: 600
+                      }}
+                    >
+                      Tải xuống
+                    </Button>
+                  </div>
+                )}
 
                 {/* Thẻ tags & Actions */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
@@ -590,7 +819,7 @@ const QuestionDetail: React.FC = () => {
                   </div>
 
                   {/* Actions buttons */}
-                  <Space size="middle">
+                  <Space size="middle" wrap>
                     <Button 
                       type="text" 
                       icon={<ShareAltOutlined />} 
@@ -604,10 +833,28 @@ const QuestionDetail: React.FC = () => {
                       type="text" 
                       icon={<FlagOutlined />} 
                       style={{ color: '#64748b', fontWeight: 500, borderRadius: 8 }}
-                      onClick={() => message.info('Đã ghi nhận báo cáo nội dung câu hỏi!')}
+                      onClick={() => {
+                        if (!user) {
+                          message.warning('Vui lòng đăng nhập để thực hiện báo cáo!');
+                          navigate('/login');
+                          return;
+                        }
+                        setReportModalVisible(true);
+                      }}
                     >
                       Báo cáo
                     </Button>
+                    {/* Nút khóa/mở luồng thảo luận (chỉ teacher/admin) */}
+                    {isTeacherOrAdmin && (
+                      <Button 
+                        type="text" 
+                        icon={question.is_closed ? <UnlockOutlined /> : <LockOutlined />}
+                        style={{ color: question.is_closed ? '#10b981' : '#ef4444', fontWeight: 500, borderRadius: 8 }}
+                        onClick={handleCloseThread}
+                      >
+                        {question.is_closed ? 'Mở khóa thảo luận' : 'Khóa thảo luận'}
+                      </Button>
+                    )}
                   </Space>
                 </div>
               </Col>
@@ -616,6 +863,16 @@ const QuestionDetail: React.FC = () => {
 
           {/* ===== Viết Câu Trả Lời Mới ===== */}
           <div ref={answerEditorRef}>
+            {question.is_closed === 1 ? (
+              <Alert
+                message="Luồng thảo luận đã bị khóa"
+                description="Giảng viên đã khóa luồng thảo luận này. Không thể viết thêm câu trả lời hoặc bình luận mới."
+                type="info"
+                showIcon
+                icon={<LockOutlined />}
+                style={{ marginBottom: 28, borderRadius: 16, border: '1px solid #bfdbfe', background: '#eff6ff' }}
+              />
+            ) : (
             <Card
               title={
                 <Title level={4} style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -675,6 +932,7 @@ const QuestionDetail: React.FC = () => {
                 </div>
               )}
             </Card>
+            )}
           </div>
 
           {/* ===== Danh Sách Câu Trả Lời ===== */}
@@ -707,6 +965,9 @@ const QuestionDetail: React.FC = () => {
               dataSource={sortedAnswers}
               renderItem={(answer) => {
                 const isAccepted = answer.is_accepted === 1;
+                const isVerified = answer.teacher_verified === 1;
+                const isHidden = answer.is_hidden === 1;
+                const isAnswerByTeacher = answer.author_role === 'teacher';
                 const answerAuthorDetails = getUserDetails(answer.author, answer.author_reputation);
                 return (
                   <Card
@@ -717,11 +978,18 @@ const QuestionDetail: React.FC = () => {
                       borderRadius: '20px',
                       padding: '8px 12px',
                       marginBottom: 20,
-                      border: isAccepted ? '2px solid #bbf7d0' : 'none',
-                      backgroundColor: isAccepted ? '#f0fdf4' : '#ffffff',
-                      boxShadow: isAccepted ? '0 10px 15px -3px rgba(34, 197, 94, 0.05)' : 'none'
+                      border: isAccepted ? '2px solid #bbf7d0' : isAnswerByTeacher ? '2px solid #bfdbfe' : isHidden ? '2px dashed #fca5a5' : 'none',
+                      backgroundColor: isAccepted ? '#f0fdf4' : isAnswerByTeacher ? '#f0f9ff' : isHidden ? '#fef2f2' : '#ffffff',
+                      boxShadow: isAccepted ? '0 10px 15px -3px rgba(34, 197, 94, 0.05)' : 'none',
+                      opacity: isHidden ? 0.7 : 1
                     }}
                   >
+                    {/* Label bị ẩn (chỉ teacher/admin thấy) */}
+                    {isHidden && (
+                      <div style={{ background: '#fee2e2', color: '#dc2626', padding: '6px 14px', borderRadius: '8px', fontSize: 12, fontWeight: 600, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <EyeInvisibleOutlined /> Câu trả lời này đã bị ẩn bởi Giảng viên do chứa thông tin không chính xác
+                      </div>
+                    )}
                     <Row gutter={16} wrap={false}>
                       {/* Cột vote câu trả lời */}
                       <Col style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 44, flexShrink: 0 }}>
@@ -776,14 +1044,26 @@ const QuestionDetail: React.FC = () => {
                       
                       {/* Nội dung câu trả lời */}
                       <Col flex="auto" style={{ paddingLeft: 12 }}>
-                        {isAccepted && (
-                          <div style={{ marginBottom: 12 }}>
+                        {/* Badges: Accepted, Verified, Teacher */}
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: (isAccepted || isVerified || isAnswerByTeacher) ? 12 : 0 }}>
+                          {isAccepted && (
                             <Tag color="success" style={{ padding: '4px 12px', borderRadius: '6px', fontWeight: 600, fontSize: '13px' }}>
                               <CheckCircleFilled style={{ marginRight: 6 }} />
                               Câu trả lời hay nhất
                             </Tag>
-                          </div>
-                        )}
+                          )}
+                          {isVerified && (
+                            <Tag color="cyan" style={{ padding: '4px 12px', borderRadius: '6px', fontWeight: 600, fontSize: '13px' }}>
+                              <SafetyCertificateOutlined style={{ marginRight: 6 }} />
+                              Giảng viên xác nhận
+                            </Tag>
+                          )}
+                          {isAnswerByTeacher && (
+                            <Tag color="blue" style={{ padding: '4px 12px', borderRadius: '6px', fontWeight: 600, fontSize: '13px' }}>
+                              👨‍🏫 Giảng viên
+                            </Tag>
+                          )}
+                        </div>
                         
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                           {/* Profile tác giả câu trả lời */}
@@ -801,11 +1081,14 @@ const QuestionDetail: React.FC = () => {
                               {(answer.author || 'Ẩn danh').charAt(0).toUpperCase()}
                             </Avatar>
                             <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                                 <Text strong style={{ color: '#1e293b', fontSize: '14.5px' }}>{answer.author || 'Ẩn danh'}</Text>
                                 <Tag bordered={false} style={{ color: answerAuthorDetails.badgeColor, backgroundColor: answerAuthorDetails.badgeBg, fontSize: 11, fontWeight: 600, borderRadius: 4, padding: '0 6px' }}>
                                   {answerAuthorDetails.badge}
                                 </Tag>
+                                {isAnswerByTeacher && (
+                                  <Tag color="blue" bordered={false} style={{ fontSize: 10, fontWeight: 600, borderRadius: 4, padding: '0 6px', margin: 0 }}>👨‍🏫 GV</Tag>
+                                )}
                               </div>
                               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2 }}>
                                 <span style={{ fontSize: 11.5, color: '#94a3b8' }}>{answerAuthorDetails.title}</span>
@@ -821,9 +1104,109 @@ const QuestionDetail: React.FC = () => {
                         </div>
                         
                         {/* Nội dung câu trả lời */}
-                        <Paragraph style={{ fontSize: 15, color: '#334155', marginTop: 10, marginBottom: 18, lineHeight: '1.75' }}>
+                        <Paragraph style={{ fontSize: 15, color: '#334155', marginTop: 10, marginBottom: 12, lineHeight: '1.75' }}>
                           {answer.content}
                         </Paragraph>
+
+                        {/* Nhận xét từ giảng viên (hiển thị cho tất cả user) */}
+                        {answer.teacher_note && (
+                          <div style={{
+                            background: 'linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%)',
+                            border: '1px solid #bfdbfe',
+                            borderLeft: '4px solid #3b82f6',
+                            borderRadius: '8px',
+                            padding: '10px 14px',
+                            marginBottom: 14,
+                            fontSize: 13,
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                              <SafetyCertificateOutlined style={{ color: '#3b82f6', fontSize: 13 }} />
+                              <Text strong style={{ color: '#1d4ed8', fontSize: 12 }}>Nhận xét từ Giảng viên</Text>
+                            </div>
+                            <Text italic style={{ color: '#334155', fontSize: 13 }}>{answer.teacher_note}</Text>
+                          </div>
+                        )}
+
+                        {/* Thanh hành động giảng viên (chỉ hiện cho teacher/admin) */}
+                        {isTeacherOrAdmin && (
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                            {isTeacher && (
+                              <Tooltip title={isVerified ? 'Bỏ xác nhận chuyên môn' : 'Xác nhận chuyên môn'}>
+                                <Button
+                                  size="small"
+                                  type={isVerified ? 'primary' : 'default'}
+                                  icon={<SafetyCertificateOutlined />}
+                                  style={{
+                                    borderRadius: 8,
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    ...(isVerified ? { background: '#0891b2', borderColor: '#0891b2' } : {})
+                                  }}
+                                  onClick={() => handleTeacherVerify(answer.id)}
+                                >
+                                  {isVerified ? 'Đã xác nhận' : 'Xác nhận'}
+                                </Button>
+                              </Tooltip>
+                            )}
+                            <Tooltip title={isHidden ? 'Hiện lại câu trả lời' : 'Ẩn câu trả lời sai lệch'}>
+                              <Button
+                                size="small"
+                                danger={!isHidden}
+                                type={isHidden ? 'primary' : 'default'}
+                                icon={isHidden ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+                                style={{ borderRadius: 8, fontSize: 12, fontWeight: 600 }}
+                                onClick={() => handleHideAnswer(answer.id)}
+                              >
+                                {isHidden ? 'Hiện lại' : 'Ẩn'}
+                              </Button>
+                            </Tooltip>
+                            {isTeacher && (
+                              <Button
+                                size="small"
+                                icon={<FormOutlined />}
+                                style={{ borderRadius: 8, fontSize: 12, fontWeight: 600 }}
+                                onClick={() => {
+                                  setShowTeacherNote(prev => ({ ...prev, [answer.id]: !prev[answer.id] }));
+                                  if (answer.teacher_note) {
+                                    setTeacherNoteText(prev => ({ ...prev, [answer.id]: answer.teacher_note || '' }));
+                                  }
+                                }}
+                              >
+                                Nhận xét
+                              </Button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Ô nhập nhận xét nhanh (chỉ teacher) */}
+                        {showTeacherNote[answer.id] && isTeacher && (
+                          <div style={{ marginBottom: 14, display: 'flex', gap: 8 }}>
+                            <Input.TextArea
+                              rows={2}
+                              placeholder='VD: "Lỗi logic ở dòng 5", "Sai cú pháp hàm map"...'
+                              value={teacherNoteText[answer.id] || ''}
+                              onChange={e => setTeacherNoteText(prev => ({ ...prev, [answer.id]: e.target.value }))}
+                              style={{ borderRadius: 10, fontSize: 13 }}
+                            />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              <Button
+                                type="primary"
+                                size="small"
+                                style={{ borderRadius: 8, background: '#3b82f6', borderColor: '#3b82f6' }}
+                                onClick={() => handleTeacherNote(answer.id)}
+                              >
+                                Lưu
+                              </Button>
+                              <Button
+                                size="small"
+                                style={{ borderRadius: 8 }}
+                                onClick={() => setShowTeacherNote(prev => ({ ...prev, [answer.id]: false }))}
+                              >
+                                Hủy
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                         
                         {/* === Mục bình luận (Comments) === */}
                         <div style={{ marginTop: 16, borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
@@ -857,8 +1240,8 @@ const QuestionDetail: React.FC = () => {
                             </div>
                           )}
                           
-                          {/* Nút / Thanh bình luận */}
-                          {user ? (
+                          {/* Nút / Thanh bình luận (ẩn nếu luồng bị khóa) */}
+                          {user && !question.is_closed ? (
                             showComment[answer.id] ? (
                               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                                 <Input
@@ -983,6 +1366,9 @@ const QuestionDetail: React.FC = () => {
                   <Tag bordered={false} style={{ color: authorDetails.badgeColor, backgroundColor: authorDetails.badgeBg, fontSize: 10, fontWeight: 700, borderRadius: 4, padding: '0 5px' }}>
                     {authorDetails.badge}
                   </Tag>
+                  {question.author_role === 'teacher' && (
+                    <Tag color="blue" style={{ fontSize: 10, fontWeight: 700, borderRadius: 4, padding: '0 5px', margin: 0 }}>👨‍🏫 Giảng viên</Tag>
+                  )}
                 </div>
                 <div style={{ color: '#64748b', fontSize: 12, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {authorDetails.title}
@@ -1082,6 +1468,61 @@ const QuestionDetail: React.FC = () => {
         </Col>
 
       </Row>
+
+      {/* Report Modal */}
+      <Modal
+        title={<span>⚠️ Báo cáo vi phạm nội dung</span>}
+        open={reportModalVisible}
+        onCancel={() => {
+          setReportModalVisible(false);
+          setReportReason('');
+          setReportTempHide(false);
+        }}
+        onOk={handleSendReport}
+        confirmLoading={reportSubmitting}
+        okText="Gửi báo cáo"
+        cancelText="Hủy"
+        okButtonProps={{ style: { borderRadius: '8px' } }}
+        cancelButtonProps={{ style: { borderRadius: '8px' } }}
+      >
+        <Form layout="vertical" style={{ marginTop: '16px' }}>
+          <Form.Item label="Lý do báo cáo" required>
+            <Select 
+              placeholder="Chọn lý do vi phạm" 
+              onChange={(val) => setReportReason(val)}
+              value={reportReason || undefined}
+            >
+              <Select.Option value="Kiến thức sai nghiêm trọng">Kiến thức sai nghiêm trọng / Sai lệch trầm trọng</Select.Option>
+              <Select.Option value="Vi phạm quy chế thi">Vi phạm quy chế thi cử / Học tập</Select.Option>
+              <Select.Option value="Ngôn từ không phù hợp">Ngôn từ không phù hợp / Thô tục</Select.Option>
+              <Select.Option value="Spam / Quảng cáo trái phép">Spam / Quảng cáo trái phép</Select.Option>
+              <Select.Option value="Lý do khác">Lý do khác</Select.Option>
+            </Select>
+          </Form.Item>
+          {reportReason === 'Lý do khác' && (
+            <Form.Item label="Chi tiết lý do khác" required>
+              <TextArea
+                rows={3}
+                placeholder="Nhập lý do chi tiết..."
+                onChange={(e) => setReportReason(e.target.value)}
+              />
+            </Form.Item>
+          )}
+          {isTeacher && (
+            <Form.Item style={{ marginBottom: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Switch
+                  checked={reportTempHide}
+                  onChange={(checked) => setReportTempHide(checked)}
+                />
+                <span style={{ fontWeight: 600, color: '#ef4444' }}>
+                  Ẩn tạm thời bài viết này ngay lập tức (Chờ Admin duyệt)
+                </span>
+              </div>
+            </Form.Item>
+          )}
+        </Form>
+      </Modal>
     </div>
   );
 };

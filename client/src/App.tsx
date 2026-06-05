@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, ConfigProvider, Input, Button, Avatar, Dropdown, Space, message } from 'antd';
+import { Layout, ConfigProvider, Input, Button, Avatar, Dropdown, Space, message, Menu } from 'antd';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import HomePage from './pages/Homepage';
 
@@ -14,7 +14,9 @@ import CreateQuestion from './pages/CreateQuestion';
 import QuestionDetail from './pages/QuestionDetail';
 import EditQuestion from './pages/EditQuestion';
 import UserProfile from './pages/UserProfile';
+import TeacherDashboard from './pages/TeacherDashboard';
 import SearchAndFilterPage from './pages/SearchAndFilterPage';
+import BookmarksPage from './pages/BookmarksPage';
 import { NotificationBell } from './components/NotificationBell';
 import {
   SearchOutlined,
@@ -27,7 +29,10 @@ import {
   SettingOutlined,
   DownOutlined,
   RightOutlined,
-  CommentOutlined
+  CommentOutlined,
+  BookOutlined,
+  TeamOutlined,
+  FormOutlined
 } from '@ant-design/icons';
 import './App.css';
 import { StudentChatbot } from './components/StudentChatbot';
@@ -90,6 +95,18 @@ const AppContent: React.FC = () => {
       label: <Link to="/admin">Quản trị hệ thống</Link>,
       icon: <SettingOutlined />
     }] : []),
+    ...(parsedUser?.role === 'teacher' ? [
+      {
+        key: 'teacher-dashboard',
+        label: <Link to="/teacher-dashboard">Bảng điều khiển GV</Link>,
+        icon: <SettingOutlined />
+      },
+      {
+        key: 'announcement',
+        label: <Link to="/create-question?type=announcement">Tạo Thông báo</Link>,
+        icon: <CommentOutlined />
+      }
+    ] : []),
     {
       type: 'divider' as const
     },
@@ -113,6 +130,68 @@ const AppContent: React.FC = () => {
   const isAdmin = location.pathname.startsWith('/admin');
   const hideSidebar = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname) || isAdmin;
   const hideLayout = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
+
+  // Xây dựng menuItems cho Menu của Ant Design v6
+  const getMenuItems = () => {
+    const role = parsedUser?.role;
+    
+    // Các mục chung cho tất cả mọi người (kể cả Guest/Student)
+    const baseItems = [
+      {
+        key: '/',
+        icon: <HomeOutlined />,
+        label: 'Trang chủ'
+      },
+      {
+        key: '/search',
+        icon: <SearchOutlined />,
+        label: 'Tìm kiếm câu hỏi'
+      },
+      {
+        key: '/create-question',
+        icon: <FormOutlined />,
+        label: 'Đặt câu hỏi mới'
+      },
+      {
+        key: '/bookmarks',
+        icon: <BookOutlined />,
+        label: 'Bài viết đã lưu'
+      }
+    ];
+
+    // Nếu là Teacher, thêm các trang đặc quyền
+    if (role === 'teacher') {
+      return [
+        ...baseItems,
+        {
+          key: '/teacher/classes',
+          icon: <TeamOutlined />,
+          label: 'Không gian lớp học'
+        },
+        {
+          key: '/teacher-dashboard',
+          icon: <SettingOutlined />,
+          label: 'Bảng điều khiển GV'
+        }
+      ];
+    }
+
+    // Nếu là Admin, thêm trang admin
+    if (role === 'admin') {
+      return [
+        ...baseItems,
+        {
+          key: '/admin',
+          icon: <SettingOutlined />,
+          label: 'Quản trị hệ thống'
+        }
+      ];
+    }
+
+    return baseItems;
+  };
+
+  const menuItems = getMenuItems();
 
   return (
     <Layout className="app-layout">
@@ -204,44 +283,21 @@ const AppContent: React.FC = () => {
           theme="light"
           className="app-sidebar"
         >
-          {/* Section: Khám phá */}
-          <div className="sidebar-section">
+          <div style={{ padding: '24px 24px 8px 24px' }}>
             <div className="sidebar-section-title">
               KHÁM PHÁ
             </div>
-            
-            <div 
-              className={`sidebar-nav-item ${isHomeActive ? 'active' : ''}`}
-              onClick={() => navigate('/')}
-            >
-              <HomeOutlined className="sidebar-menu-icon" />
-              <span>Trang chủ</span>
-            </div>
-
-            <div 
-              className={`sidebar-nav-item ${isDiscussionsActive ? 'active' : ''}`}
-              onClick={() => navigate('/discussions')}
-            >
-              <CommentOutlined className="sidebar-menu-icon" />
-              <span>Thảo luận cộng đồng</span> 
-            </div>
-
-            <div 
-              className={`sidebar-nav-item ${isPopularActive ? 'active' : ''}`}
-              onClick={() => navigate('/search?q=popular')}
-            >
-              <FireOutlined className="sidebar-menu-icon" />
-              <span>Câu hỏi phổ biến</span>
-            </div>
-
-            <div 
-              className={`sidebar-nav-item ${isNewestActive ? 'active' : ''}`}
-              onClick={() => navigate('/search?q=newest')}
-            >
-              <ClockCircleOutlined className="sidebar-menu-icon" />
-              <span>Câu hỏi mới nhất</span>
-            </div>
           </div>
+          <Menu
+            mode="inline"
+            selectedKeys={[location.pathname]}
+            onClick={(info) => {
+              navigate(info.key);
+            }}
+            items={menuItems}
+            style={{ borderRight: 0, padding: '0 12px' }}
+            className="sidebar-antd-menu"
+          />
 
           {/* Section: Tags phổ biến */}
           <div className="sidebar-section">
@@ -303,6 +359,30 @@ const AppContent: React.FC = () => {
             <Route path="/questions/:id/edit" element={<EditQuestion />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/search" element={<SearchAndFilterPage />} />
+            <Route 
+              path="/bookmarks" 
+              element={
+                <ProtectedRoute>
+                  <BookmarksPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/teacher-dashboard" 
+              element={
+                <ProtectedRoute requiredRole="teacher">
+                  <TeacherDashboard defaultTab="overview" />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/teacher/classes" 
+              element={
+                <ProtectedRoute requiredRole="teacher">
+                  <TeacherDashboard defaultTab="students" />
+                </ProtectedRoute>
+              } 
+            />
             
             <Route 
               path="/admin" 

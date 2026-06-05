@@ -28,4 +28,20 @@ const adminMiddleware = (req, res, next) => {
   next();
 };
 
-module.exports = { authMiddleware, adminMiddleware };
+// Middleware kiểm tra quyền teacher
+const teacherMiddleware = (req, res, next) => {
+  if (req.user?.role !== 'teacher') {
+    return res.status(403).json({ success: false, message: 'Chỉ giảng viên mới có quyền thực hiện!' });
+  }
+  next();
+};
+
+// Middleware kiểm tra quyền teacher hoặc admin
+const teacherOrAdminMiddleware = (req, res, next) => {
+  if (req.user?.role !== 'teacher' && req.user?.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Chỉ giảng viên hoặc admin mới có quyền!' });
+  }
+  next();
+};
+
+module.exports = { authMiddleware, adminMiddleware, teacherMiddleware, teacherOrAdminMiddleware };
