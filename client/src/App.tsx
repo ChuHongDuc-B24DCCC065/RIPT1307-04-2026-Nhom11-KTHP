@@ -23,8 +23,6 @@ import {
   SearchOutlined,
   PlusOutlined,
   HomeOutlined,
-  FireOutlined,
-  ClockCircleOutlined,
   UserOutlined,
   LogoutOutlined,
   SettingOutlined,
@@ -112,6 +110,7 @@ const AppContent: React.FC = () => {
 
 
 
+  // Xác định active menu item dựa vào pathname
 
   const isAdmin = location.pathname.startsWith('/admin');
   const hideSidebar = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname) || isAdmin;

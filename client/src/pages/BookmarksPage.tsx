@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Tag, Space, Card, Typography, message, Empty, Skeleton, Breadcrumb, Divider } from 'antd';
-import { MessageOutlined, LikeOutlined, UserOutlined, ClockCircleOutlined, BookOutlined, EyeOutlined } from '@ant-design/icons';
+import { Tag, Space, Card, Typography, message, Empty, Skeleton, Divider } from 'antd';
+import { MessageOutlined, LikeOutlined, UserOutlined, ClockCircleOutlined, BookOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import dayjs from 'dayjs';
