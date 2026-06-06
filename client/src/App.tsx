@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, ConfigProvider, Button, Avatar, Dropdown, Space, message, Menu } from 'antd';
+import { Layout, ConfigProvider, Button, Avatar, Dropdown, message, Menu } from 'antd';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import HomePage from './pages/Homepage';
 
@@ -21,13 +21,10 @@ import TagsPage from './pages/TagsPage';
 import { NotificationBell } from './components/NotificationBell';
 import {
   SearchOutlined,
-  PlusOutlined,
   HomeOutlined,
   UserOutlined,
   LogoutOutlined,
   SettingOutlined,
-  DownOutlined,
-  RightOutlined,
   CommentOutlined,
   BookOutlined,
   TeamOutlined,
@@ -63,14 +60,6 @@ const AppContent: React.FC = () => {
     localStorage.clear();
     message.success('Đăng xuất thành công!');
     navigate('/welcome');
-  };
-
-  const handleCreateQuestion = () => {
-    if (!parsedUser) {
-      navigate('/login');
-    } else {
-      navigate('/create-question');
-    }
   };
 
   // Menu Avatar Dropdown
