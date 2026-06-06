@@ -6,7 +6,7 @@ import {
 } from 'antd';
 import {
   CaretUpOutlined, CaretDownOutlined, CaretUpFilled, CaretDownFilled,
-  MessageOutlined, UserOutlined, ClockCircleOutlined,
+  MessageOutlined,
   SendOutlined, CheckCircleFilled,
   EyeOutlined, ShareAltOutlined, FlagOutlined,
   ThunderboltOutlined, GlobalOutlined, InfoCircleOutlined,

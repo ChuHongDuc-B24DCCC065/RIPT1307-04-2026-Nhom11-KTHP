@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Tag, Space, Card, Typography, message, Empty, Skeleton, Input, Divider, Tooltip, Popover, Button, Avatar } from 'antd';
-import { MessageOutlined, LikeOutlined, LikeFilled, UserOutlined, ClockCircleOutlined, CheckOutlined } from '@ant-design/icons';
+import { Tag, Card, Typography, message, Empty, Skeleton, Input, Popover, Button, Avatar } from 'antd';
+import { CheckOutlined } from '@ant-design/icons';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -10,7 +10,7 @@ import 'dayjs/locale/vi';
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 // --- Interface định nghĩa kiểu dữ liệu trả về từ API ---
 interface Question {

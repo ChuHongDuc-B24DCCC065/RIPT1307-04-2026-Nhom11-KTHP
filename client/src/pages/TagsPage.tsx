@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Typography, Row, Col, Input, Tag, Space, Skeleton, Empty, Button } from 'antd';
-import { SearchOutlined, TagOutlined, CalendarOutlined, FileTextOutlined, ArrowLeftOutlined, NumberOutlined } from '@ant-design/icons';
+import { SearchOutlined, CalendarOutlined, ArrowLeftOutlined, NumberOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import dayjs from 'dayjs';
