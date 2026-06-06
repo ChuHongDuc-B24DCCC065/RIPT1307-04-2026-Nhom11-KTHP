@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Tag, Space, Button, Row, Col, Typography, Card, message, Empty, Skeleton, Input, Pagination, Tooltip, Radio, Avatar, Popover, List } from 'antd';
 import { MessageOutlined, LikeOutlined, SearchOutlined, PlusOutlined, FireOutlined, TrophyOutlined, CheckOutlined, StarFilled, SyncOutlined, EyeOutlined, CheckCircleFilled } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
 import axiosInstance from '../utils/axiosConfig';
+import { STORAGE_KEYS } from '../constants/storageKeys';
+import { getAvatarGradient } from '../utils/avatar';
+import { stripHtml } from '../utils/html';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -61,63 +63,63 @@ interface Contributor {
 }
 
 // --- MOCK DATA GIẢ CHO TRANG CHỦ ---
-const MOCK_QUESTIONS: Question[] = [
-  {
-    id: 1,
-    title: "Lỗi 'Hydration failed' trong React 19 khi dùng Next.js, làm sao để fix?",
-    description: "Chào mọi người, hiện tại mình đang nâng cấp dự án từ React 18 lên React 19 và gặp phải lỗi Hydration mismatch. Mình không rõ tại sao lỗi này lại xuất hiện vì ở version trước chạy rất bình thường.",
-    tags: "ReactJS,Frontend,TypeScript,Web Performance",
-    author: "Minh Phúc",
-    user_id: 1,
-    votes: 128,
-    answer_count: 3,
-    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() 
-  },
-  {
-    id: 2,
-    title: "Làm thế nào để tối ưu hóa truy vấn SQL chứa JOIN nhiều bảng lớn?",
-    description: "Mình có một database MySQL chứa bảng users, orders, order_items với dữ liệu hàng triệu dòng. Hiện tại khi dùng JOIN 3 bảng này thì tốc độ query rất chậm, mất khoảng 5-8 giây. Nhờ mọi người hướng dẫn tối ưu.",
-    tags: "Database,MySQL,Backend,Optimization",
-    author: "Hoàng Anh",
-    user_id: 2,
-    votes: 85,
-    answer_count: 5,
-    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() 
-  },
-  {
-    id: 3,
-    title: "Hiểu sâu về cơ chế bất đồng bộ (Async/Await, Promise) trong JavaScript?",
-    description: "Em mới học JS và gặp khó khăn khi phân biệt thứ tự thực thi giữa microtask và macrotask. Ví dụ sự khác nhau giữa setTimeout và Promise.resolve().then() là gì?",
-    tags: "JavaScript,Beginner,Asynchronous",
-    author: "Thanh Hằng",
-    user_id: 3,
-    votes: 42,
-    answer_count: 0,
-    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() 
-  },
-  {
-    id: 4,
-    title: "Tìm hiểu kiến trúc Microservices và cách phân chia các service hợp lý",
-    description: "Công ty mình đang có kế hoạch chuyển từ kiến trúc Monolithic sang Microservices. Cho mình hỏi các tiêu chí quan trọng để phân chia một service là gì? Làm thế nào để giải quyết vấn đề distributed transaction?",
-    tags: "Microservices,Architecture,Backend",
-    author: "Quốc Trung",
-    user_id: 4,
-    votes: 95,
-    answer_count: 2,
-    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() 
-  },
-  {
-    id: 5,
-    title: "Sử dụng Tailwind CSS trong dự án lớn: Nên cấu hình thế nào để tối ưu hiệu suất?",
-    description: "Tailwind CSS rất tiện lợi nhưng khi compile dự án lớn file CSS sinh ra khá nặng. Các bạn thường cấu hình plugin purge thế nào và quản lý các class trùng lặp ra sao?",
-    tags: "Tailwind,CSS,Frontend,Optimization",
-    author: "Linh Chi",
-    user_id: 5,
-    votes: 19,
-    answer_count: 0,
-    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() 
-  }
-];
+// const MOCK_QUESTIONS: Question[] = [
+//   {
+//     id: 1,
+//     title: "Lỗi 'Hydration failed' trong React 19 khi dùng Next.js, làm sao để fix?",
+//     description: "Chào mọi người, hiện tại mình đang nâng cấp dự án từ React 18 lên React 19 và gặp phải lỗi Hydration mismatch. Mình không rõ tại sao lỗi này lại xuất hiện vì ở version trước chạy rất bình thường.",
+//     tags: "ReactJS,Frontend,TypeScript,Web Performance",
+//     author: "Minh Phúc",
+//     user_id: 1,
+//     votes: 128,
+//     answer_count: 3,
+//     created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() 
+//   },
+//   {
+//     id: 2,
+//     title: "Làm thế nào để tối ưu hóa truy vấn SQL chứa JOIN nhiều bảng lớn?",
+//     description: "Mình có một database MySQL chứa bảng users, orders, order_items với dữ liệu hàng triệu dòng. Hiện tại khi dùng JOIN 3 bảng này thì tốc độ query rất chậm, mất khoảng 5-8 giây. Nhờ mọi người hướng dẫn tối ưu.",
+//     tags: "Database,MySQL,Backend,Optimization",
+//     author: "Hoàng Anh",
+//     user_id: 2,
+//     votes: 85,
+//     answer_count: 5,
+//     created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() 
+//   },
+//   {
+//     id: 3,
+//     title: "Hiểu sâu về cơ chế bất đồng bộ (Async/Await, Promise) trong JavaScript?",
+//     description: "Em mới học JS và gặp khó khăn khi phân biệt thứ tự thực thi giữa microtask và macrotask. Ví dụ sự khác nhau giữa setTimeout và Promise.resolve().then() là gì?",
+//     tags: "JavaScript,Beginner,Asynchronous",
+//     author: "Thanh Hằng",
+//     user_id: 3,
+//     votes: 42,
+//     answer_count: 0,
+//     created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() 
+//   },
+//   {
+//     id: 4,
+//     title: "Tìm hiểu kiến trúc Microservices và cách phân chia các service hợp lý",
+//     description: "Công ty mình đang có kế hoạch chuyển từ kiến trúc Monolithic sang Microservices. Cho mình hỏi các tiêu chí quan trọng để phân chia một service là gì? Làm thế nào để giải quyết vấn đề distributed transaction?",
+//     tags: "Microservices,Architecture,Backend",
+//     author: "Quốc Trung",
+//     user_id: 4,
+//     votes: 95,
+//     answer_count: 2,
+//     created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() 
+//   },
+//   {
+//     id: 5,
+//     title: "Sử dụng Tailwind CSS trong dự án lớn: Nên cấu hình thế nào để tối ưu hiệu suất?",
+//     description: "Tailwind CSS rất tiện lợi nhưng khi compile dự án lớn file CSS sinh ra khá nặng. Các bạn thường cấu hình plugin purge thế nào và quản lý các class trùng lặp ra sao?",
+//     tags: "Tailwind,CSS,Frontend,Optimization",
+//     author: "Linh Chi",
+//     user_id: 5,
+//     votes: 19,
+//     answer_count: 0,
+//     created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() 
+//   }
+// ];
 
 const MOCK_HOT_QUESTIONS: HotQuestion[] = [
   { id: 1, title: "Lỗi 'Hydration failed' trong React 19 khi dùng Next.js, làm sao để fix?", votes: 128, answer_count: 3 },
@@ -135,7 +137,7 @@ const MOCK_TOP_CONTRIBUTORS: Contributor[] = [
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null');
 
   // --- State ---
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -160,8 +162,12 @@ const HomePage: React.FC = () => {
       let res;
       if (filterTab === 'interesting') {
         res = await axiosInstance.get('/questions/interesting');
+      } else if (filterTab === 'votes') {
+        res = await axiosInstance.get(`/questions?page=${currentPage}&limit=${pageSize}&sort=votes`);
+      } else if (filterTab === 'unanswered') {
+        res = await axiosInstance.get(`/questions?page=${currentPage}&limit=${pageSize}&filter=unanswered`);
       } else {
-        res = await axiosInstance.get(`/questions?page=${currentPage}&limit=${pageSize}`);
+        res = await axiosInstance.get(`/questions?page=${currentPage}&limit=${pageSize}&sort=newest`);
       }
       
       const fetchedQuestions = res.data?.success ? res.data.data : (Array.isArray(res.data) ? res.data : (res.data?.data || []));
@@ -181,14 +187,8 @@ const HomePage: React.FC = () => {
       setLikedQuestions(initialLikes);
     } catch (error) {
       console.error('Lỗi tải câu hỏi:', error);
-      // Hiển thị mock data nếu API lỗi
-      if (filterTab !== 'interesting') {
-        setQuestions(MOCK_QUESTIONS);
-        setTotalQuestions(MOCK_QUESTIONS.length);
-      } else {
-        setQuestions([]);
-        setTotalQuestions(0);
-      }
+      setQuestions([]);
+      setTotalQuestions(0);
     } finally {
       setLoading(false);
     }
@@ -218,7 +218,7 @@ const HomePage: React.FC = () => {
   const [tagsData, setTagsData] = useState<Record<string, { description: string; count: number }>>({});
   const [watchedTags, setWatchedTags] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem('watchedTags') || '[]');
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.WATCHED_TAGS) || '[]');
     } catch {
       return [];
     }
@@ -235,21 +235,17 @@ const HomePage: React.FC = () => {
       message.success(`Đã theo dõi thẻ #${tagName}`);
     }
     setWatchedTags(updated);
-    localStorage.setItem('watchedTags', JSON.stringify(updated));
+    localStorage.setItem(STORAGE_KEYS.WATCHED_TAGS, JSON.stringify(updated));
   };
 
   const fetchTagCounts = async () => {
     try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/tags/stats`
-      );
+      const res = await axiosInstance.get('/questions/tags/stats');
       if (res.data?.success) {
         setTagCounts(res.data.data || {});
       }
 
-      const resList = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/tags/list`
-      );
+      const resList = await axiosInstance.get('/questions/tags/list');
       if (resList.data?.success) {
         const data: Record<string, { description: string; count: number }> = {};
         resList.data.data.forEach((t: any) => {
@@ -326,12 +322,7 @@ const HomePage: React.FC = () => {
     ));
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/${question.id}/vote`,
-        { type: 'up' }, 
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axiosInstance.post(`/questions/${question.id}/vote`, { type: 'up' });
       
       // Cập nhật lại state chuẩn xác từ backend trả về
       setLikedQuestions(prev => ({ ...prev, [question.id]: res.data.user_vote_type === 1 }));
@@ -377,18 +368,7 @@ const HomePage: React.FC = () => {
     return result;
   };
 
-  const getAvatarGradient = (name: string) => {
-    const gradients = [
-      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-      'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-    ];
-    const index = (name || 'A').charCodeAt(0) % gradients.length;
-    return gradients[index];
-  };
+  // getAvatarGradient được import từ utils/avatar
 
   const displayQuestions = getFilteredAndSortedQuestions();
 
@@ -561,9 +541,9 @@ const HomePage: React.FC = () => {
                         </div>
 
                         <div className="so-question-excerpt">
-                          {item.description && item.description.length > 180
-                            ? `${item.description.replace(/<[^>]*>/g, '').substring(0, 180)}...`
-                            : item.description.replace(/<[^>]*>/g, '')}
+                          {item.description && (stripHtml(item.description).length > 180
+                            ? `${stripHtml(item.description).substring(0, 180)}...`
+                            : stripHtml(item.description))}
                         </div>
 
                         <div className="so-meta-row">

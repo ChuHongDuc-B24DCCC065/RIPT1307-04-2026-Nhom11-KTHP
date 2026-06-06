@@ -22,7 +22,7 @@ import {
   CheckOutlined,
   CloseOutlined
 } from '@ant-design/icons';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import dayjs from 'dayjs';
 
 
@@ -62,20 +62,7 @@ const AdminPostManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>(null);
 
-  const axiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  });
 
-  axiosInstance.interceptors.request.use(
-    (config) => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    },
-    (error) => Promise.reject(error)
-  );
 
   const fetchData = async () => {
     setLoading(true);

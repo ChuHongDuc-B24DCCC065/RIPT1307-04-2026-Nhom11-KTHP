@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Typography, Row, Col, Input, Tag, Space, Skeleton, Empty, Button } from 'antd';
 import { SearchOutlined, CalendarOutlined, ArrowLeftOutlined, NumberOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -26,12 +26,10 @@ const TagsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
   const fetchTags = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/questions/tags/list`);
+      const res = await axiosInstance.get('/questions/tags/list');
       if (res.data?.success) {
         setTags(res.data.data || []);
       }

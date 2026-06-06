@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Popconfirm, message } from 'antd';
 import { LockOutlined, UnlockOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 
 interface ToggleUserStatusButtonProps {
   userId: string;
@@ -21,16 +21,10 @@ const ToggleUserStatusButton: React.FC<ToggleUserStatusButtonProps> = ({
     setLoading(true);
     try {
       const newStatus = isBanned ? 'active' : 'banned';
-      const token = localStorage.getItem('token');
       
-      await axios.put(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin/users/${userId}/status`, 
-        { status: newStatus },
-        { 
-          headers: { 
-            Authorization: `Bearer ${token}` 
-          } 
-        }
+      await axiosInstance.put(
+        `/admin/users/${userId}/status`, 
+        { status: newStatus }
       );
       
       message.success(`Đã ${newStatus === 'banned' ? 'khóa' : 'mở khóa'} người dùng thành công!`);

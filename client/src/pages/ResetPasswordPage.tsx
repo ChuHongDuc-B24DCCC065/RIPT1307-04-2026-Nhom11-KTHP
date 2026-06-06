@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Card, message, Typography } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import './ResetPasswordPage.css';
 
@@ -23,7 +23,7 @@ const ResetPasswordPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/reset-password`, {
+      const res = await axiosInstance.post('/reset-password', {
         email,
         token,
         newPassword: values.newPassword

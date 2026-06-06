@@ -1,0 +1,83 @@
+/* Rich Text Editor Styles */
+.rich-text-editor-wrapper .ql-container {
+  font-size: 14px;
+  border: 1px solid #d9d9d9;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.rich-text-editor-wrapper .ql-editor {
+  min-height: 300px;
+  padding: 12px;
+}
+
+.rich-text-editor-wrapper .ql-toolbar {
+  border: 1px solid #d9d9d9;
+  border-radius: 4px 4px 0 0;
+  background-color: #fafafa;
+}
+
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-formats {
+  margin-right: 15px;
+}
+
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-picker-label {
+  color: #000;
+}
+
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-stroke {
+  stroke: #999;
+}
+
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-fill,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-stroke.ql-fill {
+  fill: #999;
+}
+
+.rich-text-editor-wrapper .ql-toolbar.ql-snow button:hover,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow button:focus,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow button.ql-active,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-picker-label:hover,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-picker-item:hover,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-picker-item.ql-selected {
+  color: #1890ff;
+}
+
+.rich-text-editor-wrapper .ql-toolbar.ql-snow button:hover .ql-stroke,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow button:focus .ql-stroke,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow button.ql-active .ql-stroke,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-picker-label:hover .ql-stroke,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-picker-item:hover .ql-stroke,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-picker-item.ql-selected .ql-stroke {
+  stroke: #1890ff;
+}
+
+.rich-text-editor-wrapper .ql-toolbar.ql-snow button:hover .ql-fill,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow button:focus .ql-fill,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow button.ql-active .ql-fill,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-picker-label:hover .ql-fill,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-picker-item:hover .ql-fill,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-picker-item.ql-selected .ql-fill,
+.rich-text-editor-wrapper .ql-toolbar.ql-snow .ql-toolbar.ql-snow .ql-picker-item.ql-selected .ql-fill {
+  fill: #1890ff;
+}
+
+.rich-text-editor-wrapper .ql-editor.ql-blank::before {
+  color: #bfbfbf;
+  font-style: italic;
+}
+
+.rich-text-editor-wrapper .ql-editor {
+  border: none;
+}
+
+/* Focus state for better UX */
+.rich-text-editor-wrapper .ql-container.ql-focus .ql-editor.ql-blank::before {
+  color: #8c8c8c;
+}
+
+.rich-text-editor-wrapper:focus-within .ql-toolbar {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}

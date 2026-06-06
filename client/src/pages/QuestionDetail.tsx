@@ -9,13 +9,15 @@ import {
   MessageOutlined,
   SendOutlined, CheckCircleFilled,
   EyeOutlined, ShareAltOutlined, FlagOutlined,
-  ThunderboltOutlined, GlobalOutlined, InfoCircleOutlined,
+  ThunderboltOutlined, InfoCircleOutlined,
   FireOutlined, PlusOutlined, CheckOutlined,
   SafetyCertificateOutlined, LockOutlined, UnlockOutlined,
   EyeInvisibleOutlined, FormOutlined, PaperClipOutlined
 } from '@ant-design/icons';
 
-import axios from 'axios';
+import axiosInstance, { API_BASE_URL } from '../utils/axiosConfig';
+import { STORAGE_KEYS } from '../constants/storageKeys';
+import { getAvatarGradient } from '../utils/avatar';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -86,19 +88,6 @@ const formatTime = (dateStr: string): string => {
   return `${Math.floor(diff / 86400)} ngày trước`;
 };
 
-// --- Helper: Get random gradient for avatars ---
-const getAvatarGradient = (username: string) => {
-  const hash = username.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const gradients = [
-    'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', // Indigo -> Purple
-    'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)', // Blue -> Cyan
-    'linear-gradient(135deg, #10b981 0%, #059669 100%)', // Emerald -> Green
-    'linear-gradient(135deg, #f59e0b 0%, #e11d48 100%)', // Amber -> Rose
-    'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)', // Pink -> Rose
-  ];
-  return gradients[hash % gradients.length];
-};
-
 // --- Helper: Map dynamic user details based on username for premium feel ---
 interface UserDetails {
   title: string;
@@ -157,13 +146,10 @@ const getUserDetails = (username: string, actualPoints?: number): UserDetails =>
   };
 };
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 const QuestionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
-  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null');
 
   // --- Refs ---
   const answerEditorRef = useRef<HTMLDivElement>(null);
@@ -191,9 +177,7 @@ const QuestionDetail: React.FC = () => {
   const fetchQuestion = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.get(`${API}/questions/${id}`, { headers });
+      const res = await axiosInstance.get(`/questions/${id}`);
       setQuestion(res.data.data);
     } catch (err: any) {
       if (err.response?.status === 404) {
@@ -209,7 +193,7 @@ const QuestionDetail: React.FC = () => {
   // --- Tải danh sách tất cả câu hỏi để tìm các câu hỏi liên quan ---
   const fetchAllQuestions = async () => {
     try {
-      const res = await axios.get(`${API}/questions`);
+      const res = await axiosInstance.get('/questions');
       const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
       setAllQuestions(data);
     } catch (err) {
@@ -221,7 +205,7 @@ const QuestionDetail: React.FC = () => {
 
   const fetchTagCounts = async () => {
     try {
-      const res = await axios.get(`${API}/questions/tags/stats`);
+      const res = await axiosInstance.get('/questions/tags/stats');
       if (res.data?.success) {
         setTagCounts(res.data.data || {});
       }
@@ -247,10 +231,9 @@ const QuestionDetail: React.FC = () => {
       return;
     }
     try {
-      const res = await axios.post(
-        `${API}/questions/${id}/vote`,
-        { type },
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await axiosInstance.post(
+        `/questions/${id}/vote`,
+        { type }
       );
       setQuestion(prev => prev ? { ...prev, votes: res.data.votes, user_vote_type: res.data.user_vote_type } : prev);
       
@@ -273,10 +256,9 @@ const QuestionDetail: React.FC = () => {
       return;
     }
     try {
-      const res = await axios.post(
-        `${API}/questions/${id}/answers/${answerId}/vote`,
-        { type },
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await axiosInstance.post(
+        `/questions/${id}/answers/${answerId}/vote`,
+        { type }
       );
       setQuestion(prev => {
         if (!prev) return prev;
@@ -315,10 +297,9 @@ const QuestionDetail: React.FC = () => {
     });
 
     try {
-      await axios.patch(
-        `${API}/questions/${id}/answers/${answerId}/accept`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
+      await axiosInstance.patch(
+        `/questions/${id}/answers/${answerId}/accept`,
+        {}
       );
       message.success('Đã chấp nhận câu trả lời này làm giải pháp!');
       fetchQuestion();
@@ -341,10 +322,9 @@ const QuestionDetail: React.FC = () => {
     }
     setSubmitting(true);
     try {
-      await axios.post(
-        `${API}/questions/${id}/answers`,
-        { content: answerText.trim() },
-        { headers: { Authorization: `Bearer ${token}` } }
+      await axiosInstance.post(
+        `/questions/${id}/answers`,
+        { content: answerText.trim() }
       );
       message.success('Đăng câu trả lời thành công!');
       setAnswerText('');
@@ -365,10 +345,9 @@ const QuestionDetail: React.FC = () => {
     if (!text) return;
     setSubmittingComment(answerId);
     try {
-      await axios.post(
-        `${API}/questions/${id}/answers/${answerId}/comments`,
-        { content: text },
-        { headers: { Authorization: `Bearer ${token}` } }
+      await axiosInstance.post(
+        `/questions/${id}/answers/${answerId}/comments`,
+        { content: text }
       );
       message.success('Đã gửi bình luận!');
       setCommentTexts(prev => ({ ...prev, [answerId]: '' }));
@@ -381,22 +360,59 @@ const QuestionDetail: React.FC = () => {
     }
   };
 
+  const fetchFollowStatus = async (authorName: string) => {
+    if (!user) return;
+    try {
+      const res = await axiosInstance.get(`/users/${user.id}/following`);
+      if (res.data.success) {
+        const followingList = res.data.data || [];
+        const isFollowing = followingList.some((u: any) => u.username.toLowerCase() === authorName.toLowerCase());
+        setFollowedAuthors(prev => ({ ...prev, [authorName]: isFollowing }));
+      }
+    } catch (err) {
+      console.error('Lỗi check follow status:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (question) {
+      fetchFollowStatus(question.author);
+    }
+  }, [question?.author]);
+
   // --- Theo dõi tác giả ---
-  const handleFollowAuthor = (authorName: string) => {
-    setFollowedAuthors(prev => {
-      const current = !!prev[authorName];
-      message.success(current ? `Đã bỏ theo dõi ${authorName}` : `Bắt đầu theo dõi ${authorName}!`);
-      return { ...prev, [authorName]: !current };
-    });
+  const handleFollowAuthor = async (authorId: number, authorName: string) => {
+    if (!user) {
+      message.warning('Bạn cần đăng nhập để theo dõi tác giả!');
+      navigate('/login');
+      return;
+    }
+    if (authorId === user.id) {
+      message.warning('Bạn không thể tự theo dõi chính mình!');
+      return;
+    }
+    try {
+      const res = await axiosInstance.post(
+        `/users/${authorId}/follow`,
+        {}
+      );
+      if (res.data.success) {
+        const followed = res.data.followed;
+        setFollowedAuthors(prev => ({ ...prev, [authorName]: followed }));
+        message.success(followed ? `Bắt đầu theo dõi ${authorName}!` : `Đã hủy theo dõi ${authorName}`);
+      }
+    } catch (error) {
+      console.error('Lỗi khi theo dõi:', error);
+      message.error('Không thể thực hiện thao tác theo dõi!');
+    }
   };
 
   // --- [TEACHER] Xác nhận chuyên môn ---
   const handleTeacherVerify = async (answerId: number) => {
     try {
-      const res = await axios.patch(
-        `${API}/questions/${id}/answers/${answerId}/teacher-verify`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await axiosInstance.patch(
+        `/questions/${id}/answers/${answerId}/teacher-verify`,
+        {}
       );
       message.success(res.data.message);
       fetchQuestion();
@@ -408,10 +424,9 @@ const QuestionDetail: React.FC = () => {
   // --- [TEACHER] Đóng/Mở luồng thảo luận ---
   const handleCloseThread = async () => {
     try {
-      const res = await axios.patch(
-        `${API}/questions/${id}/close`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await axiosInstance.patch(
+        `/questions/${id}/close`,
+        {}
       );
       message.success(res.data.message);
       fetchQuestion();
@@ -423,10 +438,9 @@ const QuestionDetail: React.FC = () => {
   // --- [TEACHER] Ẩn câu trả lời sai lệch ---
   const handleHideAnswer = async (answerId: number) => {
     try {
-      const res = await axios.patch(
-        `${API}/questions/${id}/answers/${answerId}/hide`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await axiosInstance.patch(
+        `/questions/${id}/answers/${answerId}/hide`,
+        {}
       );
       message.success(res.data.message);
       fetchQuestion();
@@ -440,10 +454,9 @@ const QuestionDetail: React.FC = () => {
     const note = teacherNoteText[answerId]?.trim();
     if (!note) return;
     try {
-      const res = await axios.post(
-        `${API}/questions/${id}/answers/${answerId}/teacher-note`,
-        { note },
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await axiosInstance.post(
+        `/questions/${id}/answers/${answerId}/teacher-note`,
+        { note }
       );
       message.success(res.data.message);
       setTeacherNoteText(prev => ({ ...prev, [answerId]: '' }));
@@ -468,14 +481,13 @@ const QuestionDetail: React.FC = () => {
     }
     setReportSubmitting(true);
     try {
-      const res = await axios.post(
-        `${API}/reports`,
+      const res = await axiosInstance.post(
+        '/reports',
         {
           question_id: question?.id,
           ly_do: reportReason,
           temp_hide: reportTempHide
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       );
       if (res.data.success) {
         message.success(res.data.message);
@@ -556,13 +568,6 @@ const QuestionDetail: React.FC = () => {
       </div>
     );
   }
-
-  // const sortLabels: Record<string, string> = {
-  //   newest: 'Mới nhất',
-  //   oldest: 'Cũ nhất',
-  //   most_voted: 'Vote cao nhất',
-  //   least_voted: 'Vote thấp nhất'
-  // };
 
   // Lọc các câu hỏi liên quan cùng chung thẻ tags
   const relatedQuestions = allQuestions
@@ -781,8 +786,8 @@ const QuestionDetail: React.FC = () => {
                       </div>
                     </Space>
                     <Button 
-                      type="primary" 
-                      href={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000'}${question.attachment_url}`}
+                      type="link" 
+                      href={`${API_BASE_URL.replace('/api', '')}${question.attachment_url}`}
                       target="_blank"
                       download
                       style={{ 
@@ -1342,10 +1347,33 @@ const QuestionDetail: React.FC = () => {
                 </Text>
               </div>
               <div>
-                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>PHIÊN BẢN</Text>
-                <Text strong style={{ fontSize: 13.5, color: '#6366f1', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <GlobalOutlined style={{ fontSize: 12 }} /> React v19.2
-                </Text>
+                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>THẺ</Text>
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: 4 }}>
+                  {tagList.length > 0 ? (
+                    tagList.map(tag => (
+                      <Tag 
+                        key={tag}
+                        color="purple" 
+                        style={{ 
+                          margin: 0,
+                          borderRadius: '6px', 
+                          padding: '2px 8px', 
+                          fontSize: '11px',
+                          fontWeight: 500,
+                          backgroundColor: '#f3e8ff',
+                          color: '#7c3aed',
+                          border: 'none',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => navigate(`/search?tag=${tag.toLowerCase()}`)}
+                      >
+                        #{tag}
+                      </Tag>
+                    ))
+                  ) : (
+                    <Text type="secondary" style={{ fontSize: 12 }}>Không có thẻ</Text>
+                  )}
+                </div>
               </div>
             </div>
           </Card>
@@ -1361,7 +1389,11 @@ const QuestionDetail: React.FC = () => {
             className="premium-card animated-hover-card"
             style={{ borderRadius: '20px', marginBottom: 20, padding: '6px' }}
           >
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <div 
+              style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}
+              onClick={() => navigate(`/profile?id=${question.user_id}`)}
+              title="Xem trang cá nhân"
+            >
               <div style={{ position: 'relative' }}>
                 <Avatar 
                   size={52} 
@@ -1397,23 +1429,26 @@ const QuestionDetail: React.FC = () => {
               </div>
             </div>
             
-            <Divider style={{ margin: '14px 0' }} />
-            
-            <Button 
-              type={followedAuthors[question.author] ? 'default' : 'primary'}
-              ghost={followedAuthors[question.author]}
-              style={{ 
-                width: '100%', 
-                borderRadius: '10px', 
-                height: '38px', 
-                fontWeight: 600,
-                borderColor: followedAuthors[question.author] ? '#6366f1' : 'transparent',
-                color: followedAuthors[question.author] ? '#6366f1' : undefined
-              }}
-              onClick={() => handleFollowAuthor(question.author)}
-            >
-              {followedAuthors[question.author] ? 'Đang theo dõi ✓' : 'Theo dõi tác giả'}
-            </Button>
+            {!isOwner && (
+              <>
+                <Divider style={{ margin: '14px 0' }} />
+                <Button 
+                  type={followedAuthors[question.author] ? 'default' : 'primary'}
+                  ghost={followedAuthors[question.author]}
+                  style={{ 
+                    width: '100%', 
+                    borderRadius: '10px', 
+                    height: '38px', 
+                    fontWeight: 600,
+                    borderColor: followedAuthors[question.author] ? '#6366f1' : 'transparent',
+                    color: followedAuthors[question.author] ? '#6366f1' : undefined
+                  }}
+                  onClick={() => handleFollowAuthor(question.user_id, question.author)}
+                >
+                  {followedAuthors[question.author] ? 'Đang theo dõi ✓' : 'Theo dõi tác giả'}
+                </Button>
+              </>
+            )}
           </Card>
 
           {/* WIDGET 3: CÂU HỎI LIÊN QUAN */}

@@ -13,8 +13,11 @@ import {
   TeamOutlined, UserDeleteOutlined, IdcardOutlined, TrophyOutlined,
   EditOutlined
 } from '@ant-design/icons';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import axiosInstance, { API_BASE_URL } from '../utils/axiosConfig';
+import { STORAGE_KEYS } from '../constants/storageKeys';
+import { getAvatarGradient } from '../utils/avatar';
+import { stripHtml } from '../utils/html';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -27,21 +30,9 @@ const { Dragger } = Upload;
 const { Content } = Layout;
 const { TextArea } = Input;
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API = API_BASE_URL;
 
-// --- Helper: Avatar gradient ---
-const getAvatarGradient = (name: string) => {
-  const gradients = [
-    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-  ];
-  const index = (name || 'A').charCodeAt(0) % gradients.length;
-  return gradients[index];
-};
+// getAvatarGradient được import từ utils/avatar
 
 // --- Interfaces ---
 interface QuestionItem {
@@ -67,13 +58,22 @@ interface FollowUser {
 
 const UserProfile: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const targetId = searchParams.get('id');
+
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
-  const [user, setUser] = useState<Record<string, any> | null>(JSON.parse(localStorage.getItem('user') || 'null'));
-  const [loading, setLoading] = useState(false);
+
+  // Decouple logged-in user from the profile we are viewing
+  const loggedInUser = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null');
+  const isOwnProfile = !targetId || Number(targetId) === Number(loggedInUser?.id);
+
+  const [profileUser, setProfileUser] = useState<Record<string, any> | null>(null);
+  const [loading, setLoading] = useState(true);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('about');
   const [isEditing, setIsEditing] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   // State cho "Giới thiệu" - theo dõi thay đổi form
   const [, setHasChanges] = useState(false);
@@ -91,94 +91,81 @@ const UserProfile: React.FC = () => {
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
 
   useEffect(() => {
-    if (!user) {
+    if (!loggedInUser) {
       navigate('/login');
     }
-  }, [user, navigate]);
+  }, [loggedInUser, navigate]);
 
   // Fetch profile
   useEffect(() => {
     const fetchUserProfile = async () => {
+      setLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const res = await axios.get(`${API}/users/profile`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const url = isOwnProfile ? '/users/profile' : `/users/${targetId}/profile`;
+        const res = await axiosInstance.get(url);
         if (res.data.success && res.data.data) {
           const fetchedUser = res.data.data;
-          setUser((prevUser: Record<string, any> | null) => {
-            const newUser = { ...prevUser, ...fetchedUser };
-            localStorage.setItem('user', JSON.stringify(newUser));
-            return newUser;
-          });
-          const vals = {
-            fullName: fetchedUser.fullName || fetchedUser.username,
-            email: fetchedUser.email,
-            bio: fetchedUser.bio || '',
-            phoneNumber: fetchedUser.phoneNumber || '',
-            school: fetchedUser.school || '',
-            website: fetchedUser.website || '',
-            class_name: fetchedUser.class_name || '',
-            academic_title: fetchedUser.academic_title || '',
-            department: fetchedUser.department || '',
-            major: fetchedUser.major || '',
-            teacher_code: fetchedUser.teacher_code || '',
-          };
-          form.setFieldsValue(vals);
-          setInitialValues(vals);
+          setProfileUser(fetchedUser);
+
+          if (isOwnProfile) {
+            // Update local storage for own profile
+            localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify({ ...loggedInUser, ...fetchedUser }));
+            
+            const vals = {
+              fullName: fetchedUser.fullName || fetchedUser.username,
+              email: fetchedUser.email,
+              bio: fetchedUser.bio || '',
+              phoneNumber: fetchedUser.phoneNumber || '',
+              school: fetchedUser.school || '',
+              website: fetchedUser.website || '',
+              class_name: fetchedUser.class_name || '',
+              academic_title: fetchedUser.academic_title || '',
+              department: fetchedUser.department || '',
+              major: fetchedUser.major || '',
+              teacher_code: fetchedUser.teacher_code || '',
+            };
+            form.setFieldsValue(vals);
+            setInitialValues(vals);
+          }
         }
       } catch (error) {
         console.error("Lỗi khi tải profile:", error);
+        message.error("Không thể tải thông tin hồ sơ.");
+      } finally {
+        setLoading(false);
       }
     };
-    if (user) {
+    if (loggedInUser) {
       fetchUserProfile();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form]);
+  }, [targetId, isOwnProfile, form]);
 
   // Fetch follow counts
   const fetchFollowCounts = useCallback(async () => {
-    if (!user) return;
+    const activeUserId = isOwnProfile ? loggedInUser?.id : targetId;
+    if (!activeUserId) return;
     try {
-      const res = await axios.get(`${API}/users/${user.id}/follow-counts`);
+      const res = await axiosInstance.get(`/users/${activeUserId}/follow-counts`);
       if (res.data.success) {
         setFollowCounts({ followers: res.data.followers, following: res.data.following });
       }
     } catch (e) { /* ignore */ }
-  }, [user]);
+  }, [isOwnProfile, loggedInUser?.id, targetId]);
 
   useEffect(() => {
     fetchFollowCounts();
   }, [fetchFollowCounts]);
 
-  // Fetch my questions
-  const fetchMyQuestions = useCallback(async () => {
-    setQuestionsLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/questions/user/questions`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.data.success) {
-        setMyQuestions(res.data.data);
-      }
-    } catch (e) {
-      console.error('Lỗi tải câu hỏi:', e);
-    } finally {
-      setQuestionsLoading(false);
-    }
-  }, []);
-
-  // Fetch followers/following
+  // Fetch follow data
   const fetchFollowData = useCallback(async () => {
-    if (!user) return;
+    const activeUserId = isOwnProfile ? loggedInUser?.id : targetId;
+    if (!activeUserId) return;
     setFollowLoading(true);
     try {
       const [followersRes, followingRes] = await Promise.all([
-        axios.get(`${API}/users/${user.id}/followers`),
-        axios.get(`${API}/users/${user.id}/following`)
+        axiosInstance.get(`/users/${activeUserId}/followers`),
+        axiosInstance.get(`/users/${activeUserId}/following`)
       ]);
       if (followersRes.data.success) setFollowers(followersRes.data.data);
       if (followingRes.data.success) setFollowing(followingRes.data.data);
@@ -187,7 +174,48 @@ const UserProfile: React.FC = () => {
     } finally {
       setFollowLoading(false);
     }
-  }, [user]);
+  }, [isOwnProfile, loggedInUser?.id, targetId]);
+
+  // Check follow status of the profile being viewed
+  const checkIsFollowing = useCallback(async () => {
+    if (!loggedInUser || isOwnProfile || !targetId) return;
+    try {
+      const res = await axiosInstance.get(`/users/${loggedInUser.id}/following`);
+      if (res.data.success) {
+        const list = res.data.data || [];
+        const matched = list.some((u: any) => Number(u.id) === Number(targetId));
+        setIsFollowing(matched);
+      }
+    } catch (e) {
+      console.error('Lỗi check follow status:', e);
+    }
+  }, [loggedInUser?.id, targetId, isOwnProfile]);
+
+  useEffect(() => {
+    checkIsFollowing();
+  }, [checkIsFollowing, targetId]);
+
+  // Fetch questions
+  const fetchMyQuestions = useCallback(async () => {
+    setQuestionsLoading(true);
+    try {
+      if (isOwnProfile) {
+        const res = await axiosInstance.get('/questions/user/questions');
+        if (res.data.success) {
+          setMyQuestions(res.data.data);
+        }
+      } else {
+        const res = await axiosInstance.get(`/questions?userId=${targetId}`);
+        if (res.data.success) {
+          setMyQuestions(res.data.data || []);
+        }
+      }
+    } catch (e) {
+      console.error('Lỗi tải câu hỏi:', e);
+    } finally {
+      setQuestionsLoading(false);
+    }
+  }, [isOwnProfile, targetId]);
 
   // Load data when tab changes
   useEffect(() => {
@@ -195,13 +223,31 @@ const UserProfile: React.FC = () => {
     if (activeTab === 'follow') fetchFollowData();
   }, [activeTab, fetchMyQuestions, fetchFollowData]);
 
+  // Handle follow toggle on another user's profile
+  const handleFollowToggle = async () => {
+    if (!loggedInUser) {
+      message.warning('Bạn cần đăng nhập để theo dõi!');
+      navigate('/login');
+      return;
+    }
+    try {
+      const res = await axiosInstance.post(`/users/${targetId}/follow`, {});
+      if (res.data.success) {
+        setIsFollowing(res.data.followed);
+        message.success(res.data.followed ? 'Đã theo dõi' : 'Đã hủy theo dõi');
+        fetchFollowCounts();
+        fetchFollowData();
+      }
+    } catch {
+      message.error('Không thể thực hiện');
+    }
+  };
+
   // Handle profile save (Giới thiệu)
   const onFinishProfile = async (values: Record<string, any>) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      
-      await axios.put(`${API}/users/profile`, {
+      await axiosInstance.put('/users/profile', {
         fullName: values.fullName,
         phoneNumber: values.phoneNumber,
         school: values.school,
@@ -212,14 +258,12 @@ const UserProfile: React.FC = () => {
         department: values.department,
         major: values.major,
         teacherCode: values.teacher_code,
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       
       message.success('Cập nhật thông tin thành công!');
       
       const updatedUser = { 
-        ...user, 
+        ...loggedInUser, 
         fullName: values.fullName,
         phoneNumber: values.phoneNumber,
         school: values.school,
@@ -231,11 +275,10 @@ const UserProfile: React.FC = () => {
         major: values.major,
         teacher_code: values.teacher_code,
       };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser));
+      setProfileUser(updatedUser);
       window.dispatchEvent(new Event('storage'));
       
-      // Reset initial values to current
       setInitialValues(values);
       setHasChanges(false);
       setIsEditing(false);
@@ -250,13 +293,10 @@ const UserProfile: React.FC = () => {
   const onFinishPassword = async (values: Record<string, any>) => {
     setPasswordLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`${API}/users/profile`, {
-        fullName: user?.fullName || user?.username,
+      await axiosInstance.put('/users/profile', {
+        fullName: profileUser?.fullName || profileUser?.username,
         currentPassword: values.currentPassword,
         newPassword: values.newPassword
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       message.success('Đổi mật khẩu thành công!');
       passwordForm.resetFields();
@@ -276,12 +316,9 @@ const UserProfile: React.FC = () => {
   };
 
   // Unfollow
-  const handleUnfollow = async (targetId: number) => {
+  const handleUnfollow = async (tId: number) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${API}/users/${targetId}/follow`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axiosInstance.post(`/users/${tId}/follow`, {});
       message.success('Đã hủy theo dõi');
       fetchFollowData();
       fetchFollowCounts();
@@ -290,7 +327,7 @@ const UserProfile: React.FC = () => {
     }
   };
 
-  if (!user) return null;
+  if (!loggedInUser) return null;
 
   // --- Card styling ---
   const cardStyle = {
@@ -313,6 +350,8 @@ const UserProfile: React.FC = () => {
       </div>
     );
 
+    if (!profileUser) return null;
+
     return (
       <Card 
         styles={{ body: { padding: '32px' } }} 
@@ -331,17 +370,33 @@ const UserProfile: React.FC = () => {
               </div>
               <div>
                 <Title level={4} style={{ margin: 0, fontWeight: 600 }}>Thông tin cơ bản</Title>
-                <Text type="secondary" style={{ fontSize: 13 }}>Quản lý thông tin cá nhân của bạn</Text>
+                <Text type="secondary" style={{ fontSize: 13 }}>{isOwnProfile ? 'Quản lý thông tin cá nhân của bạn' : 'Thông tin chi tiết về người dùng'}</Text>
               </div>
             </Flex>
-            {!isEditing && (
+            {isOwnProfile ? (
+              !isEditing && (
+                <Button 
+                  type="primary" 
+                  icon={<EditOutlined />} 
+                  onClick={() => setIsEditing(true)}
+                  style={{ borderRadius: 10, background: '#6366f1', borderColor: '#6366f1' }}
+                >
+                  Chỉnh sửa hồ sơ
+                </Button>
+              )
+            ) : (
               <Button 
-                type="primary" 
-                icon={<EditOutlined />} 
-                onClick={() => setIsEditing(true)}
-                style={{ borderRadius: 10, background: '#6366f1', borderColor: '#6366f1' }}
+                type={isFollowing ? 'default' : 'primary'}
+                ghost={isFollowing}
+                onClick={handleFollowToggle}
+                style={{ 
+                  borderRadius: 10, 
+                  fontWeight: 600,
+                  borderColor: isFollowing ? '#6366f1' : 'transparent',
+                  color: isFollowing ? '#6366f1' : undefined
+                }}
               >
-                Chỉnh sửa hồ sơ
+                {isFollowing ? 'Đang theo dõi ✓' : 'Theo dõi'}
               </Button>
             )}
           </Flex>
@@ -351,32 +406,32 @@ const UserProfile: React.FC = () => {
               {renderViewItem(
                 "Họ và tên",
                 <Text strong style={{ color: '#0f172a', fontSize: '15.5px' }}>
-                  {user.fullName || user.username || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                  {profileUser.fullName || profileUser.username || <Text type="secondary" italic>Chưa cập nhật</Text>}
                 </Text>
               )}
               {renderViewItem(
                 "Địa chỉ Email",
                 <Text style={{ color: '#334155', fontSize: '15px' }}>
-                  {user.email || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                  {profileUser.email || <Text type="secondary" italic>Chưa cập nhật</Text>}
                 </Text>
               )}
               {renderViewItem(
                 "Số điện thoại",
                 <Text style={{ color: '#334155', fontSize: '15px' }}>
-                  {user.phoneNumber || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                  {profileUser.phoneNumber || <Text type="secondary" italic>Chưa cập nhật</Text>}
                 </Text>
               )}
               {renderViewItem(
                 "Trường học",
                 <Text style={{ color: '#334155', fontSize: '15px' }}>
-                  {user.school || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                  {profileUser.school || <Text type="secondary" italic>Chưa cập nhật</Text>}
                 </Text>
               )}
-              {user.role !== 'teacher' ? (
+              {profileUser.role !== 'teacher' ? (
                 renderViewItem(
                   "Lớp",
                   <Text style={{ color: '#334155', fontSize: '15px' }}>
-                    {user.class_name || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                    {profileUser.class_name || <Text type="secondary" italic>Chưa cập nhật</Text>}
                   </Text>
                 )
               ) : (
@@ -384,41 +439,41 @@ const UserProfile: React.FC = () => {
                   {renderViewItem(
                     "Mã giảng viên",
                     <Text style={{ color: '#334155', fontSize: '15px' }}>
-                      {user.teacher_code || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                      {profileUser.teacher_code || <Text type="secondary" italic>Chưa cập nhật</Text>}
                     </Text>
                   )}
                   {renderViewItem(
                     "Học hàm / Học vị",
                     <Text style={{ color: '#334155', fontSize: '15px' }}>
-                      {user.academic_title || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                      {profileUser.academic_title || <Text type="secondary" italic>Chưa cập nhật</Text>}
                     </Text>
                   )}
                   {renderViewItem(
                     "Khoa / Bộ môn công tác",
                     <Text style={{ color: '#334155', fontSize: '15px' }}>
-                      {user.department || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                      {profileUser.department || <Text type="secondary" italic>Chưa cập nhật</Text>}
                     </Text>
                   )}
                   {renderViewItem(
                     "Chuyên ngành giảng dạy",
                     <Text style={{ color: '#334155', fontSize: '15px' }}>
-                      {user.major || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                      {profileUser.major || <Text type="secondary" italic>Chưa cập nhật</Text>}
                     </Text>
                   )}
                   {renderViewItem(
                     "Trạng thái hỗ trợ (Office Hours)",
                     <Space size="middle">
-                      <Badge status={user.is_available ? 'processing' : 'default'} text={user.is_available ? 'Đang sẵn sàng trực tuyến hỗ trợ' : 'Ngoại tuyến'} />
-                      {user.office_hours && <Text type="secondary">(Lịch trực: {user.office_hours})</Text>}
+                      <Badge status={profileUser.is_available ? 'processing' : 'default'} text={profileUser.is_available ? 'Đang sẵn sàng trực tuyến hỗ trợ' : 'Ngoại tuyến'} />
+                      {profileUser.office_hours && <Text type="secondary">(Lịch trực: {profileUser.office_hours})</Text>}
                     </Space>
                   )}
                 </>
               )}
               {renderViewItem(
                 "Website / GitHub",
-                user.website ? (
-                  <a href={user.website} target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1', fontWeight: 600, fontSize: '15px' }}>
-                    {user.website}
+                profileUser.website ? (
+                  <a href={profileUser.website} target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1', fontWeight: 600, fontSize: '15px' }}>
+                    {profileUser.website}
                   </a>
                 ) : (
                   <Text type="secondary" italic>Chưa cập nhật</Text>
@@ -427,7 +482,7 @@ const UserProfile: React.FC = () => {
               {renderViewItem(
                 "Giới thiệu bản thân",
                 <Paragraph style={{ color: '#334155', fontSize: '15px', lineHeight: '1.65', margin: 0, whiteSpace: 'pre-wrap' }}>
-                  {user.bio || <Text type="secondary" italic>Chưa cập nhật</Text>}
+                  {profileUser.bio || <Text type="secondary" italic>Chưa cập nhật</Text>}
                 </Paragraph>,
                 true
               )}
@@ -482,7 +537,7 @@ const UserProfile: React.FC = () => {
                   <Input prefix={<BankOutlined style={{ color: '#bfbfbf' }}/>} size="large" placeholder="Nhập tên trường" />
                 </Form.Item>
               </Col>
-              {user.role !== 'teacher' ? (
+              {profileUser?.role !== 'teacher' ? (
                 <Col xs={24} md={12}>
                   <Form.Item 
                     name="class_name" 
@@ -577,7 +632,7 @@ const UserProfile: React.FC = () => {
     );
   };
 
-  // ======== TAB: CÂU HỎI CỦA TÔI ========
+  // ======== TAB: CÂU HỎI ========
   const renderQuestionsTab = () => (
     <Card 
       styles={{ body: { padding: '32px' } }} 
@@ -593,8 +648,12 @@ const UserProfile: React.FC = () => {
           <BookOutlined />
         </div>
         <div>
-          <Title level={4} style={{ margin: 0, fontWeight: 600 }}>Câu hỏi của tôi ({myQuestions.length})</Title>
-          <Text type="secondary" style={{ fontSize: 13 }}>Danh sách các câu hỏi bạn đã đăng trên diễn đàn</Text>
+          <Title level={4} style={{ margin: 0, fontWeight: 600 }}>
+            {isOwnProfile ? `Câu hỏi của tôi (${myQuestions.length})` : `Câu hỏi đã đăng (${myQuestions.length})`}
+          </Title>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            {isOwnProfile ? 'Danh sách các câu hỏi bạn đã đăng trên diễn đàn' : 'Danh sách các câu hỏi người dùng đã đăng trên diễn đàn'}
+          </Text>
         </div>
       </Flex>
 
@@ -602,12 +661,14 @@ const UserProfile: React.FC = () => {
         <Skeleton active />
       ) : myQuestions.length === 0 ? (
         <Empty 
-          description="Bạn chưa đăng câu hỏi nào"
+          description={isOwnProfile ? "Bạn chưa đăng câu hỏi nào" : "Người dùng này chưa đăng câu hỏi nào"}
           style={{ padding: '40px 0' }}
         >
-          <Button type="primary" onClick={() => navigate('/create-question')} style={{ borderRadius: 10, background: '#6366f1' }}>
-            Đặt câu hỏi đầu tiên
-          </Button>
+          {isOwnProfile && (
+            <Button type="primary" onClick={() => navigate('/create-question')} style={{ borderRadius: 10, background: '#6366f1' }}>
+              Đặt câu hỏi đầu tiên
+            </Button>
+          )}
         </Empty>
       ) : (
         myQuestions.map((q) => (
@@ -624,7 +685,7 @@ const UserProfile: React.FC = () => {
                   {q.title}
                 </Text>
                 <Paragraph ellipsis={{ rows: 2 }} style={{ color: '#64748b', fontSize: 13.5, margin: 0, marginBottom: 10 }}>
-                  {q.description?.replace(/<[^>]*>/g, '')}
+                  {q.description ? stripHtml(q.description) : ''}
                 </Paragraph>
                 <Space size={[6, 6]} wrap>
                   {q.tags && q.tags.split(',').map((tag: string) => (
@@ -790,7 +851,7 @@ const UserProfile: React.FC = () => {
           name="file" 
           multiple={false} 
           action={`${API}/upload`}
-          headers={{ Authorization: `Bearer ${localStorage.getItem('token')}` }}
+          headers={{ Authorization: `Bearer ${localStorage.getItem(STORAGE_KEYS.TOKEN)}` }}
           onChange={(info) => {
             if (info.file.status === 'done') {
               message.success('Tải ảnh lên thành công!');
@@ -798,9 +859,9 @@ const UserProfile: React.FC = () => {
               if (newAvatar) {
                 const serverRoot = API.replace('/api', '');
                 const fullAvatarUrl = `${serverRoot}${newAvatar}`;
-                const updatedUser = { ...user, avatar: fullAvatarUrl };
-                localStorage.setItem('user', JSON.stringify(updatedUser));
-                setUser(updatedUser);
+                const updatedUser = { ...loggedInUser, avatar: fullAvatarUrl };
+                localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser));
+                setProfileUser(updatedUser);
                 window.dispatchEvent(new Event('storage'));
               }
             } else if (info.file.status === 'error') {
@@ -913,20 +974,38 @@ const UserProfile: React.FC = () => {
 
   const tabItems = [
     { key: 'about', label: <span style={{ fontWeight: 600, fontSize: 15, padding: '0 8px' }}>Giới thiệu</span>, children: renderAboutTab() },
-    { key: 'questions', label: <span style={{ fontWeight: 600, fontSize: 15, padding: '0 8px' }}>Câu hỏi của tôi</span>, children: renderQuestionsTab() },
-    { key: 'follow', label: <span style={{ fontWeight: 600, fontSize: 15, padding: '0 8px' }}>Theo dõi</span>, children: renderFollowTab() },
-    { key: 'settings', label: <span style={{ fontWeight: 600, fontSize: 15, padding: '0 8px' }}>Cài đặt tài khoản</span>, children: renderSettingsTab() },
     { 
-      key: 'more', 
-      label: (
-        <Dropdown menu={{ items: moreItems }} trigger={['hover']} placement="bottomRight">
-          <Space style={{ fontWeight: 600, fontSize: 15, padding: '0 8px' }}>
-            Xem thêm <DownOutlined style={{ fontSize: 12 }} />
-          </Space>
-        </Dropdown>
-      )
-    }
+      key: 'questions', 
+      label: <span style={{ fontWeight: 600, fontSize: 15, padding: '0 8px' }}>{isOwnProfile ? 'Câu hỏi của tôi' : 'Câu hỏi đã đăng'}</span>, 
+      children: renderQuestionsTab() 
+    },
+    { key: 'follow', label: <span style={{ fontWeight: 600, fontSize: 15, padding: '0 8px' }}>Theo dõi</span>, children: renderFollowTab() },
+    ...(isOwnProfile ? [
+      { key: 'settings', label: <span style={{ fontWeight: 600, fontSize: 15, padding: '0 8px' }}>Cài đặt tài khoản</span>, children: renderSettingsTab() },
+      { 
+        key: 'more', 
+        label: (
+          <Dropdown menu={{ items: moreItems }} trigger={['hover']} placement="bottomRight">
+            <Space style={{ fontWeight: 600, fontSize: 15, padding: '0 8px' }}>
+              Xem thêm <DownOutlined style={{ fontSize: 12 }} />
+            </Space>
+          </Dropdown>
+        )
+      }
+    ] : [])
   ];
+
+  if (loading || !profileUser) {
+    return (
+      <Layout style={{ minHeight: '100vh', background: '#f8fafc', padding: '40px 20px' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <Card style={{ borderRadius: 16 }}>
+            <Skeleton active avatar paragraph={{ rows: 8 }} />
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <ConfigProvider theme={{ token: { colorPrimary: '#6366f1', borderRadius: 8 } }}>
@@ -939,17 +1018,17 @@ const UserProfile: React.FC = () => {
               onFinish={onFinishProfile}
               onValuesChange={handleValuesChange}
               initialValues={{
-                fullName: user.fullName || user.username,
-                email: user.email,
-                bio: user.bio || '',
-                phoneNumber: user.phoneNumber || '',
-                school: user.school || '',
-                website: user.website || '',
-                class_name: user.class_name || '',
-                academic_title: user.academic_title || '',
-                department: user.department || '',
-                major: user.major || '',
-                teacher_code: user.teacher_code || ''
+                fullName: profileUser.fullName || profileUser.username,
+                email: profileUser.email,
+                bio: profileUser.bio || '',
+                phoneNumber: profileUser.phoneNumber || '',
+                school: profileUser.school || '',
+                website: profileUser.website || '',
+                class_name: profileUser.class_name || '',
+                academic_title: profileUser.academic_title || '',
+                department: profileUser.department || '',
+                major: profileUser.major || '',
+                teacher_code: profileUser.teacher_code || ''
               }}
             >
               {/* Vùng chứa Header và Tabs Bar */}
@@ -968,11 +1047,11 @@ const UserProfile: React.FC = () => {
                     <div style={{ position: 'relative' }}>
                       <Avatar 
                         size={130} 
-                        src={user.avatar}
+                        src={profileUser.avatar}
                         onError={() => true}
                         style={{ 
                           border: '4px solid #ffffff', 
-                          background: getAvatarGradient(user.fullName || user.username), 
+                          background: getAvatarGradient(profileUser.fullName || profileUser.username), 
                           color: '#ffffff',
                           fontWeight: 700,
                           fontSize: '48px',
@@ -981,31 +1060,33 @@ const UserProfile: React.FC = () => {
                           justifyContent: 'center'
                         }} 
                       >
-                        {(user.fullName || user.username || 'U').charAt(0).toUpperCase()}
+                        {(profileUser.fullName || profileUser.username || 'U').charAt(0).toUpperCase()}
                       </Avatar>
-                      <div style={{
-                        position: 'absolute',
-                        bottom: 6,
-                        right: 6,
-                        width: 36,
-                        height: 36,
-                        borderRadius: '50%',
-                        backgroundColor: '#f1f5f9',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        color: '#64748b',
-                        border: '2px solid #ffffff'
-                      }}>
-                        <CameraOutlined style={{ fontSize: 16 }} />
-                      </div>
+                      {isOwnProfile && (
+                        <div style={{
+                          position: 'absolute',
+                          bottom: 6,
+                          right: 6,
+                          width: 36,
+                          height: 36,
+                          borderRadius: '50%',
+                          backgroundColor: '#f1f5f9',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          color: '#64748b',
+                          border: '2px solid #ffffff'
+                        }}>
+                          <CameraOutlined style={{ fontSize: 16 }} />
+                        </div>
+                      )}
                     </div>
                     {/* Info */}
                     <div style={{ paddingBottom: 16, marginTop: 60 }}>
                       <Title level={2} style={{ margin: 0, marginBottom: 8, fontWeight: 700, lineHeight: 1.2 }}>
-                        {user.fullName || user.username}
-                        {user.role === 'teacher' && (
+                        {profileUser.fullName || profileUser.username}
+                        {profileUser.role === 'teacher' && (
                           <Tag color="blue" style={{ marginLeft: 8, verticalAlign: 'middle', fontSize: '14px', padding: '2px 8px', borderRadius: '6px' }}>
                             👨‍🏫 Giảng viên
                           </Tag>
@@ -1014,7 +1095,7 @@ const UserProfile: React.FC = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', color: '#64748b' }}>
                         <Space size={4}>
                           <MailOutlined />
-                          <Text style={{ color: '#64748b' }}>{user.email || 'Chưa cập nhật email'}</Text>
+                          <Text style={{ color: '#64748b' }}>{profileUser.email || 'Chưa cập nhật email'}</Text>
                         </Space>
                         <Text type="secondary">·</Text>
                         <Space size={4}>
@@ -1025,9 +1106,9 @@ const UserProfile: React.FC = () => {
                         <Space size={4}>
                           <TrophyOutlined style={{ color: '#f59e0b' }} />
                           <Text style={{ color: '#64748b' }}>
-                            {user.role === 'teacher' 
-                              ? `${user.expert_score || 0} điểm đóng góp chuyên môn`
-                              : `${user.reputation || 0} điểm uy tín`
+                            {profileUser.role === 'teacher' 
+                              ? `${profileUser.expert_score || 0} điểm đóng góp chuyên môn`
+                              : `${profileUser.reputation || 0} điểm uy tín`
                             }
                           </Text>
                         </Space>

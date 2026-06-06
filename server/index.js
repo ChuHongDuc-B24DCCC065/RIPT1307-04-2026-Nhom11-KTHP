@@ -104,6 +104,9 @@ app.post('/api/login', async (req, res) => {
         }
 
         // Tạo token với đầy đủ thông tin
+        if (!process.env.JWT_SECRET) {
+            throw new Error("JWT_SECRET is not defined in environment variables");
+        }
         const token = jwt.sign(
             { 
                 id: user.id, 
@@ -111,7 +114,7 @@ app.post('/api/login', async (req, res) => {
                 email: user.email,
                 role: user.role
             }, 
-            'bi_mat_quoc_gia', 
+            process.env.JWT_SECRET, 
             { expiresIn: '1d' }
         );
 
@@ -148,7 +151,10 @@ app.post('/api/forgot-password', async (req, res) => {
         }
 
         const user = rows[0];
-        const secret = process.env.JWT_SECRET || 'bi_mat_quoc_gia';
+        if (!process.env.JWT_SECRET) {
+            throw new Error("JWT_SECRET is not defined in environment variables");
+        }
+        const secret = process.env.JWT_SECRET;
         // Tạo token, dùng thêm user.password để đảm bảo token vô hiệu khi password bị đổi
         const token = jwt.sign({ id: user.id, email: user.email }, secret + user.password, { expiresIn: '15m' });
 
@@ -173,7 +179,10 @@ app.post('/api/reset-password', async (req, res) => {
         if (rows.length === 0) return res.status(404).json({ message: "Không tìm thấy tài khoản!" });
 
         const user = rows[0];
-        const secret = process.env.JWT_SECRET || 'bi_mat_quoc_gia';
+        if (!process.env.JWT_SECRET) {
+            throw new Error("JWT_SECRET is not defined in environment variables");
+        }
+        const secret = process.env.JWT_SECRET;
 
         try {
             // Verify token
