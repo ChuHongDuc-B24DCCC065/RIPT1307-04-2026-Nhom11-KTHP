@@ -9,7 +9,7 @@ router.get('/profile', authMiddleware, async (req, res) => {
     const [rows] = await pool.execute(
       `SELECT u.id, u.username, u.email, u.role, u.reputation, 
               p.full_name as fullName, p.phone as phoneNumber, p.school, p.bio, p.website, p.avatar, p.class_name,
-              p.academic_title, p.department, p.major, p.teacher_code, p.is_available, p.office_hours,
+              p.academic_title, p.department, p.major, p.teacher_code, p.is_available, p.office_hours, p.interests,
               (SELECT COUNT(*) FROM answers WHERE verified_by_user_id = u.id) as verified_count,
               (SELECT COUNT(*) FROM questions WHERE user_id = u.id AND post_type = 'announcement') as announcement_count,
               (SELECT COUNT(*) FROM answers WHERE user_id = u.id) as answer_count
@@ -41,7 +41,7 @@ const bcrypt = require('bcrypt');
 router.put('/profile', authMiddleware, async (req, res) => {
   const { 
     fullName, phoneNumber, school, bio, website, className, 
-    academicTitle, department, major, teacherCode,
+    academicTitle, department, major, teacherCode, interests,
     currentPassword, newPassword 
   } = req.body;
   try {
@@ -65,17 +65,18 @@ router.put('/profile', authMiddleware, async (req, res) => {
 
     // 2. Cập nhật thông tin profile
     await pool.execute(
-      `INSERT INTO user_profile (user_id, full_name, phone, school, bio, website, class_name, academic_title, department, major, teacher_code) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+      `INSERT INTO user_profile (user_id, full_name, phone, school, bio, website, class_name, academic_title, department, major, teacher_code, interests) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
        ON DUPLICATE KEY UPDATE 
        full_name = VALUES(full_name), phone = VALUES(phone), 
        school = VALUES(school), bio = VALUES(bio), website = VALUES(website),
        class_name = VALUES(class_name), academic_title = VALUES(academic_title),
-       department = VALUES(department), major = VALUES(major), teacher_code = VALUES(teacher_code)`,
+       department = VALUES(department), major = VALUES(major), teacher_code = VALUES(teacher_code),
+       interests = VALUES(interests)`,
       [
         req.user.id, 
         fullName || null, phoneNumber || null, school || null, bio || null, website || null, className || null,
-        academicTitle || null, department || null, major || null, teacherCode || null
+        academicTitle || null, department || null, major || null, teacherCode || null, interests || null
       ]
     );
     res.json({ success: true, message: 'Cập nhật thành công' });

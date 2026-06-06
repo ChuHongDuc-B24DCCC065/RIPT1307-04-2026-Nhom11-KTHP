@@ -1,0 +1,38 @@
+[
+  {
+    "username": "js_dev",
+    "email": "js_dev@gmail.com",
+    "role": "student",
+    "reputation": 120,
+    "interests": "react,javascript,typescript",
+    "fullName": "Lập Trình Viên JS",
+    "bio": "Đam mê JavaScript và hệ sinh thái React."
+  },
+  {
+    "username": "react_master",
+    "email": "react_master@ptit.edu.vn",
+    "role": "student",
+    "reputation": 150,
+    "interests": "react,tailwind,next.js",
+    "fullName": "React Master",
+    "bio": "Chuyên gia xây dựng giao diện với React và TailwindCSS."
+  },
+  {
+    "username": "backend_guru",
+    "email": "backend_guru@ptit.edu.vn",
+    "role": "teacher",
+    "reputation": 500,
+    "interests": "node.js,express,mysql,database",
+    "fullName": "Backend Guru",
+    "bio": "Giảng viên khoa Công nghệ thông tin chuyên ngành Hệ thống Thông tin."
+  },
+  {
+    "username": "admin_forum",
+    "email": "admin@ptit.edu.vn",
+    "role": "admin",
+    "reputation": 1000,
+    "interests": "devops,security,cloud",
+    "fullName": "Administrator",
+    "bio": "Quản trị viên hệ thống Diễn Đàn Công Nghệ."
+  }
+]

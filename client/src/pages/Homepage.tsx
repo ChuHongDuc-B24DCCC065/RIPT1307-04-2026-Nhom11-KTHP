@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Tag, Space, Button, Row, Col, Typography, Card, message, Empty, Skeleton, Input, Pagination, Tooltip, Radio, Avatar, Divider, Popover } from 'antd';
-import { MessageOutlined, LikeOutlined, LikeFilled, UserOutlined, ClockCircleOutlined, SearchOutlined, PlusOutlined, FireOutlined, TrophyOutlined, NumberOutlined, CheckOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { Tag, Space, Button, Row, Col, Typography, Card, message, Empty, Skeleton, Input, Pagination, Tooltip, Radio, Avatar, Divider, Popover, List } from 'antd';
+import { MessageOutlined, LikeOutlined, LikeFilled, UserOutlined, ClockCircleOutlined, SearchOutlined, PlusOutlined, FireOutlined, TrophyOutlined, NumberOutlined, CheckOutlined, StarFilled, SyncOutlined, EyeOutlined, CheckCircleFilled } from '@ant-design/icons';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -30,6 +31,18 @@ interface Question {
   deadline?: string;
   attachment_url?: string;
   attachment_name?: string;
+  is_interesting?: number;
+  views?: number;
+  author_reputation?: number;
+}
+
+interface Activity {
+  id: string;
+  type: 'answer' | 'verify' | 'view';
+  content: string;
+  questionTitle: string;
+  questionId: number;
+  created_at: string;
 }
 
 interface HotQuestion {
@@ -130,7 +143,10 @@ const HomePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [likedQuestions, setLikedQuestions] = useState<Record<number, boolean>>({});
   const [tagCounts, setTagCounts] = useState<Record<string, number>>({});
-  const [filterTab, setFilterTab] = useState<'newest' | 'votes' | 'unanswered'>('newest');
+  const [filterTab, setFilterTab] = useState<'newest' | 'votes' | 'unanswered' | 'interesting'>('newest');
+
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
 
   // State quản lý phân trang
   const [currentPage, setCurrentPage] = useState(1);
@@ -141,17 +157,19 @@ const HomePage: React.FC = () => {
   const fetchQuestions = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions?page=${currentPage}&limit=${pageSize}`,
-        { headers }
-      );
+      let res;
+      if (filterTab === 'interesting') {
+        res = await axiosInstance.get('/questions/interesting');
+      } else {
+        res = await axiosInstance.get(`/questions?page=${currentPage}&limit=${pageSize}`);
+      }
       
       const fetchedQuestions = res.data?.success ? res.data.data : (Array.isArray(res.data) ? res.data : (res.data?.data || []));
       setQuestions(fetchedQuestions);
       
-      const total = res.data?.pagination?.total ?? (res.data?.total || fetchedQuestions.length);
+      const total = filterTab === 'interesting'
+        ? fetchedQuestions.length
+        : (res.data?.pagination?.total ?? (res.data?.total || fetchedQuestions.length));
       setTotalQuestions(Number(total));
       
       const initialLikes: Record<number, boolean> = {};
@@ -164,10 +182,36 @@ const HomePage: React.FC = () => {
     } catch (error) {
       console.error('Lỗi tải câu hỏi:', error);
       // Hiển thị mock data nếu API lỗi
-      setQuestions(MOCK_QUESTIONS);
-      setTotalQuestions(MOCK_QUESTIONS.length);
+      if (filterTab !== 'interesting') {
+        setQuestions(MOCK_QUESTIONS);
+        setTotalQuestions(MOCK_QUESTIONS.length);
+      } else {
+        setQuestions([]);
+        setTotalQuestions(0);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // --- Gọi API lấy danh sách hoạt động cộng đồng ---
+  const fetchActivities = async () => {
+    setActivitiesLoading(true);
+    try {
+      const res = await axiosInstance.get('/community/activities');
+      if (res.data?.success) {
+        setActivities(res.data.data || []);
+      }
+    } catch (error) {
+      console.error('Lỗi tải hoạt động cộng đồng:', error);
+      // Mock data fallback if API fails
+      setActivities([
+        { id: 'act-1', type: 'answer', content: 'Sinh viên Minh Phúc vừa trả lời câu hỏi', questionTitle: 'Lỗi Hydration failed trong React 19 khi dùng Next.js', questionId: 1, created_at: new Date(Date.now() - 5 * 60000).toISOString() },
+        { id: 'act-2', type: 'verify', content: 'Giảng viên Hoàng Anh vừa ghim một đáp án đúng cho câu hỏi', questionTitle: 'Làm thế nào để tối ưu hóa truy vấn SQL chứa JOIN nhiều bảng lớn?', questionId: 2, created_at: new Date(Date.now() - 30 * 60000).toISOString() },
+        { id: 'act-3', type: 'view', content: 'vừa đạt mốc 100 lượt xem', questionTitle: 'Hiểu sâu về cơ chế bất đồng bộ (Async/Await, Promise) trong JavaScript?', questionId: 3, created_at: new Date(Date.now() - 120 * 60000).toISOString() }
+      ]);
+    } finally {
+      setActivitiesLoading(false);
     }
   };
 
@@ -238,8 +282,20 @@ const HomePage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchQuestions();
     fetchTagCounts();
+    fetchActivities();
+  }, []);
+
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    } else {
+      fetchQuestions();
+    }
+  }, [filterTab]);
+
+  useEffect(() => {
+    fetchQuestions();
   }, [currentPage, pageSize]);
 
   const handleCreateQuestion = () => {
@@ -397,7 +453,14 @@ const HomePage: React.FC = () => {
           <div style={{ marginBottom: 20 }}>
             <Radio.Group 
               value={filterTab} 
-              onChange={(e) => setFilterTab(e.target.value)} 
+              onChange={(e) => {
+                if (e.target.value === 'interesting' && !user) {
+                  message.warning('Bạn cần đăng nhập để xem những bài viết gợi ý dành riêng cho bạn!');
+                  navigate('/login');
+                  return;
+                }
+                setFilterTab(e.target.value);
+              }}
               optionType="button" 
               buttonStyle="solid"
               style={{ display: 'inline-flex', gap: 4 }}
@@ -410,6 +473,9 @@ const HomePage: React.FC = () => {
               </Radio.Button>
               <Radio.Button value="unanswered" style={{ borderRadius: 8, border: '1px solid #e2e8f0', fontWeight: 500 }}>
                 Chưa trả lời
+              </Radio.Button>
+              <Radio.Button value="interesting" style={{ borderRadius: 8, border: '1px solid #e2e8f0', fontWeight: 500, color: '#f59e0b' }}>
+                <StarFilled style={{ marginRight: '4px', color: '#f59e0b' }} />Dành cho bạn
               </Radio.Button>
             </Radio.Group>
           </div>
@@ -465,6 +531,11 @@ const HomePage: React.FC = () => {
                       {/* Right: Content Column */}
                       <div className="so-content-container">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                          {item.is_interesting === 1 && (
+                            <Tooltip title="Bài viết gợi ý dựa trên sở thích của bạn">
+                              <StarFilled style={{ color: '#f59e0b', fontSize: '15px', marginRight: '4px' }} />
+                            </Tooltip>
+                          )}
                           <a
                             href={`/questions/${item.id}`}
                             className="so-question-title"
@@ -662,6 +733,102 @@ const HomePage: React.FC = () => {
                 </div>
               </div>
             ))}
+          </Card>
+
+          {/* Card: Hoạt động cộng đồng */}
+          <Card 
+            title={<Space><SyncOutlined style={{ color: '#6366f1' }} /><strong>Hoạt động cộng đồng</strong></Space>}
+            extra={
+              <Tooltip title="Làm mới hoạt động">
+                <SyncOutlined 
+                  spin={activitiesLoading} 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fetchActivities();
+                  }} 
+                  style={{ cursor: 'pointer', color: '#6366f1' }} 
+                />
+              </Tooltip>
+            }
+            variant="borderless"
+            style={{ 
+              borderRadius: '16px', 
+              boxShadow: '0 4px 16px rgba(0,0,0,0.02)', 
+              marginBottom: 24,
+              border: '1px solid #e2e8f0'
+            }}
+            styles={{ body: { padding: '12px 16px' } }}
+          >
+            <List
+              loading={activitiesLoading}
+              dataSource={activities}
+              renderItem={(item) => {
+                let icon = <MessageOutlined style={{ color: '#3b82f6' }} />;
+                if (item.type === 'verify') {
+                  icon = <CheckCircleFilled style={{ color: '#10b981' }} />;
+                } else if (item.type === 'view') {
+                  icon = <EyeOutlined style={{ color: '#f59e0b' }} />;
+                }
+
+                return (
+                  <List.Item 
+                    style={{ 
+                      padding: '12px 0', 
+                      borderBottom: '1px dashed #f1f5f9',
+                      alignItems: 'flex-start'
+                    }}
+                  >
+                    <List.Item.Meta
+                      avatar={<span style={{ fontSize: '16px', marginTop: '2px', display: 'inline-block' }}>{icon}</span>}
+                      title={
+                        <span style={{ fontSize: '13px', fontWeight: 500, color: '#475569', lineHeight: '1.4' }}>
+                          {item.type === 'answer' && (
+                            <>
+                              {item.content}{' '}
+                              <Link 
+                                to={`/questions/${item.questionId}`}
+                                style={{ fontWeight: 600, color: '#4f46e5' }}
+                              >
+                                "{item.questionTitle}"
+                              </Link>
+                            </>
+                          )}
+                          {item.type === 'verify' && (
+                            <>
+                              {item.content}{' '}
+                              <Link 
+                                to={`/questions/${item.questionId}`}
+                                style={{ fontWeight: 600, color: '#10b981' }}
+                              >
+                                "{item.questionTitle}"
+                              </Link>
+                            </>
+                          )}
+                          {item.type === 'view' && (
+                            <>
+                              Bài viết{' '}
+                              <Link 
+                                to={`/questions/${item.questionId}`}
+                                style={{ fontWeight: 600, color: '#f59e0b' }}
+                              >
+                                "{item.questionTitle}"
+                              </Link>{' '}
+                              {item.content}
+                            </>
+                          )}
+                        </span>
+                      }
+                      description={
+                        <Text type="secondary" style={{ fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                          {dayjs(item.created_at).fromNow()}
+                        </Text>
+                      }
+                    />
+                  </List.Item>
+                );
+              }}
+              locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Không có hoạt động nào gần đây" /> }}
+            />
           </Card>
 
           {/* Card 2: Bảng xếp hạng đóng góp */}

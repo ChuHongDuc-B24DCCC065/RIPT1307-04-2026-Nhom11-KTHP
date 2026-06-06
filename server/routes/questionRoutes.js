@@ -166,6 +166,112 @@ router.get('/tags/list', async (req, res) => {
   }
 });
 
+// GET /api/questions/interesting - Gợi ý câu hỏi dựa trên sở thích (tags) của user
+router.get('/interesting', async (req, res) => {
+  let userId = null;
+  const currentUser = getUserFromHeader(req);
+  if (currentUser) {
+    userId = currentUser.id;
+  } else if (req.query.userId) {
+    userId = parseInt(req.query.userId);
+  }
+
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Yêu cầu đăng nhập hoặc cung cấp userId.' });
+  }
+
+  try {
+    // Tìm kiếm trong Database sở thích công nghệ (tags) của User từ bảng user_profile
+    const [profiles] = await pool.execute(
+      'SELECT interests FROM user_profile WHERE user_id = ?',
+      [userId]
+    );
+
+    let interestTags = [];
+    if (profiles.length > 0 && profiles[0].interests) {
+      interestTags = profiles[0].interests
+        .split(',')
+        .map(t => t.trim().toLowerCase())
+        .filter(Boolean);
+    }
+
+    // Nếu chưa có sở thích, lấy tags từ các câu hỏi mà user đã từng hỏi hoặc bookmark
+    if (interestTags.length === 0) {
+      const [userQuestions] = await pool.execute(
+        'SELECT tags FROM questions WHERE user_id = ? AND tags IS NOT NULL AND tags != ""',
+        [userId]
+      );
+      const questionTags = userQuestions
+        .map(q => q.tags.split(','))
+        .flat()
+        .map(t => t.trim().toLowerCase())
+        .filter(Boolean);
+      
+      const [bookmarkedQuestions] = await pool.execute(
+        `SELECT q.tags FROM bookmarks b 
+         JOIN questions q ON b.question_id = q.id 
+         WHERE b.user_id = ? AND q.tags IS NOT NULL AND q.tags != ""`,
+        [userId]
+      );
+      const bookmarkTags = bookmarkedQuestions
+        .map(q => q.tags.split(','))
+        .flat()
+        .map(t => t.trim().toLowerCase())
+        .filter(Boolean);
+
+      const combinedTags = [...new Set([...questionTags, ...bookmarkTags])];
+      if (combinedTags.length > 0) {
+        interestTags = combinedTags;
+      }
+    }
+
+    // Nếu vẫn trống (user mới), lấy 5 tags phổ biến nhất trong hệ thống làm mặc định
+    if (interestTags.length === 0) {
+      const [popularQuestions] = await pool.execute(
+        'SELECT tags FROM questions WHERE tags IS NOT NULL AND tags != "" LIMIT 50'
+      );
+      const allTags = popularQuestions
+        .map(q => q.tags.split(','))
+        .flat()
+        .map(t => t.trim().toLowerCase())
+        .filter(Boolean);
+      
+      const counts = {};
+      allTags.forEach(t => counts[t] = (counts[t] || 0) + 1);
+      interestTags = Object.keys(counts)
+        .sort((a, b) => counts[b] - counts[a])
+        .slice(0, 5);
+    }
+
+    if (interestTags.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // Truy vấn câu hỏi có chứa ít nhất một trong các tags sở thích
+    let whereClauses = interestTags.map(() => 'FIND_IN_SET(?, q.tags)').join(' OR ');
+    let finalWhere = `WHERE (${whereClauses}) AND (q.status = 'approved' OR q.status = 'public' OR q.status IS NULL) AND q.is_temp_hidden = 0`;
+    
+    const [rows] = await pool.query(
+      `SELECT q.*, u.role AS author_role, u.reputation AS author_reputation,
+              (SELECT COUNT(*) FROM answers a WHERE a.question_id = q.id) AS answer_count,
+              1 AS is_interesting
+              ${userId ? `, qv.vote_type AS user_vote_type` : ''}
+       FROM questions q
+       LEFT JOIN users u ON u.id = q.user_id
+       ${userId ? `LEFT JOIN question_votes qv ON qv.question_id = q.id AND qv.user_id = ?` : ''}
+       ${finalWhere}
+       ORDER BY q.created_at DESC
+       LIMIT 50`,
+      userId ? [userId, ...interestTags] : interestTags
+    );
+
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('GET /questions/interesting error:', err.message);
+    res.status(500).json({ success: false, message: 'Lỗi server: ' + err.message });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const [[question]] = await pool.execute(

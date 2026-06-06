@@ -30,6 +30,8 @@ interface Question {
   deadline?: string;
   attachment_url?: string;
   attachment_name?: string;
+  views?: number;
+  author_reputation?: number;
 }
 
 const SearchAndFilterPage: React.FC = () => {
