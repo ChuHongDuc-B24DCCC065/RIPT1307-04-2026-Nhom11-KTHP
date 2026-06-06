@@ -148,7 +148,7 @@ const CreateQuestion: React.FC = () => {
           
           {parsedUser && (
             <Alert 
-              message={
+              title={
                 <span className="verification-banner-text">
                   <b>Trạng thái đăng nhập đã xác thực.</b> Chào mừng bạn quay trở lại, {username}. Bạn có thể đăng bài ngay bây giờ.
                 </span>
@@ -168,7 +168,7 @@ const CreateQuestion: React.FC = () => {
 
             {isAnnouncement && (
               <Alert
-                message="Chế độ Thông báo Giảng viên"
+                title="Chế độ Thông báo Giảng viên"
                 description="Bạn đang tạo bài thông báo của Giảng viên. Bài viết sẽ được ghim cố định trên đầu trang và hiển thị nhãn '📢 Thông báo' nổi bật."
                 type="info"
                 showIcon

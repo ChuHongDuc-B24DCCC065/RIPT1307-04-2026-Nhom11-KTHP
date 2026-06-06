@@ -1,0 +1,62 @@
+[
+  {
+    "title": "Làm thế nào để sử dụng useEffect tối ưu trong React 18?",
+    "description": "<p>Chào mọi người,</p><p>Mình đang làm một dự án bằng React 18 và gặp vấn đề là component bị render lại rất nhiều lần khi sử dụng <code>useEffect</code>. Mọi người có tip nào để tối ưu hoặc có bài viết nào hay chia sẻ mình với ạ. Mình cảm ơn!</p>",
+    "tags": "react,frontend,javascript",
+    "authorEmail": "js_dev@gmail.com",
+    "views": 540,
+    "votes": 15,
+    "post_type": "question",
+    "status": "approved"
+  },
+  {
+    "title": "Lỗi CORS policy khi gọi API từ React sang Express",
+    "description": "<p>Mình có 1 server Express chạy ở cổng 5000 và app React Vite chạy ở cổng 5173. Khi fetch API thì báo lỗi <strong>has been blocked by CORS policy</strong>. Mình đã thử dùng thư viện <code>cors</code> nhưng không được, ai giúp với!</p>",
+    "tags": "node.js,express,cors,backend",
+    "authorEmail": "react_master@ptit.edu.vn",
+    "views": 120,
+    "votes": 8,
+    "post_type": "question",
+    "status": "approved"
+  },
+  {
+    "title": "Có nên dùng MySQL cho một ứng dụng mạng xã hội nhỏ không?",
+    "description": "<p>Mình chuẩn bị làm đồ án một mạng xã hội thu nhỏ (có post, like, comment, message). Mình đang phân vân giữa MongoDB và MySQL. MySQL có gặp vấn đề gì về hiệu năng khi các bảng relation quá nhiều không ạ?</p>",
+    "tags": "database,mysql,mongodb",
+    "authorEmail": "backend_guru@ptit.edu.vn",
+    "views": 980,
+    "votes": 24,
+    "post_type": "question",
+    "status": "approved"
+  },
+  {
+    "title": "Sự khác biệt giữa TypeScript và JavaScript là gì?",
+    "description": "<p>Em mới học lập trình web và thấy dạo này các cty toàn tuyển TypeScript. Mọi người cho em hỏi học TS có khó không và khác JS chỗ nào quan trọng nhất ạ?</p>",
+    "tags": "typescript,javascript,beginner",
+    "authorEmail": "js_dev@gmail.com",
+    "views": 45,
+    "votes": 3,
+    "post_type": "question",
+    "status": "approved"
+  },
+  {
+    "title": "Cách setup JWT Authentication trong Node.js?",
+    "description": "<p>Mình muốn làm chức năng đăng nhập, cấp token cho user, và verify token ở các request sau. Có package nào chuẩn và dễ xài nhất hiện nay cho Express không?</p>",
+    "tags": "node.js,jwt,security",
+    "authorEmail": "react_master@ptit.edu.vn",
+    "views": 502,
+    "votes": 11,
+    "post_type": "question",
+    "status": "approved"
+  },
+  {
+    "title": "Thông báo: Hạn nộp bài tập lớn học phần Lập trình Web",
+    "description": "<p>Yêu cầu tất cả các nhóm sinh viên nộp báo cáo và mã nguồn bài tập lớn trước 23h59 ngày 15/06/2026. Sau thời gian này hệ thống sẽ tự động khóa.</p>",
+    "tags": "announcement,assignment,web",
+    "authorEmail": "backend_guru@ptit.edu.vn",
+    "views": 250,
+    "votes": 10,
+    "post_type": "announcement",
+    "status": "approved"
+  }
+]

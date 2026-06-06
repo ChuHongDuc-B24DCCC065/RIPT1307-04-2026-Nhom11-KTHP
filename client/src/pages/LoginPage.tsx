@@ -43,7 +43,7 @@ const LoginPage: React.FC = () => {
       <div className="auth-bg-glow-1"></div>
       <div className="auth-bg-glow-2"></div>
 
-      <Card bordered={false} className="auth-card">
+      <Card variant="borderless" className="auth-card">
         <div className="auth-header">
           <div className="auth-logo-badge">D</div>
           <Title level={3} className="auth-title">Chào mừng trở lại</Title>
@@ -66,12 +66,7 @@ const LoginPage: React.FC = () => {
 
           <Form.Item 
             name="password" 
-            label={
-              <div className="form-label-with-link">
-                <span>Mật khẩu</span>
-                <Link to="/forgot-password" className="forgot-password-link">Quên mật khẩu?</Link>
-              </div>
-            }
+            label={<span className="auth-form-label">Mật khẩu</span>}
             rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
           >
             <Input.Password 
@@ -81,6 +76,10 @@ const LoginPage: React.FC = () => {
               className="auth-input-wrapper"
             />
           </Form.Item>
+
+          <div style={{ textAlign: 'right', marginTop: -12, marginBottom: 20 }}>
+            <Link to="/forgot-password" className="forgot-password-link">Quên mật khẩu?</Link>
+          </div>
 
           <Form.Item style={{ marginBottom: 0 }}>
             <Button 

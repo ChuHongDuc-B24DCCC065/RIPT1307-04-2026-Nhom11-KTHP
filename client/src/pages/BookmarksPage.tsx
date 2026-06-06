@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { List, Tag, Space, Card, Typography, message, Empty, Skeleton } from 'antd';
+import { Tag, Space, Card, Typography, message, Empty, Skeleton, Divider } from 'antd';
 import { MessageOutlined, LikeOutlined, UserOutlined, ClockCircleOutlined, BookOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -114,82 +114,72 @@ const BookmarksPage: React.FC = () => {
           />
         </Card>
       ) : (
-        <List
-          itemLayout="vertical"
-          size="large"
-          dataSource={questions}
-          renderItem={(item) => {
-            const tagList = item.tags
-              ? item.tags.split(',').map(t => t.trim()).filter(Boolean)
-              : [];
-            return (
-              <Card
-                className="premium-card transition-all"
-                key={item.id}
-                style={{ marginBottom: 18, cursor: 'pointer', borderRadius: '16px' }}
-                onClick={() => navigate(`/questions/${item.id}`)}
-              >
-                <List.Item
-                  style={{ padding: 0 }}
-                  actions={[
-                    <Space key="votes" style={{ color: '#4f46e5', fontWeight: 500 }}><LikeOutlined /> {item.votes ?? 0} Thích</Space>,
-                    <Space key="answers" style={{ color: '#059669', fontWeight: 500 }}><MessageOutlined /> {item.answer_count ?? 0} Trả lời</Space>,
-                    <Space key="time" style={{ color: '#64748b' }}><ClockCircleOutlined /> {item.created_at ? dayjs(item.created_at).fromNow() : 'Vừa xong'}</Space>,
-                  ]}
-                >
-                  <List.Item.Meta
-                    title={
-                      <a
-                        href={`/questions/${item.id}`}
-                        style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', transition: 'color 0.2s ease' }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          navigate(`/questions/${item.id}`);
-                        }}
-                      >
-                        {item.title}
-                      </a>
-                    }
-                    description={
-                      <Space>
-                        <UserOutlined style={{ color: '#94a3b8' }} />
-                        <Text strong style={{ color: '#475569', fontSize: '13px' }}>{item.author || 'Ẩn danh'}</Text>
-                      </Space>
-                    }
-                  />
-                  {/* Tóm tắt nội dung */}
-                  <div style={{ margin: '12px 0', color: '#475569', fontSize: '14px', lineHeight: '1.6' }}>
-                    {item.description && item.description.length > 150
-                      ? `${item.description.replace(/<[^>]*>/g, '').substring(0, 150)}...`
-                      : item.description.replace(/<[^>]*>/g, '')}
-                  </div>
-                  {/* Thẻ tags */}
-                  <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {tagList.map(tag => (
-                      <Tag 
-                        color="purple" 
-                        key={tag} 
-                        style={{ 
-                          cursor: 'pointer', 
-                          borderRadius: '6px', 
-                          padding: '3px 10px', 
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          backgroundColor: '#f3e8ff',
-                          color: '#7c3aed',
-                          border: 'none'
-                        }}
-                        onClick={() => navigate(`/search?tag=${tag}`)}
-                      >
-                        #{tag}
-                      </Tag>
-                    ))}
-                  </div>
-                </List.Item>
-              </Card>
-            );
-          }}
-        />
+        questions.map((item) => {
+          const tagList = item.tags
+            ? item.tags.split(',').map(t => t.trim()).filter(Boolean)
+            : [];
+          return (
+            <Card
+              className="premium-card transition-all"
+              key={item.id}
+              style={{ marginBottom: 18, cursor: 'pointer', borderRadius: '16px' }}
+              onClick={() => navigate(`/questions/${item.id}`)}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ marginBottom: 8 }}>
+                  <a
+                    href={`/questions/${item.id}`}
+                    style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: 6, transition: 'color 0.2s ease' }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate(`/questions/${item.id}`);
+                    }}
+                  >
+                    {item.title}
+                  </a>
+                  <Space>
+                    <UserOutlined style={{ color: '#94a3b8' }} />
+                    <Text strong style={{ color: '#475569', fontSize: '13px' }}>{item.author || 'Ẩn danh'}</Text>
+                  </Space>
+                </div>
+                {/* Tóm tắt nội dung */}
+                <div style={{ margin: '12px 0', color: '#475569', fontSize: '14px', lineHeight: '1.6' }}>
+                  {item.description && item.description.length > 150
+                    ? `${item.description.replace(/<[^>]*>/g, '').substring(0, 150)}...`
+                    : item.description.replace(/<[^>]*>/g, '')}
+                </div>
+                {/* Thẻ tags */}
+                <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: 16 }}>
+                  {tagList.map(tag => (
+                    <Tag 
+                      color="purple" 
+                      key={tag} 
+                      style={{ 
+                        cursor: 'pointer', 
+                        borderRadius: '6px', 
+                        padding: '3px 10px', 
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        backgroundColor: '#f3e8ff',
+                        color: '#7c3aed',
+                        border: 'none'
+                      }}
+                      onClick={() => navigate(`/search?tag=${tag}`)}
+                    >
+                      #{tag}
+                    </Tag>
+                  ))}
+                </div>
+                <Divider style={{ margin: '8px 0' }} />
+                <Space size="large" style={{ color: '#8c8c8c' }}>
+                  <Space key="votes" style={{ color: '#4f46e5', fontWeight: 500 }}><LikeOutlined /> {item.votes ?? 0} Thích</Space>
+                  <Space key="answers" style={{ color: '#059669', fontWeight: 500 }}><MessageOutlined /> {item.answer_count ?? 0} Trả lời</Space>
+                  <Space key="time" style={{ color: '#64748b' }}><ClockCircleOutlined /> {item.created_at ? dayjs(item.created_at).fromNow() : 'Vừa xong'}</Space>
+                </Space>
+              </div>
+            </Card>
+          );
+        })
       )}
     </div>
   );

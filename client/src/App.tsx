@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Layout, ConfigProvider, Input, Button, Avatar, Dropdown, Space, message, Menu } from 'antd';
+import React from 'react';
+import { Layout, ConfigProvider, Button, Avatar, Dropdown, Space, message, Menu } from 'antd';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import HomePage from './pages/Homepage';
 
@@ -17,6 +17,7 @@ import UserProfile from './pages/UserProfile';
 import TeacherDashboard from './pages/TeacherDashboard';
 import SearchAndFilterPage from './pages/SearchAndFilterPage';
 import BookmarksPage from './pages/BookmarksPage';
+import TagsPage from './pages/TagsPage'; 
 import { NotificationBell } from './components/NotificationBell';
 import {
   SearchOutlined,
@@ -30,7 +31,8 @@ import {
   CommentOutlined,
   BookOutlined,
   TeamOutlined,
-  FormOutlined
+  FormOutlined,
+  TagOutlined
 } from '@ant-design/icons';
 import './App.css';
 import { StudentChatbot } from './components/StudentChatbot';
@@ -57,20 +59,10 @@ const AppContent: React.FC = () => {
   const userData = localStorage.getItem('user');
   const parsedUser = userData ? JSON.parse(userData) : null;
 
-  const [searchVal, setSearchVal] = useState('');
-  const [categoryOpen, setCategoryOpen] = useState(true);
-
   const handleLogout = () => {
     localStorage.clear();
     message.success('Đăng xuất thành công!');
     navigate('/welcome');
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchVal.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchVal.trim())}`);
-    }
   };
 
   const handleCreateQuestion = () => {
@@ -116,8 +108,7 @@ const AppContent: React.FC = () => {
     }
   ];
 
-  // Các thẻ phổ biến ở Sidebar
-  const sidebarTags = ['React', 'TypeScript', 'Next.js', 'Tailwind', 'Node.js', 'Python', 'AI/ML', 'DevOps'];
+
 
   // Xác định active menu item dựa vào pathname
 
@@ -140,6 +131,11 @@ const AppContent: React.FC = () => {
         key: '/search',
         icon: <SearchOutlined />,
         label: 'Tìm kiếm câu hỏi'
+      },
+      {
+        key: '/tags',
+        icon: <TagOutlined />,
+        label: 'Thẻ câu hỏi'
       },
       {
         key: '/create-question',
@@ -203,28 +199,9 @@ const AppContent: React.FC = () => {
           </span>
         </Link>
 
-        {/* Ô Tìm Kiếm ở giữa */}
-        {!isAdmin && (
-        <form onSubmit={handleSearch} className="app-search-form">
-          <Input
-            placeholder="Tìm kiếm câu hỏi, chủ đề..."
-            prefix={<SearchOutlined className="app-search-icon" />}
-            value={searchVal}
-            onChange={(e) => setSearchVal(e.target.value)}
-            className="premium-search-input transition-all app-search-input"
-          />
-        </form>
-        )}
-
         {/* Các nút bấm bên phải */}
         <div className="app-header-actions">
           
-          {/* Nút đặt câu hỏi */}
-          <button onClick={handleCreateQuestion} className="btn-action-primary transition-all">
-            <PlusOutlined className="app-header-btn-icon" />
-            <span>Đặt câu hỏi</span>
-          </button>
-
           {/* Chuông thông báo */}
           <NotificationBell />
 
@@ -277,8 +254,9 @@ const AppContent: React.FC = () => {
           theme="light"
           className="app-sidebar"
         >
-          <div style={{ padding: '24px 24px 8px 24px' }}>
+          <div className="sidebar-header-wrapper">
             <div className="sidebar-section-title">
+              <span className="sidebar-title-dot"></span>
               KHÁM PHÁ
             </div>
           </div>
@@ -292,50 +270,6 @@ const AppContent: React.FC = () => {
             style={{ borderRight: 0, padding: '0 12px' }}
             className="sidebar-antd-menu"
           />
-
-          {/* Section: Tags phổ biến */}
-          <div className="sidebar-section">
-            <div className="sidebar-section-title tags-title">
-              TAGS PHỔ BIẾN
-            </div>
-            
-            <div className="sidebar-tags-wrapper">
-              {sidebarTags.map(tag => (
-                <div 
-                  key={tag} 
-                  className="sidebar-tag transition-all"
-                  onClick={() => navigate(`/search?tag=${tag.toLowerCase()}`)}
-                >
-                  #{tag}
-                </div>
-              ))}
-            </div>
-
-            <div 
-              className="sidebar-view-all"
-              onClick={() => navigate('/search')}
-            >
-              Xem tất cả thẻ
-            </div>
-          </div>
-
-          {/* Section: Chuyên mục */}
-          <div>
-            <div className="category-dropdown-header transition-all" onClick={() => setCategoryOpen(!categoryOpen)}>
-              <Space className="category-dropdown-title">
-                CHUYÊN MỤC
-              </Space>
-              {categoryOpen ? <DownOutlined className="category-dropdown-icon" /> : <RightOutlined className="category-dropdown-icon" />}
-            </div>
-
-            {categoryOpen && (
-              <div className="category-sub-menu">
-                <div className="category-sub-item transition-all" onClick={() => navigate('/search?q=Web')}>Lập trình Web</div>
-                <div className="category-sub-item transition-all" onClick={() => navigate('/search?q=Di động')}>Di động</div>
-                <div className="category-sub-item transition-all" onClick={() => navigate('/search?q=Hệ điều hành')}>Hệ điều hành</div>
-              </div>
-            )}
-          </div>
         </Sider>
         )}
 
@@ -353,6 +287,7 @@ const AppContent: React.FC = () => {
             <Route path="/questions/:id/edit" element={<EditQuestion />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/search" element={<SearchAndFilterPage />} />
+            <Route path="/tags" element={<TagsPage />} />
             <Route 
               path="/bookmarks" 
               element={

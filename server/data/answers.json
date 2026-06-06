@@ -1,0 +1,34 @@
+[
+  {
+    "questionTitle": "Làm thế nào để sử dụng useEffect tối ưu trong React 18?",
+    "authorEmail": "react_master@ptit.edu.vn",
+    "content": "<p>Trong React 18, StrictMode sẽ mount component 2 lần trong chế độ dev. Để tối ưu <code>useEffect</code>, bạn phải đảm bảo có dependency array chính xác (ví dụ <code>[]</code> nếu chỉ chạy 1 lần) và luôn có cleanup function (return một hàm) nếu gọi API hoặc subscribe event nhé!</p>",
+    "votes": 10,
+    "teacherVerified": 1,
+    "verifiedByTeacherEmail": "backend_guru@ptit.edu.vn"
+  },
+  {
+    "questionTitle": "Lỗi CORS policy khi gọi API từ React sang Express",
+    "authorEmail": "backend_guru@ptit.edu.vn",
+    "content": "<p>Bạn thêm đoạn này vào server Express nhé: <br><code>const cors = require(\"cors\");<br>app.use(cors({ origin: \"http://localhost:5173\", credentials: true }));</code><br> Đảm bảo khai báo TRƯỚC các routes nha.</p>",
+    "votes": 6,
+    "teacherVerified": 1,
+    "verifiedByTeacherEmail": "backend_guru@ptit.edu.vn"
+  },
+  {
+    "questionTitle": "Có nên dùng MySQL cho một ứng dụng mạng xã hội nhỏ không?",
+    "authorEmail": "react_master@ptit.edu.vn",
+    "content": "<p>Hoàn toàn được nhé! Với mxh nhỏ thì MySQL vẫn cân rất tốt. Hãy chú ý đánh index cho các trường hay query (user_id, post_id). Tuy nhiên MongoDB sẽ linh hoạt hơn nếu schema của bài post thay đổi liên tục.</p>",
+    "votes": 18,
+    "teacherVerified": 0,
+    "verifiedByTeacherEmail": null
+  },
+  {
+    "questionTitle": "Sự khác biệt giữa TypeScript và JavaScript là gì?",
+    "authorEmail": "backend_guru@ptit.edu.vn",
+    "content": "<p>TS thực chất là JS cộng thêm Static Typing (kiểu dữ liệu tĩnh). Khó khăn lúc đầu là phải định nghĩa type cho mọi thứ, nhưng bù lại lúc code IDE sẽ gợi ý rất thông minh, bắt lỗi ngay lúc gõ code thay vì lúc chạy. Rất đáng học nhé em!</p>",
+    "votes": 5,
+    "teacherVerified": 1,
+    "verifiedByTeacherEmail": "backend_guru@ptit.edu.vn"
+  }
+]

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ConfigProvider, Typography, Form, Input, Button, Upload, 
-  Row, Col, Space, Avatar, message, Flex, Divider, Card, Layout, Tabs, List, Dropdown, Tag, Segmented, Empty, Tooltip, Badge
+  Row, Col, Space, Avatar, message, Flex, Divider, Card, Layout, Tabs, Dropdown, Tag, Segmented, Empty, Tooltip, Badge, Skeleton
 } from 'antd';
 import type { MenuProps } from 'antd';
 import { 
@@ -598,7 +598,9 @@ const UserProfile: React.FC = () => {
         </div>
       </Flex>
 
-      {myQuestions.length === 0 && !questionsLoading ? (
+      {questionsLoading ? (
+        <Skeleton active />
+      ) : myQuestions.length === 0 ? (
         <Empty 
           description="Bạn chưa đăng câu hỏi nào"
           style={{ padding: '40px 0' }}
@@ -608,60 +610,56 @@ const UserProfile: React.FC = () => {
           </Button>
         </Empty>
       ) : (
-        <List
-          loading={questionsLoading}
-          itemLayout="vertical"
-          dataSource={myQuestions}
-          renderItem={(q) => (
-            <Card 
-              hoverable
-              onClick={() => navigate(`/questions/${q.id}`)}
-              style={{ borderRadius: 14, marginBottom: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
-              styles={{ body: { padding: '16px 20px' } }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-                <div style={{ flex: 1 }}>
-                  <Text strong style={{ fontSize: 16, color: '#1e293b', display: 'block', marginBottom: 8 }}>
-                    {q.title}
-                  </Text>
-                  <Paragraph ellipsis={{ rows: 2 }} style={{ color: '#64748b', fontSize: 13.5, margin: 0, marginBottom: 10 }}>
-                    {q.description?.replace(/<[^>]*>/g, '')}
-                  </Paragraph>
-                  <Space size={[6, 6]} wrap>
-                    {q.tags && q.tags.split(',').map((tag: string) => (
-                      <Tag key={tag.trim()} bordered={false} style={{ backgroundColor: '#eef2ff', color: '#6366f1', borderRadius: 6, fontWeight: 500 }}>
-                        {tag.trim()}
-                      </Tag>
-                    ))}
-                  </Space>
-                </div>
-                <div style={{ display: 'flex', gap: 16, flexShrink: 0, alignItems: 'center' }}>
-                  <Tooltip title="Lượt thích">
-                    <Space size={4} style={{ color: '#64748b', fontSize: 13 }}>
-                      <LikeOutlined /> {q.votes || 0}
-                    </Space>
-                  </Tooltip>
-                  <Tooltip title="Câu trả lời">
-                    <Space size={4} style={{ color: '#64748b', fontSize: 13 }}>
-                      <CommentOutlined /> {q.answer_count || 0}
-                    </Space>
-                  </Tooltip>
-                  <Tooltip title="Lượt xem">
-                    <Space size={4} style={{ color: '#64748b', fontSize: 13 }}>
-                      <EyeOutlined /> {q.views || 0}
-                    </Space>
-                  </Tooltip>
-                </div>
-              </div>
-              <div style={{ marginTop: 8 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  <ClockCircleOutlined style={{ marginRight: 4 }} />
-                  {dayjs(q.created_at).fromNow()}
+        myQuestions.map((q) => (
+          <Card 
+            key={q.id}
+            hoverable
+            onClick={() => navigate(`/questions/${q.id}`)}
+            style={{ borderRadius: 14, marginBottom: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            styles={{ body: { padding: '16px 20px' } }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+              <div style={{ flex: 1 }}>
+                <Text strong style={{ fontSize: 16, color: '#1e293b', display: 'block', marginBottom: 8 }}>
+                  {q.title}
                 </Text>
+                <Paragraph ellipsis={{ rows: 2 }} style={{ color: '#64748b', fontSize: 13.5, margin: 0, marginBottom: 10 }}>
+                  {q.description?.replace(/<[^>]*>/g, '')}
+                </Paragraph>
+                <Space size={[6, 6]} wrap>
+                  {q.tags && q.tags.split(',').map((tag: string) => (
+                    <Tag key={tag.trim()} bordered={false} style={{ backgroundColor: '#eef2ff', color: '#6366f1', borderRadius: 6, fontWeight: 500 }}>
+                      {tag.trim()}
+                    </Tag>
+                  ))}
+                </Space>
               </div>
-            </Card>
-          )}
-        />
+              <div style={{ display: 'flex', gap: 16, flexShrink: 0, alignItems: 'center' }}>
+                <Tooltip title="Lượt thích">
+                  <Space size={4} style={{ color: '#64748b', fontSize: 13 }}>
+                    <LikeOutlined /> {q.votes || 0}
+                  </Space>
+                </Tooltip>
+                <Tooltip title="Câu trả lời">
+                  <Space size={4} style={{ color: '#64748b', fontSize: 13 }}>
+                    <CommentOutlined /> {q.answer_count || 0}
+                  </Space>
+                </Tooltip>
+                <Tooltip title="Lượt xem">
+                  <Space size={4} style={{ color: '#64748b', fontSize: 13 }}>
+                    <EyeOutlined /> {q.views || 0}
+                  </Space>
+                </Tooltip>
+              </div>
+            </div>
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                <ClockCircleOutlined style={{ marginRight: 4 }} />
+                {dayjs(q.created_at).fromNow()}
+              </Text>
+            </div>
+          </Card>
+        ))
       )}
     </Card>
   );
@@ -706,15 +704,14 @@ const UserProfile: React.FC = () => {
           style={{ marginBottom: 20 }}
         />
 
-        {currentList.length === 0 && !followLoading ? (
+        {followLoading ? (
+          <Skeleton active />
+        ) : currentList.length === 0 ? (
           <Empty description={emptyText} style={{ padding: '40px 0' }} />
         ) : (
-          <List
-            loading={followLoading}
-            grid={{ gutter: 16, column: 2, xs: 1, sm: 1, md: 2 }}
-            dataSource={currentList}
-            renderItem={(item) => (
-              <List.Item>
+          <Row gutter={[16, 16]}>
+            {currentList.map((item) => (
+              <Col xs={24} sm={24} md={12} key={item.id}>
                 <Card 
                   styles={{ body: { padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' } }} 
                   style={{ borderRadius: 12, border: '1px solid #f0f0f0' }}
@@ -758,9 +755,9 @@ const UserProfile: React.FC = () => {
                     </Tooltip>
                   </Space>
                 </Card>
-              </List.Item>
-            )}
-          />
+              </Col>
+            ))}
+          </Row>
         )}
       </Card>
     );

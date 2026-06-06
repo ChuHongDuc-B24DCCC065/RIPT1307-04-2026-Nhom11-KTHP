@@ -53,7 +53,7 @@ const LandingPage: React.FC = () => {
 
         <Row gutter={[32, 32]} className="feature-cards-row">
           <Col xs={24} sm={12} md={8}>
-            <Card className="feature-card qna-card" bordered={false}>
+            <Card className="feature-card qna-card" variant="borderless">
               <div className="feature-icon-wrapper">
                 <QuestionCircleOutlined className="feature-icon" />
               </div>
@@ -64,7 +64,7 @@ const LandingPage: React.FC = () => {
             </Card>
           </Col>
           <Col xs={24} sm={12} md={8}>
-            <Card className="feature-card community-card" bordered={false}>
+            <Card className="feature-card community-card" variant="borderless">
               <div className="feature-icon-wrapper">
                 <TeamOutlined className="feature-icon" />
               </div>
@@ -75,7 +75,7 @@ const LandingPage: React.FC = () => {
             </Card>
           </Col>
           <Col xs={24} sm={24} md={8}>
-            <Card className="feature-card study-card" bordered={false}>
+            <Card className="feature-card study-card" variant="borderless">
               <div className="feature-icon-wrapper">
                 <RocketOutlined className="feature-icon" />
               </div>

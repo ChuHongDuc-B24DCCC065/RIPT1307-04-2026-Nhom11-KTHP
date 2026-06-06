@@ -307,7 +307,7 @@ const AdminUserManagement: React.FC = () => {
         <div style={{ marginBottom: 24 }}>
           <p>Bạn muốn reset mật khẩu cho người dùng <strong>{selectedUser?.username}</strong> ({selectedUser?.email}) bằng cách nào?</p>
         </div>
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Button block type="primary" onClick={() => handleResetPassword('email')}>
             Gửi Link Reset qua Email
           </Button>
