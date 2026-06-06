@@ -313,3 +313,184 @@ body, html {
   border-left-color: #6366f1;
 }
 
+/* ==================== STACKOVERFLOW QUESTION ITEM LAYOUT ==================== */
+.so-questions-list-container {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
+  margin-bottom: 24px;
+}
+
+.so-question-item {
+  display: flex;
+  padding: 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background-color: #ffffff;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.so-question-item:last-child {
+  border-bottom: none;
+}
+
+/* Stats Column (left side) */
+.so-stats-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  width: 120px;
+  margin-right: 20px;
+  gap: 8px;
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #64748b;
+  padding-top: 4px;
+}
+
+.so-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.so-stat-item.votes {
+  color: #334155;
+  font-weight: 500;
+}
+
+.so-stat-item.answers {
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #475569;
+}
+
+.so-stat-item.answers.has-answers {
+  border: 1px solid #22c55e;
+  color: #22c55e;
+}
+
+.so-stat-item.answers.has-accepted {
+  background-color: #22c55e;
+  color: #ffffff;
+  border: 1px solid #22c55e;
+}
+
+.so-stat-item.views {
+  color: #64748b;
+}
+
+/* Content Column (right side) */
+.so-content-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.so-question-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #0284c7;
+  text-decoration: none;
+  line-height: 1.4;
+  margin-bottom: 6px;
+  word-wrap: break-word;
+  transition: color 0.15s ease;
+}
+
+.so-question-title:hover {
+  color: #0ea5e9;
+  text-decoration: none;
+}
+
+.so-question-excerpt {
+  font-size: 13.5px;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+/* Meta Footer Row (Tags + User Info) */
+.so-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.so-tags-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* StackOverflow Style Tags */
+.so-tag {
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+  border-radius: 6px !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  border: none !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  margin: 0 !important;
+}
+
+.so-tag:hover {
+  background-color: #bae6fd !important;
+  color: #0369a1 !important;
+}
+
+/* User Info Box */
+.so-user-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+  margin-left: auto;
+}
+
+.so-username {
+  color: #0284c7;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.so-username:hover {
+  color: #0ea5e9;
+}
+
+.so-reputation {
+  font-weight: 700;
+  color: #334155;
+}
+
+.so-time {
+  color: #64748b;
+}
+
+/* Popover customize */
+.so-popover-tag-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+

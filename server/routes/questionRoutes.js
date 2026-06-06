@@ -67,7 +67,7 @@ router.get('/', async (req, res) => {
 
     // ✅ LIMIT và OFFSET nhúng thẳng vào chuỗi SQL
     const [rows] = await pool.query(
-      `SELECT q.*, u.role AS author_role,
+      `SELECT q.*, u.role AS author_role, u.reputation AS author_reputation,
               (SELECT COUNT(*) FROM answers a WHERE a.question_id = q.id) AS answer_count
               ${userId ? `, qv.vote_type AS user_vote_type` : ''}
        FROM questions q

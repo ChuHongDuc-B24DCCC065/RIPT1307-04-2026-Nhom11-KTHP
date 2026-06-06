@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Tag, Space, Button, Row, Col, Typography, Card, message, Empty, Skeleton, Input, Pagination, Tooltip, Radio, Avatar, Divider } from 'antd';
-import { MessageOutlined, LikeOutlined, LikeFilled, UserOutlined, ClockCircleOutlined, SearchOutlined, PlusOutlined, FireOutlined, TrophyOutlined, NumberOutlined } from '@ant-design/icons';
+import { Tag, Space, Button, Row, Col, Typography, Card, message, Empty, Skeleton, Input, Pagination, Tooltip, Radio, Avatar, Divider, Popover } from 'antd';
+import { MessageOutlined, LikeOutlined, LikeFilled, UserOutlined, ClockCircleOutlined, SearchOutlined, PlusOutlined, FireOutlined, TrophyOutlined, NumberOutlined, CheckOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -171,6 +171,29 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const [tagsData, setTagsData] = useState<Record<string, { description: string; count: number }>>({});
+  const [watchedTags, setWatchedTags] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('watchedTags') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const toggleWatchTag = (tagName: string) => {
+    const isWatched = watchedTags.includes(tagName.toLowerCase());
+    let updated;
+    if (isWatched) {
+      updated = watchedTags.filter(t => t !== tagName.toLowerCase());
+      message.success(`Đã bỏ theo dõi thẻ #${tagName}`);
+    } else {
+      updated = [...watchedTags, tagName.toLowerCase()];
+      message.success(`Đã theo dõi thẻ #${tagName}`);
+    }
+    setWatchedTags(updated);
+    localStorage.setItem('watchedTags', JSON.stringify(updated));
+  };
+
   const fetchTagCounts = async () => {
     try {
       const res = await axios.get(
@@ -179,9 +202,39 @@ const HomePage: React.FC = () => {
       if (res.data?.success) {
         setTagCounts(res.data.data || {});
       }
+
+      const resList = await axios.get(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/tags/list`
+      );
+      if (resList.data?.success) {
+        const data: Record<string, { description: string; count: number }> = {};
+        resList.data.data.forEach((t: any) => {
+          data[t.name.toLowerCase()] = {
+            description: t.description,
+            count: t.question_count
+          };
+        });
+        setTagsData(data);
+      }
     } catch (error) {
       console.error('Lỗi lấy thống kê tags:', error);
     }
+  };
+
+  const getTagInfo = (tagName: string) => {
+    const key = tagName.toLowerCase();
+    const info = tagsData[key];
+    return {
+      description: info?.description || 'Không có mô tả cho thẻ này.',
+      count: info?.count || tagCounts[key] || 0
+    };
+  };
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    }
+    return num;
   };
 
   useEffect(() => {
@@ -374,39 +427,55 @@ const HomePage: React.FC = () => {
             </Card>
           ) : (
             <>
-              {displayQuestions.map((item) => {
-                const tagList = item.tags
-                  ? item.tags.split(',').map(t => t.trim()).filter(Boolean)
-                  : [];
-                return (
-                  <Card
-                    className="premium-card animated-hover-card"
-                    key={item.id}
-                    style={{ marginBottom: 18, cursor: 'pointer', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.01)' }}
-                    onClick={() => navigate(`/questions/${item.id}`)}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <div style={{ marginBottom: 8 }}>
-                        <a
-                          href={`/questions/${item.id}`}
-                          style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', display: 'block', transition: 'color 0.2s ease' }}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigate(`/questions/${item.id}`);
+              <div className="so-questions-list-container">
+                {displayQuestions.map((item) => {
+                  const tagList = item.tags
+                    ? item.tags.split(',').map(t => t.trim()).filter(Boolean)
+                    : [];
+                  return (
+                    <div className="so-question-item" key={item.id}>
+                      {/* Left: Stats Column */}
+                      <div className="so-stats-container">
+                        <div 
+                          className={`so-stat-item votes ${likedQuestions[item.id] ? 'vote-btn-active' : ''}`}
+                          onClick={(e) => handleLike(e, item)}
+                          style={{ 
+                            cursor: 'pointer',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: likedQuestions[item.id] ? '#e6f7ff' : 'transparent',
+                            color: likedQuestions[item.id] ? '#1890ff' : '#334155',
+                            transition: 'all 0.2s'
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.color = '#6366f1')}
-                          onMouseLeave={(e) => (e.currentTarget.style.color = '#1e293b')}
+                          title="Bấm để Thích/Bỏ Thích"
                         >
-                          {item.title}
-                        </a>
-                        <Space size="middle" style={{ marginTop: '8px', flexWrap: 'wrap' }}>
-                          <Space size="small">
-                            <UserOutlined style={{ color: '#94a3b8' }} />
-                            <Text strong style={{ color: '#475569', fontSize: '13px' }}>{item.author || 'Ẩn danh'}</Text>
-                            {item.author_role === 'teacher' && (
-                              <Tag color="blue" style={{ borderRadius: 5, fontWeight: 600, fontSize: 10, padding: '0 6px', margin: 0 }}>👨‍🏫 GV</Tag>
-                            )}
-                          </Space>
+                          {formatNumber(item.votes ?? 0)} votes
+                        </div>
+                        
+                        <div className={`so-stat-item answers ${item.answer_count && item.answer_count > 0 ? 'has-accepted' : ''}`}>
+                          {item.answer_count && item.answer_count > 0 && <CheckOutlined style={{ marginRight: '4px' }} />}
+                          {formatNumber(item.answer_count ?? 0)} answers
+                        </div>
+                        
+                        <div className="so-stat-item views">
+                          {formatNumber(item.views ?? 0)} views
+                        </div>
+                      </div>
+
+                      {/* Right: Content Column */}
+                      <div className="so-content-container">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                          <a
+                            href={`/questions/${item.id}`}
+                            className="so-question-title"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigate(`/questions/${item.id}`);
+                            }}
+                            style={{ marginBottom: 0 }}
+                          >
+                            {item.title}
+                          </a>
                           {(item.is_announcement === 1 || item.post_type === 'announcement') && (
                             <Tag color="gold" style={{ borderRadius: 5, fontWeight: 600, fontSize: 10, padding: '0 6px', margin: 0 }}>📢 Thông báo</Tag>
                           )}
@@ -418,64 +487,107 @@ const HomePage: React.FC = () => {
                           {item.post_type === 'material' && (
                             <Tag color="cyan" style={{ borderRadius: 5, fontWeight: 600, fontSize: 10, padding: '0 6px', margin: 0 }}>📚 Tài liệu học tập</Tag>
                           )}
-                        </Space>
+                        </div>
+
+                        <div className="so-question-excerpt">
+                          {item.description && item.description.length > 180
+                            ? `${item.description.replace(/<[^>]*>/g, '').substring(0, 180)}...`
+                            : item.description.replace(/<[^>]*>/g, '')}
+                        </div>
+
+                        <div className="so-meta-row">
+                          <div className="so-tags-list" onClick={(e) => e.stopPropagation()}>
+                            {tagList.map(tag => {
+                              const info = getTagInfo(tag);
+                              const isWatched = watchedTags.includes(tag.toLowerCase());
+                              return (
+                                <Popover
+                                  key={tag}
+                                  trigger="hover"
+                                  placement="top"
+                                  content={
+                                    <div style={{ width: 280, padding: '4px' }}>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        <div>
+                                          <div className="so-popover-tag-title">{tag.toLowerCase()}</div>
+                                          <div style={{ fontSize: '13px', color: '#64748b', marginTop: 2 }}>
+                                            <strong>{formatNumber(info.count)}</strong> questions
+                                          </div>
+                                        </div>
+                                        <div style={{ fontSize: '13.5px', color: '#475569', lineHeight: 1.5, minHeight: '36px' }}>
+                                          {info.description}
+                                        </div>
+                                        <Button 
+                                          type={isWatched ? "default" : "primary"} 
+                                          size="middle" 
+                                          block
+                                          style={{ 
+                                            borderRadius: 8, 
+                                            fontWeight: 600,
+                                            height: '38px',
+                                            boxShadow: isWatched ? 'none' : '0 2px 4px rgba(22, 119, 255, 0.2)'
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleWatchTag(tag);
+                                          }}
+                                        >
+                                          {isWatched ? 'Đang theo dõi' : 'Watch tag'}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  }
+                                >
+                                  <Tag 
+                                    className="so-tag"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/search?tag=${tag.toLowerCase()}`);
+                                    }}
+                                  >
+                                    {tag.toLowerCase()}
+                                  </Tag>
+                                </Popover>
+                              );
+                            })}
+                          </div>
+
+                          <div className="so-user-box" onClick={(e) => e.stopPropagation()}>
+                            <Avatar 
+                              size={18} 
+                              style={{ 
+                                background: getAvatarGradient(item.author),
+                                fontWeight: 600,
+                                fontSize: '9px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              {(item.author || 'U').charAt(0).toUpperCase()}
+                            </Avatar>
+                            <span 
+                              className="so-username"
+                              onClick={() => navigate(`/profile?id=${item.user_id}`)}
+                            >
+                              {item.author || 'Ẩn danh'}
+                            </span>
+                            {item.author_role === 'teacher' && (
+                              <span style={{ fontSize: '11px', color: '#6366f1', fontWeight: 600, marginRight: '2px' }}>👨‍🏫 GV</span>
+                            )}
+                            <span className="so-reputation" title="Điểm uy tín">
+                              {item.author_reputation ?? 100}
+                            </span>
+                            <span className="so-time">
+                              hỏi {item.created_at ? dayjs(item.created_at).fromNow() : 'vừa xong'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      {/* Tóm tắt nội dung */}
-                      <div style={{ margin: '14px 0', color: '#475569', fontSize: '14.5px', lineHeight: '1.6' }}>
-                        {item.description && item.description.length > 150
-                          ? `${item.description.replace(/<[^>]*>/g, '').substring(0, 150)}...`
-                          : item.description.replace(/<[^>]*>/g, '')}
-                      </div>
-                      {/* Thẻ tags */}
-                      <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: 16 }}>
-                        {tagList.map(tag => {
-                          const count = tagCounts[tag.toLowerCase()] || 0;
-                          return (
-                            <Tooltip key={tag} title={`Có ${count} câu hỏi gắn thẻ này`}>
-                              <Tag 
-                                color="purple" 
-                                style={{ 
-                                  cursor: 'pointer', 
-                                  borderRadius: '6px', 
-                                  padding: '3px 10px', 
-                                  fontSize: '12px',
-                                  fontWeight: 500,
-                                  backgroundColor: '#f3e8ff',
-                                  color: '#7c3aed',
-                                  border: 'none'
-                                }}
-                                onClick={() => navigate(`/search?tag=${tag.toLowerCase()}`)}
-                              >
-                                #{tag}
-                              </Tag>
-                            </Tooltip>
-                          );
-                        })}
-                      </div>
-                      <Divider style={{ margin: '8px 0' }} />
-                      <Space size="large" style={{ color: '#8c8c8c' }}>
-                        <Space 
-                          key="votes" 
-                          onClick={(e) => handleLike(e, item)}
-                          style={{ 
-                            color: likedQuestions[item.id] ? '#1890ff' : '#4f46e5', 
-                            fontWeight: 500,
-                            cursor: 'pointer',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            background: likedQuestions[item.id] ? '#e6f7ff' : 'transparent',
-                            transition: 'all 0.3s'
-                          }}
-                        >
-                          {likedQuestions[item.id] ? <LikeFilled /> : <LikeOutlined />} {item.votes ?? 0} Thích
-                        </Space>
-                        <Space key="answers" style={{ color: '#059669', fontWeight: 500 }}><MessageOutlined /> {item.answer_count ?? 0} Trả lời</Space>
-                        <Space key="time" style={{ color: '#64748b' }}><ClockCircleOutlined /> {item.created_at ? dayjs(item.created_at).fromNow() : 'Vừa xong'}</Space>
-                      </Space>
                     </div>
-                  </Card>
-                );
-              })}
+                  );
+                })}
+              </div>
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px', marginBottom: '20px' }}>
                 <Pagination
                   current={currentPage}

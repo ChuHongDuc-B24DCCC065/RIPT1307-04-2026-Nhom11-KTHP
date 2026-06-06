@@ -5,9 +5,9 @@ import {
   Avatar, Input, message, Row, Col, Skeleton, Empty, Select, Tooltip, Alert, Modal, Switch, Form
 } from 'antd';
 import {
-  LikeOutlined, LikeFilled, DislikeOutlined, DislikeFilled,
+  CaretUpOutlined, CaretDownOutlined, CaretUpFilled, CaretDownFilled,
   MessageOutlined, UserOutlined, ClockCircleOutlined,
-  ArrowLeftOutlined, SendOutlined, CheckCircleFilled,
+  SendOutlined, CheckCircleFilled,
   EyeOutlined, ShareAltOutlined, FlagOutlined,
   ThunderboltOutlined, GlobalOutlined, InfoCircleOutlined,
   FireOutlined, PlusOutlined, CheckOutlined,
@@ -502,6 +502,29 @@ const QuestionDetail: React.FC = () => {
   };
 
   const isOwner = user && question ? user.id === question.user_id : false;
+
+  const getModifiedTime = () => {
+    if (!question) return '';
+    let latest = new Date(question.created_at).getTime();
+    if (question.answers && question.answers.length > 0) {
+      question.answers.forEach(ans => {
+        const ansTime = new Date(ans.created_at).getTime();
+        if (ansTime > latest) {
+          latest = ansTime;
+        }
+        if (ans.comments && ans.comments.length > 0) {
+          ans.comments.forEach(c => {
+            const cTime = new Date(c.created_at).getTime();
+            if (cTime > latest) {
+              latest = cTime;
+            }
+          });
+        }
+      });
+    }
+    return dayjs(latest).fromNow();
+  };
+
   const isTeacher = user?.role === 'teacher';
   const isTeacherOrAdmin = user?.role === 'teacher' || user?.role === 'admin';
   const tagList = question && question.tags ? question.tags.split(',').map(t => t.trim()) : [];
@@ -583,44 +606,13 @@ const QuestionDetail: React.FC = () => {
   const isDisliked = question?.user_vote_type === -1;
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 8px 40px 8px' }}>
-      
-      {/* ==================== BREADCRUMBS SANG TRỌNG ==================== */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-        <Link to="/" className="breadcrumb-link">Trang chủ</Link>
-        <span style={{ color: '#94a3b8', fontSize: 12 }}>/</span>
-        <Link to="/search" className="breadcrumb-link">Câu hỏi</Link>
-        <span style={{ color: '#94a3b8', fontSize: 12 }}>/</span>
-        <Text ellipsis style={{ maxWidth: 300, color: '#4f46e5', fontWeight: 600, fontSize: 13 }}>
-          {question.title}
-        </Text>
-      </div>
-
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 8px 40px 8px', paddingTop: '20px' }}>
       <Row gutter={[24, 24]}>
         
         {/* ======================================================== */}
         {/* CỘT CHÍNH TRÁI (NỘI DUNG CHI TIẾT & CÂU TRẢ LỜI) - 70%   */}
         {/* ======================================================== */}
         <Col xs={24} lg={17}>
-          
-          {/* Back Button */}
-          <Button
-            icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/')}
-            type="text"
-            className="transition-all"
-            style={{ 
-              marginBottom: 16, 
-              fontWeight: 600, 
-              color: '#64748b',
-              paddingLeft: 4,
-              display: 'flex',
-              alignItems: 'center',
-              borderRadius: '8px'
-            }}
-          >
-            Quay lại trang chủ
-          </Button>
 
           {question.status === 'pending' && (
             <Alert
@@ -656,31 +648,37 @@ const QuestionDetail: React.FC = () => {
                   borderRadius: '999px',
                   border: '1px solid #f1f5f9'
                 }}>
-                  <Tooltip title="Thích câu hỏi này">
+                  <Tooltip title="Bình chọn lên">
                     <Button
-                      icon={isLiked ? <LikeFilled /> : <LikeOutlined />}
+                      icon={isLiked ? <CaretUpFilled style={{ fontSize: 24 }} /> : <CaretUpOutlined style={{ fontSize: 24 }} />}
                       shape="circle"
                       size="middle"
                       className={`transition-all ${isLiked ? 'vote-btn-active' : ''}`}
                       style={{ 
                         border: 'none', 
                         background: 'transparent',
-                        color: isLiked ? '#6366f1' : '#64748b'
+                        color: isLiked ? '#6366f1' : '#64748b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}
                       onClick={() => handleVote('up')}
                     />
                   </Tooltip>
                   <Text strong style={{ fontSize: 18, color: '#1e293b', margin: '2px 0' }}>{question.votes}</Text>
-                  <Tooltip title="Không thích câu hỏi">
+                  <Tooltip title="Bình chọn xuống">
                     <Button
-                      icon={isDisliked ? <DislikeFilled /> : <DislikeOutlined />}
+                      icon={isDisliked ? <CaretDownFilled style={{ fontSize: 24 }} /> : <CaretDownOutlined style={{ fontSize: 24 }} />}
                       shape="circle"
                       size="middle"
                       className={`transition-all ${isDisliked ? 'vote-btn-active' : ''}`}
                       style={{ 
                         border: 'none', 
                         background: 'transparent',
-                        color: isDisliked ? '#ef4444' : '#64748b'
+                        color: isDisliked ? '#ef4444' : '#64748b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}
                       onClick={() => handleVote('down')}
                     />
@@ -700,19 +698,12 @@ const QuestionDetail: React.FC = () => {
                 </div>
 
                 {/* Meta info bar */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', margin: '14px 0 20px 0', borderBottom: '1px dashed #f1f5f9', paddingBottom: 16, alignItems: 'center' }}>
-                  <Space>
-                    <UserOutlined style={{ color: '#94a3b8' }} />
-                    <Text strong style={{ color: '#475569', fontSize: 13.5 }}>{question.author}</Text>
-                    {question.author_role === 'teacher' && (
-                      <Tag color="blue" style={{ borderRadius: 6, fontWeight: 600, fontSize: 11, padding: '0 8px', margin: 0 }}>👨‍🏫 Giảng viên</Tag>
-                    )}
-                  </Space>
-                  <Space><ClockCircleOutlined style={{ color: '#94a3b8' }} /> <Text type="secondary" style={{ fontSize: 13 }}>{formatTime(question.created_at)}</Text></Space>
-                  <Space><EyeOutlined style={{ color: '#94a3b8' }} /> <Text type="secondary" style={{ fontSize: 13 }}>{question.views ?? 0} lượt xem</Text></Space>
-                  <Space><MessageOutlined style={{ color: '#94a3b8' }} /> <Text type="secondary" style={{ fontSize: 13 }}>{question.answers?.length ?? 0} trả lời</Text></Space>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', margin: '14px 0 20px 0', borderBottom: '1px solid #e2e8f0', paddingBottom: 12, alignItems: 'center', fontSize: 13, color: '#64748b' }}>
+                  <span>Ngày đăng: <span style={{ color: '#334155' }}>{dayjs(question.created_at).fromNow()}</span></span>
+                  <span>Ngày Modified: <span style={{ color: '#334155' }}>{getModifiedTime()}</span></span>
+                  <span>Số view: <span style={{ color: '#334155' }}>{question.views ?? 0}</span></span>
                   {question.is_closed === 1 && (
-                    <Tag color="red" style={{ borderRadius: 6, fontWeight: 600, fontSize: 11, padding: '0 8px', margin: 0 }}><LockOutlined /> Đã khóa</Tag>
+                    <Tag color="red" style={{ borderRadius: 6, fontWeight: 600, fontSize: 11, padding: '0 8px', margin: 0, marginLeft: 'auto' }}><LockOutlined /> Đã khóa</Tag>
                   )}
                 </div>
 
@@ -1008,22 +999,36 @@ const QuestionDetail: React.FC = () => {
                       {/* Cột vote câu trả lời */}
                       <Col style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 44, flexShrink: 0 }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                          <Tooltip title="Câu trả lời hữu ích">
+                          <Tooltip title="Bình chọn lên">
                             <Button
-                              icon={answer.user_vote_type === 1 ? <LikeFilled /> : <LikeOutlined />}
+                              icon={answer.user_vote_type === 1 ? <CaretUpFilled style={{ fontSize: 20 }} /> : <CaretUpOutlined style={{ fontSize: 20 }} />}
                               size="small"
                               shape="circle"
-                              style={{ backgroundColor: answer.user_vote_type === 1 ? '#e6f7ff' : '#f1f5f9', border: 'none', color: answer.user_vote_type === 1 ? '#6366f1' : '#475569' }}
+                              style={{ 
+                                backgroundColor: answer.user_vote_type === 1 ? '#e6f7ff' : '#f1f5f9', 
+                                border: 'none', 
+                                color: answer.user_vote_type === 1 ? '#6366f1' : '#475569',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
                               onClick={() => handleVoteAnswer(answer.id, 'up')}
                             />
                           </Tooltip>
                           <Text strong style={{ color: '#1e293b', fontSize: 15 }}>{answer.votes}</Text>
-                          <Tooltip title="Không hữu ích">
+                          <Tooltip title="Bình chọn xuống">
                             <Button
-                              icon={answer.user_vote_type === -1 ? <DislikeFilled /> : <DislikeOutlined />}
+                              icon={answer.user_vote_type === -1 ? <CaretDownFilled style={{ fontSize: 20 }} /> : <CaretDownOutlined style={{ fontSize: 20 }} />}
                               size="small"
                               shape="circle"
-                              style={{ backgroundColor: answer.user_vote_type === -1 ? '#fee2e2' : '#f1f5f9', border: 'none', color: answer.user_vote_type === -1 ? '#ef4444' : '#475569' }}
+                              style={{ 
+                                backgroundColor: answer.user_vote_type === -1 ? '#fee2e2' : '#f1f5f9', 
+                                border: 'none', 
+                                color: answer.user_vote_type === -1 ? '#ef4444' : '#475569',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
                               onClick={() => handleVoteAnswer(answer.id, 'down')}
                             />
                           </Tooltip>
