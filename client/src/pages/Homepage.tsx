@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tag, Space, Button, Row, Col, Typography, Card, message, Empty, Skeleton, Input, Pagination, Tooltip, Radio, Avatar, Popover, List } from 'antd';
+import { Tag, Space, Button, Row, Col, Typography, Card, message, Empty, Skeleton, Input, Pagination, Tooltip, Radio, Avatar, Popover, Spin } from 'antd';
 import { MessageOutlined, LikeOutlined, SearchOutlined, PlusOutlined, FireOutlined, TrophyOutlined, CheckOutlined, StarFilled, SyncOutlined, EyeOutlined, CheckCircleFilled } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import axiosInstance from '../utils/axiosConfig';
@@ -739,29 +739,36 @@ const HomePage: React.FC = () => {
             }}
             styles={{ body: { padding: '12px 16px' } }}
           >
-            <List
-              loading={activitiesLoading}
-              dataSource={activities}
-              renderItem={(item) => {
-                let icon = <MessageOutlined style={{ color: '#3b82f6' }} />;
-                if (item.type === 'verify') {
-                  icon = <CheckCircleFilled style={{ color: '#10b981' }} />;
-                } else if (item.type === 'view') {
-                  icon = <EyeOutlined style={{ color: '#f59e0b' }} />;
-                }
+            {activitiesLoading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+                <Spin size="small" />
+              </div>
+            ) : activities.length === 0 ? (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Không có hoạt động nào gần đây" />
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {activities.map((item) => {
+                  let icon = <MessageOutlined style={{ color: '#3b82f6' }} />;
+                  if (item.type === 'verify') {
+                    icon = <CheckCircleFilled style={{ color: '#10b981' }} />;
+                  } else if (item.type === 'view') {
+                    icon = <EyeOutlined style={{ color: '#f59e0b' }} />;
+                  }
 
-                return (
-                  <List.Item 
-                    style={{ 
-                      padding: '12px 0', 
-                      borderBottom: '1px dashed #f1f5f9',
-                      alignItems: 'flex-start'
-                    }}
-                  >
-                    <List.Item.Meta
-                      avatar={<span style={{ fontSize: '16px', marginTop: '2px', display: 'inline-block' }}>{icon}</span>}
-                      title={
-                        <span style={{ fontSize: '13px', fontWeight: 500, color: '#475569', lineHeight: '1.4' }}>
+                  return (
+                    <div 
+                      key={item.id}
+                      style={{ 
+                        padding: '12px 0', 
+                        borderBottom: '1px dashed #f1f5f9',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '12px'
+                      }}
+                    >
+                      <span style={{ fontSize: '16px', marginTop: '2px', display: 'inline-block' }}>{icon}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ fontSize: '13px', fontWeight: 500, color: '#475569', lineHeight: '1.4', display: 'block' }}>
                           {item.type === 'answer' && (
                             <>
                               {item.content}{' '}
@@ -797,18 +804,15 @@ const HomePage: React.FC = () => {
                             </>
                           )}
                         </span>
-                      }
-                      description={
                         <Text type="secondary" style={{ fontSize: '11px', display: 'block', marginTop: '4px' }}>
                           {dayjs(item.created_at).fromNow()}
                         </Text>
-                      }
-                    />
-                  </List.Item>
-                );
-              }}
-              locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Không có hoạt động nào gần đây" /> }}
-            />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
 
           {/* Card 2: Bảng xếp hạng đóng góp */}
