@@ -91,8 +91,9 @@ const AppContent: React.FC = () => {
   // Xác định active menu item dựa vào pathname
 
   const isAdmin = location.pathname.startsWith('/admin');
-  const hideSidebar = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname) || isAdmin;
+  const hideSidebar = ['/login', '/register', '/forgot-password', '/reset-password', '/welcome'].includes(location.pathname) || isAdmin;
   const hideLayout = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
+  const isLandingPage = location.pathname === '/welcome';
 
   // Xây dựng menuItems cho Menu của Ant Design v6
   const getMenuItems = () => {
@@ -246,7 +247,7 @@ const AppContent: React.FC = () => {
         )}
 
         {/* MAIN CONTENT AREA */}
-        <Content className={`app-content ${hideLayout ? 'hide-layout' : ''} ${isAdmin ? 'admin-content-wrapper' : ''}`}>
+        <Content className={`app-content ${hideLayout ? 'hide-layout' : ''} ${isAdmin ? 'admin-content-wrapper' : ''} ${isLandingPage ? 'landing-page-content-wrapper' : ''}`}>
           <Routes>
             <Route path="/" element={<HomePage />} />   
             <Route path="/welcome" element={<LandingPage />} /> 

@@ -493,4 +493,195 @@ body, html {
   color: #0f172a;
 }
 
+/* ==================== PREMIUM NOTIFICATION BELL & POPOVER STYLES ==================== */
+
+.bell-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.bell-icon-wrapper:hover {
+  background-color: #ffffff;
+  color: #6366f1;
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+  transform: translateY(-1px);
+}
+
+.bell-icon-wrapper.has-unread {
+  background-color: rgba(99, 102, 241, 0.06);
+  border-color: rgba(99, 102, 241, 0.2);
+  color: #6366f1;
+}
+
+.bell-icon-wrapper.has-unread:hover {
+  background-color: rgba(99, 102, 241, 0.12);
+  color: #4f46e5;
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+}
+
+/* Hover Ring Animation */
+.bell-icon-wrapper:hover .anticon-bell {
+  animation: bellRingHover 0.6s ease-in-out;
+  transform-origin: top center;
+}
+
+@keyframes bellRingHover {
+  0%, 100% { transform: rotate(0); }
+  20%, 60% { transform: rotate(15deg); }
+  40%, 80% { transform: rotate(-15deg); }
+}
+
+/* Unread Pulse Animation: Shakes gently every 5 seconds to catch attention */
+.bell-unread-pulse {
+  animation: bellPulseShake 5s infinite ease-in-out;
+  transform-origin: top center;
+  color: #6366f1;
+}
+
+@keyframes bellPulseShake {
+  0%, 80%, 100% { transform: rotate(0) scale(1); }
+  83% { transform: rotate(15deg) scale(1.1); }
+  86% { transform: rotate(-15deg) scale(1.1); }
+  89% { transform: rotate(10deg) scale(1.1); }
+  92% { transform: rotate(-10deg) scale(1.1); }
+  95% { transform: rotate(5deg) scale(1.05); }
+  97% { transform: rotate(-5deg) scale(1.05); }
+}
+
+/* Premium Popover Container overrides */
+.premium-notification-popover .ant-popover-inner {
+  padding: 0 !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12) !important;
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+.premium-notification-popover .ant-popover-title {
+  padding: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.notification-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+}
+
+.notification-list-container {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+/* Scrollbar for notification list */
+.notification-list-container::-webkit-scrollbar {
+  width: 5px;
+}
+.notification-list-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.notification-list-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+.notification-list-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Notification Item Layout */
+.notification-item {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  position: relative;
+  background: transparent;
+}
+
+.notification-item::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: transparent;
+  transition: background-color 0.2s;
+}
+
+.notification-item:hover {
+  background-color: #f8fafc;
+}
+
+.notification-item.unread {
+  background-color: rgba(99, 102, 241, 0.03);
+}
+
+.notification-item.unread::after {
+  background: #6366f1;
+}
+
+.notification-item.unread:hover {
+  background-color: rgba(99, 102, 241, 0.06);
+}
+
+/* Avatar Border styling */
+.notification-avatar-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-avatar-wrapper .ant-avatar {
+  border: 2px solid #e2e8f0;
+  background: #e2e8f0;
+}
+
+.notification-item.unread .notification-avatar-wrapper .ant-avatar {
+  border-color: rgba(99, 102, 241, 0.25);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.1);
+}
+
+/* Teacher Broadcast Tag Styling */
+.tag-teacher-broadcast {
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%) !important;
+  color: white !important;
+  border: none !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2) !important;
+  margin-right: 6px;
+}
+
+.notification-footer {
+  padding: 12px 20px;
+  text-align: center;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+}
+
+
 

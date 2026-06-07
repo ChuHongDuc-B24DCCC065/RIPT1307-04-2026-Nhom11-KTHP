@@ -215,3 +215,10 @@
   min-height: calc(100vh - 72px);
   background: #f8fafc;
 }
+
+/* Style for landing page content wrapper to go full-width */
+.app-content.landing-page-content-wrapper {
+  padding: 0;
+  min-height: calc(100vh - 72px);
+  background: #f8fafc;
+}

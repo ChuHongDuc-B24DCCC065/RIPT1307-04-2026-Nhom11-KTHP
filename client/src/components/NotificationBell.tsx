@@ -179,13 +179,13 @@ export const NotificationBell: React.FC = () => {
     <Flex 
       justify="space-between" 
       align="center" 
-      style={{ padding: '12px 16px', borderBottom: `1px solid ${token.colorBorderSecondary}` }}
+      className="notification-header"
     >
       <Text strong style={{ fontSize: 16 }}>
         Thông báo {isLoggedIn ? `(${notifications.length})` : ''}
       </Text>
       {isLoggedIn && (
-        <Flex gap={8} align="center">
+        <Flex gap={10} align="center">
           {/* Nút Làm mới (Refresh) thông báo */}
           <Tooltip title="Làm mới">
             <Button 
@@ -201,7 +201,7 @@ export const NotificationBell: React.FC = () => {
             />
           </Tooltip>
 
-          {/* Nút Đánh dấu tất cả là đã đọc (bỏ text span, thêm hover tooltip) */}
+          {/* Nút Đánh dấu tất cả là đã đọc */}
           <Tooltip title="Đánh dấu tất cả là đã đọc">
             <Button 
               type="text" 
@@ -237,27 +237,20 @@ export const NotificationBell: React.FC = () => {
         </Flex>
       ) : (
         <>
-          <div style={{ flex: 1, overflowY: 'auto' }}>
+          <div className="notification-list-container">
             {displayedNotifications.map((item) => (
               <div
                 key={item.id}
                 onClick={() => handleItemClick(item)}
-                style={{
-                  padding: '12px 16px',
-                  backgroundColor: item.isRead ? 'transparent' : token.colorPrimaryBg,
-                  borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                  cursor: 'pointer',
-                  transition: 'background-color 0.3s',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px'
-                }}
+                className={`notification-item ${item.isRead ? 'read' : 'unread'}`}
               >
-                <Avatar src={item.user.avatar} size="large" style={{ flexShrink: 0 }} />
+                <div className="notification-avatar-wrapper">
+                  <Avatar src={item.user.avatar} size="large" style={{ flexShrink: 0 }} />
+                </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, lineHeight: '1.4' }}>
+                  <div style={{ fontSize: 14, lineHeight: '1.45' }}>
                     {item.isTeacherBroadcast && (
-                      <Tag color="purple" style={{ marginRight: 6 }}>Từ Giảng viên</Tag>
+                      <Tag className="tag-teacher-broadcast">Từ Giảng viên</Tag>
                     )}
                     <Text strong>{item.user.name}</Text> {item.content}
                   </div>
@@ -269,11 +262,11 @@ export const NotificationBell: React.FC = () => {
             ))}
           </div>
           {visibleCount < notifications.length && (
-            <div style={{ padding: '12px 16px', textAlign: 'center', borderTop: `1px solid ${token.colorBorderSecondary}` }}>
+            <div className="notification-footer">
               <Button 
                 type="link" 
                 onClick={() => setVisibleCount(prev => prev + 5)} 
-                style={{ fontSize: 14, fontWeight: 600, padding: 0, height: 'auto' }}
+                style={{ fontSize: 13, fontWeight: 600, padding: 0, height: 'auto' }}
               >
                 Tải thêm thông báo
               </Button>
@@ -292,11 +285,12 @@ export const NotificationBell: React.FC = () => {
       open={open}
       onOpenChange={setOpen}
       placement="bottomRight"
+      overlayClassName="premium-notification-popover"
       styles={{ container: { padding: 0 } }} // Xóa padding mặc định của Popover để custom layout
     >
       <Badge count={unreadCount} size="small" color="#ef4444" offset={[-2, 2]}>
-        <div className="bell-icon-wrapper" style={{ cursor: 'pointer', padding: '4px' }}>
-          <BellOutlined style={{ fontSize: '20px' }} />
+        <div className={`bell-icon-wrapper ${unreadCount > 0 ? 'has-unread' : ''}`}>
+          <BellOutlined className={unreadCount > 0 ? 'bell-unread-pulse' : ''} style={{ fontSize: '20px' }} />
         </div>
       </Badge>
     </Popover>
