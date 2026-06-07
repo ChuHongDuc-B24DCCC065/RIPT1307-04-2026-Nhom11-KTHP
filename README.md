@@ -1,6 +1,3 @@
-Dưới đây là file `README.md` được thiết kế chuẩn chỉnh, gọn gàng và chuyên nghiệp cho dự án **Q&A Platform tích hợp Chatbot thông minh** của nhóm bạn. Bạn chỉ cần sao chép toàn bộ nội dung trong ô mã nguồn bên dưới và tạo một file tên là `README.md` ở thư mục gốc của dự án trên GitHub nhé.
-
-```markdown
 # Q&A Platform - Diễn đàn Hỏi đáp trực tuyến tích hợp Chatbot thông minh
 
 Một nền tảng mạng xã hội hỏi đáp chuyên sâu dành cho cộng đồng sinh viên công nghệ, kết hợp giữa mô hình diễn đàn truyền thống và trợ lý ảo AI hỗ trợ tự động 24/7. Dự án được phát triển dựa trên bộ công nghệ Fullstack JavaScript (React, Node.js, MySQL).
