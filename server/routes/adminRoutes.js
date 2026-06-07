@@ -449,19 +449,114 @@ router.delete("/reports/:id", async (req, res) => {
 });
 
 // ─────────────────────────────────────────
-// API Lấy danh sách Comments
+// API Lấy danh sách Comments (Các câu trả lời Answers)
 // ─────────────────────────────────────────
 router.get("/comments", async (req, res) => {
   try {
-    console.log("Fetching comments list...");
-    // Tạm thời trả về mảng rỗng hoặc query từ bảng nếu có
-    // const [comments] = await pool.query("SELECT * FROM comments");
-    res.json({ comments: [] });
+    const { search, status, startDate, endDate } = req.query;
+    console.log("Fetching comments list with filters:", { search, status, startDate, endDate });
+
+    let query = `
+      SELECT a.id, a.question_id AS postId, q.title AS postTitle, u.username AS author, 
+             a.content, a.created_at AS createdAt, a.is_hidden
+      FROM answers a
+      JOIN questions q ON a.question_id = q.id
+      JOIN users u ON a.user_id = u.id
+    `;
+    const queryParams = [];
+    const whereClauses = [];
+
+    if (search) {
+      whereClauses.push("(a.content LIKE ? OR u.username LIKE ? OR q.title LIKE ?)");
+      queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    if (status && status !== 'all') {
+      if (status === 'hidden') {
+        whereClauses.push("a.is_hidden = 1");
+      } else if (status === 'public' || status === 'approved') {
+        whereClauses.push("a.is_hidden = 0");
+      }
+    }
+
+    if (startDate && endDate) {
+      whereClauses.push("a.created_at >= ? AND a.created_at <= ?");
+      queryParams.push(new Date(startDate), new Date(endDate));
+    }
+
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(" AND ")}`;
+    }
+
+    query += " ORDER BY a.id DESC";
+
+    const [rows] = await pool.query(query, queryParams);
+
+    const comments = rows.map(r => ({
+      id: r.id.toString(),
+      postId: r.postId.toString(),
+      postTitle: r.postTitle,
+      author: r.author || 'Ẩn danh',
+      content: r.content,
+      createdAt: r.createdAt,
+      reports: 0,
+      status: r.is_hidden === 1 ? 'hidden' : 'public'
+    }));
+
+    res.json({ comments });
   } catch (error) {
-    console.error("Error in /comments:", error);
+    console.error("Error in GET /comments:", error);
     res.status(500).json({ message: "Lỗi server: " + error.message });
   }
 });
+
+// ─────────────────────────────────────────
+// Cập nhật trạng thái (Ẩn/Hiện) Bình luận
+// ─────────────────────────────────────────
+router.put("/comments/:id/status", async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body; // 'public' hoặc 'hidden'
+
+  try {
+    const isHidden = status === 'hidden' ? 1 : 0;
+    const [result] = await pool.query("UPDATE answers SET is_hidden = ? WHERE id = ?", [isHidden, id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: `Không tìm thấy bình luận với id = ${id}.` });
+    }
+
+    const action = isHidden === 1 ? 'Ẩn' : 'Hiện';
+    res.json({ message: `Đã ${action.toLowerCase()} bình luận id = ${id} thành công.` });
+  } catch (error) {
+    console.error("Lỗi PUT /comments/:id/status:", error);
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+});
+
+// ─────────────────────────────────────────
+// Xóa vĩnh viễn Bình luận
+// ─────────────────────────────────────────
+router.delete("/comments/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // 1. Xóa các bình luận con trong bảng comments liên quan đến answer này
+    await pool.query("DELETE FROM comments WHERE answer_id = ?", [id]);
+
+    // 2. Xóa answer này khỏi bảng answers
+    const [result] = await pool.query("DELETE FROM answers WHERE id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: `Không tìm thấy bình luận với id = ${id}.` });
+    }
+
+    res.json({ message: `Đã xóa bình luận id = ${id} thành công.` });
+  } catch (error) {
+    console.error("Lỗi DELETE /comments/:id:", error);
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+});
+
 
 // ─────────────────────────────────────────
 // API Tags Management
