@@ -83,24 +83,101 @@ router.get("/stats", async (req, res) => {
 // ─────────────────────────────────────────
 router.get("/detailed-stats", async (req, res) => {
   try {
-    const [usersResult] = await pool.query("SELECT COUNT(*) AS totalUsers FROM users");
-    const [postsResult] = await pool.query("SELECT COUNT(*) AS totalQuestions FROM questions");
+    const [[{ totalUsers }]] = await pool.query("SELECT COUNT(*) AS totalUsers FROM users");
+    const [[{ totalQuestions }]] = await pool.query("SELECT COUNT(*) AS totalQuestions FROM questions");
+    const [[{ totalComments }]] = await pool.query("SELECT (SELECT COUNT(*) FROM answers) + (SELECT COUNT(*) FROM comments) AS totalComments");
+    const [[{ totalVotes }]] = await pool.query("SELECT (SELECT COUNT(*) FROM question_votes) + (SELECT COUNT(*) FROM answer_votes) AS totalVotes");
+
+    // Lấy số lượng báo cáo chưa xử lý (pending reports)
+    const [[{ pendingReportsCount }]] = await pool.query("SELECT COUNT(*) AS pendingReportsCount FROM reports WHERE trang_thai = 'pending' OR trang_thai IS NULL");
+
+    // Lấy 5 bài viết mới nhất
+    const [latestPostsRows] = await pool.query(`
+      SELECT id, title, author, status, created_at
+      FROM questions
+      ORDER BY created_at DESC
+      LIMIT 5
+    `);
+    const latestPosts = latestPostsRows.map(p => {
+      let statusLabel = 'Nháp';
+      if (p.status === 'approved' || p.status === 'public') {
+        statusLabel = 'Công khai';
+      } else if (p.status === 'hidden') {
+        statusLabel = 'Bị ẩn';
+      }
+      return {
+        key: p.id.toString(),
+        title: p.title,
+        author: p.author || 'Ẩn danh',
+        status: statusLabel,
+        date: p.created_at ? new Date(p.created_at).toLocaleDateString('vi-VN') : 'Vừa xong'
+      };
+    });
+
+    // Lấy phân bố các thẻ (tags)
+    const [tagDistributionRows] = await pool.query(`
+      SELECT t.name, COUNT(q.id) AS count
+      FROM tags t
+      LEFT JOIN questions q ON FIND_IN_SET(t.name, q.tags) > 0 OR q.tags LIKE CONCAT('%', t.name, '%')
+      GROUP BY t.id
+      ORDER BY count DESC
+      LIMIT 5
+    `);
+    const totalTagUsage = tagDistributionRows.reduce((acc, row) => acc + row.count, 0) || 1;
+    const tagDistribution = tagDistributionRows.map(row => ({
+      name: row.name,
+      count: row.count,
+      value: Math.round((row.count / totalTagUsage) * 1000) / 10
+    }));
+
+    // Lấy danh sách báo cáo chưa xử lý (reports)
+    const [pendingReportsRows] = await pool.query(`
+      SELECT r.id, u.username AS reportedUser, q.title AS content, r.ly_do AS reason
+      FROM reports r
+      LEFT JOIN questions q ON r.question_id = q.id
+      LEFT JOIN users u ON q.user_id = u.id
+      WHERE r.trang_thai = 'pending' OR r.trang_thai IS NULL
+      ORDER BY r.created_at DESC
+      LIMIT 5
+    `);
+    const pendingReports = pendingReportsRows.map(r => ({
+      key: r.id.toString(),
+      reportedUser: r.reportedUser || 'Ẩn danh',
+      content: r.content || 'Nội dung không khả dụng',
+      reason: r.reason || 'Báo cáo vi phạm',
+      reportCount: 1
+    }));
+
+    // Dữ liệu tăng trưởng giả lập 7 ngày
+    const growthData = [
+      { date: '01/06', newUsers: 12, newPosts: 5 },
+      { date: '02/06', newUsers: 15, newPosts: 6 },
+      { date: '03/06', newUsers: 11, newPosts: 3 },
+      { date: '04/06', newUsers: 18, newPosts: 8 },
+      { date: '05/06', newUsers: 21, newPosts: 9 },
+      { date: '06/06', newUsers: 16, newPosts: 5 },
+      { date: '07/06', newUsers: 24, newPosts: 11 },
+    ];
 
     res.json({
-      totalUsers: usersResult[0].totalUsers,
-      totalQuestions: postsResult[0].totalQuestions,
-      totalAnswers: 1800,
-      totalVotes: 3200,
-      reportedQuestions: [
-        { key: '1', title: 'Tại sao React lại khó học?', reports: 12, author: 'nguyenvana' },
-        { key: '2', title: 'Lỗi khi cài đặt Node.js trên Windows 11', reports: 8, author: 'tranb' }
+      totalUsers,
+      totalPosts: totalQuestions,
+      totalComments,
+      totalVotes,
+      pendingReportsCount,
+      latestPosts,
+      tagDistribution: tagDistribution.length > 0 ? tagDistribution : [
+        { name: 'React', value: 40, count: 4 },
+        { name: 'Node.js', value: 30, count: 3 },
+        { name: 'MySQL', value: 20, count: 2 },
+        { name: 'Vite', value: 10, count: 1 }
       ],
-      activities: [
-        { id: '1', content: 'Admin A vừa xóa bài viết vi phạm', time: '10 phút trước', color: 'red' },
-        { id: '2', content: 'Người dùng B vừa đăng ký tài khoản', time: '1 giờ trước', color: 'green' }
-      ],
-      acceptedAnswerRate: 68,
-      teacherStudentRatio: { teacher: 15, student: 85 }
+      pendingReports,
+      growthData,
+      usersGrowth: 5.2,
+      postsGrowth: 3.1,
+      commentsGrowth: 12.5,
+      votesGrowth: 8.4,
     });
   } catch (error) {
     console.error("Error in /detailed-stats:", error);
