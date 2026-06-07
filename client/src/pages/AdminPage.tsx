@@ -18,10 +18,9 @@ import AdminEmailBroadcast from './AdminEmailBroadcast';
 import AdminPostManagement from './AdminPostManagement';
 import AdminUserManagement from './AdminUserManagement';
 import AdminTagManagement from './AdminTagManagement';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 const { Content, Sider } = Layout;
-
-
 
 const AdminPage: React.FC = () => {
   const location = useLocation();
@@ -56,8 +55,8 @@ const AdminPage: React.FC = () => {
 
   useEffect(() => {
   // Kiểm tra token và user info
-  const token = localStorage.getItem('token');
-  const userStr = localStorage.getItem('user');
+  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+  const userStr = localStorage.getItem(STORAGE_KEYS.USER);
   
   console.log('Token:', token);
   console.log('User:', userStr);

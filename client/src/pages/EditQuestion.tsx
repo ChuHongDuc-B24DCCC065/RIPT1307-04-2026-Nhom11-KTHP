@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Typography, Select, message, Space, Spin, DatePicker, Upload } from 'antd';
 import { ArrowLeftOutlined, EditOutlined, UploadOutlined, PaperClipOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance, { API_BASE_URL } from '../utils/axiosConfig';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import dayjs from 'dayjs';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -62,12 +63,12 @@ const EditQuestion: React.FC = () => {
   useEffect(() => {
     const fetchQuestion = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/${id}`);
+        const res = await axiosInstance.get(`/questions/${id}`);
         // server trả về data nằm trực tiếp trong response hoặc qua key data
         const question = res.data.data || res.data;
 
         // Lấy thông tin user từ localStorage
-        const userDataString = localStorage.getItem('user');
+        const userDataString = localStorage.getItem(STORAGE_KEYS.USER);
         if (!userDataString) {
           message.error("Vui lòng đăng nhập để thực hiện chức năng này!");
           navigate('/login');
@@ -122,9 +123,7 @@ const EditQuestion: React.FC = () => {
     setLoading(true); 
 
     try {
-      const token = localStorage.getItem('token');
-      
-      const res = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/${id}`, {
+      const res = await axiosInstance.put(`/questions/${id}`, {
         title: values.title,
         description: values.description, 
         tags: values.tags,
@@ -132,8 +131,6 @@ const EditQuestion: React.FC = () => {
         deadline: currentUser?.role === 'teacher' && values.post_type === 'assignment' ? values.deadline : null,
         attachment_url: currentUser?.role === 'teacher' ? attachmentUrl : null,
         attachment_name: currentUser?.role === 'teacher' ? attachmentName : null
-      }, {
-        headers: { Authorization: `Bearer ${token}` } 
       });
 
       if (res.status === 200 || res.status === 204) {
@@ -217,8 +214,8 @@ const EditQuestion: React.FC = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <Upload
                     name="file"
-                    action={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/upload/document`}
-                    headers={{ Authorization: `Bearer ${localStorage.getItem('token')}` }}
+                    action={`${API_BASE_URL}/upload/document`}
+                    headers={{ Authorization: `Bearer ${localStorage.getItem(STORAGE_KEYS.TOKEN)}` }}
                     showUploadList={false}
                     onChange={(info) => {
                       if (info.file.status === 'uploading') {

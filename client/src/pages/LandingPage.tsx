@@ -2,13 +2,14 @@ import React, { useEffect } from 'react';
 import { Button, Typography, Row, Col, Card } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { RocketOutlined, TeamOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import './LandingPage.css';
 
 const { Title, Paragraph } = Typography;
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const user = localStorage.getItem('user');
+  const user = localStorage.getItem(STORAGE_KEYS.USER);
 
   useEffect(() => {
     if (user) {

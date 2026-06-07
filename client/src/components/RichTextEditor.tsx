@@ -1,16 +1,16 @@
 import React from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import './MarkdownEditor.css';
+import './RichTextEditor.css';
 
-interface MarkdownEditorProps {
+interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   readOnly?: boolean;
 }
 
-const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
+const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
   placeholder = 'Nhập nội dung...',
@@ -53,7 +53,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   ];
 
   return (
-    <div className="markdown-editor-wrapper">
+    <div className="rich-text-editor-wrapper">
       <ReactQuill
         theme="snow"
         value={value}
@@ -72,4 +72,4 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   );
 };
 
-export default MarkdownEditor;
+export default RichTextEditor;

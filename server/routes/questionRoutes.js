@@ -10,7 +10,10 @@ const getUserFromHeader = (req) => {
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return null;
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'bi_mat_quoc_gia');
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not defined in environment variables");
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     return decoded;
   } catch (e) {
     return null;
@@ -28,13 +31,18 @@ const normalizeTags = (tags) => {
   return tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
 };
 
-// questionRoutes.js - Sửa route GET /
 router.get('/', async (req, res) => {
   const page   = Math.max(1, parseInt(req.query.page)  || 1);
   const limit  = Math.min(50, parseInt(req.query.limit) || 10);
   const offset = (page - 1) * limit;
   const search = req.query.search ? `%${req.query.search}%` : null;
+  const searchIn = req.query.searchIn || 'both'; // 'title', 'content', 'both'
   const tag    = req.query.tag ? req.query.tag.toLowerCase() : null;
+  const tagsParam = req.query.tags;
+  const dateRange = req.query.dateRange || 'all'; // 'today', 'week', 'month', 'year', 'all'
+  const userIdParam = req.query.userId ? parseInt(req.query.userId) : null;
+  const sort = req.query.sort || 'newest';
+  const filter = req.query.filter;
 
   try {
     let where = "WHERE (q.status = 'approved' OR q.status = 'public' OR q.status IS NULL)";
@@ -48,24 +56,67 @@ router.get('/', async (req, res) => {
     }
 
     if (search) {
-      where += ' AND (q.title LIKE ? OR q.description LIKE ?)';
-      params.push(search, search);
+      if (searchIn === 'title') {
+        where += ' AND q.title LIKE ?';
+        params.push(search);
+      } else if (searchIn === 'content') {
+        where += ' AND q.description LIKE ?';
+        params.push(search);
+      } else {
+        where += ' AND (q.title LIKE ? OR q.description LIKE ?)';
+        params.push(search, search);
+      }
     }
-    if (tag) {
+
+    if (tagsParam) {
+      const filterTags = tagsParam.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+      if (filterTags.length > 0) {
+        const tagConditions = filterTags.map(() => 'FIND_IN_SET(?, q.tags)').join(' OR ');
+        where += ` AND (${tagConditions})`;
+        params.push(...filterTags);
+      }
+    } else if (tag) {
       where += ' AND FIND_IN_SET(?, q.tags)';
       params.push(tag);
     }
 
-    // ✅ Dùng pool.query thay vì pool.execute cho total
+    if (dateRange !== 'all') {
+      if (dateRange === 'today') {
+        where += ' AND q.created_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)';
+      } else if (dateRange === 'week') {
+        where += ' AND q.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)';
+      } else if (dateRange === 'month') {
+        where += ' AND q.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
+      } else if (dateRange === 'year') {
+        where += ' AND q.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)';
+      }
+    }
+
+    if (userIdParam) {
+      where += ' AND q.user_id = ?';
+      params.push(userIdParam);
+    }
+
+    if (filter === 'unanswered') {
+      where += ' AND (SELECT COUNT(*) FROM answers a WHERE a.question_id = q.id) = 0';
+    }
+
+    // Dùng pool.query thay vì pool.execute cho total
     const [[{ total }]] = await pool.query(
       `SELECT COUNT(*) AS total FROM questions q ${where}`,
       params
     );
 
     const userId = currentUser ? currentUser.id : null;
-    const rowParams = userId ? [userId, ...params] : params;
+    const rowParams = userId ? [userId, ...params, limit, offset] : [...params, limit, offset];
 
-    // ✅ LIMIT và OFFSET nhúng thẳng vào chuỗi SQL
+    let orderBy = `q.is_announcement DESC, q.post_type = 'announcement' DESC, (q.post_type = 'assignment' AND (q.deadline IS NULL OR q.deadline > NOW())) DESC, q.pinned_order DESC`;
+    if (sort === 'votes') {
+      orderBy += `, q.votes DESC, q.created_at DESC`;
+    } else {
+      orderBy += `, q.created_at DESC`;
+    }
+
     const [rows] = await pool.query(
       `SELECT q.*, u.role AS author_role, u.reputation AS author_reputation,
               (SELECT COUNT(*) FROM answers a WHERE a.question_id = q.id) AS answer_count
@@ -74,8 +125,8 @@ router.get('/', async (req, res) => {
        LEFT JOIN users u ON u.id = q.user_id
        ${userId ? `LEFT JOIN question_votes qv ON qv.question_id = q.id AND qv.user_id = ?` : ''}
        ${where}
-       ORDER BY q.is_announcement DESC, q.post_type = 'announcement' DESC, (q.post_type = 'assignment' AND (q.deadline IS NULL OR q.deadline > NOW())) DESC, q.pinned_order DESC, q.created_at DESC
-       LIMIT ${limit} OFFSET ${offset}`,
+       ORDER BY ${orderBy}
+       LIMIT ? OFFSET ?`,
       rowParams
     );
 

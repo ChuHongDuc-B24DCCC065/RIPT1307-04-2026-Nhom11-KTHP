@@ -3,7 +3,10 @@ const router = express.Router();
 const pool = require('../config/db');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = 'bi_mat_quoc_gia';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET is not defined in environment variables");
+}
 
 // Middleware verifyToken
 function verifyToken(req, res, next) {

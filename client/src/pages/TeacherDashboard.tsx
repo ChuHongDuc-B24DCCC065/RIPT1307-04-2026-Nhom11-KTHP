@@ -17,19 +17,18 @@ import {
   QuestionCircleOutlined,
   TrophyOutlined
 } from '@ant-design/icons';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { stripHtml } from '../utils/html';
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 interface DashboardStats {
   followersCount: number;
@@ -95,10 +94,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
   const fetchDashboardData = async () => {
     setLoadingStats(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/users/teacher/dashboard-stats`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axiosInstance.get('/users/teacher/dashboard-stats');
       if (res.data.success) {
         setStats(res.data.data.stats);
         setUnansweredQuestions(res.data.data.unansweredQuestions);
@@ -116,10 +112,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
   const fetchStudentsData = async () => {
     setLoadingStudents(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/users/teacher/students-performance`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axiosInstance.get('/users/teacher/students-performance');
       if (res.data.success) {
         setStudents(res.data.data);
       }
@@ -134,10 +127,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
   // Tải trạng thái sẵn sàng từ profile
   const fetchAvailability = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/users/profile`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axiosInstance.get('/users/profile');
       if (res.data.success) {
         setIsAvailable(!!res.data.data.is_available);
         setOfficeHours(res.data.data.office_hours || '');
@@ -174,10 +164,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
   const handleBroadcast = async (values: { title: string; content: string }) => {
     setBroadcastLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post(`${API}/users/teacher/broadcast`, values, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axiosInstance.post('/users/teacher/broadcast', values);
       if (res.data.success) {
         message.success(res.data.message);
         broadcastForm.resetFields();
@@ -194,12 +181,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
   const handleAvailabilitySubmit = async (values: { isAvailable: boolean; officeHours: string }) => {
     setAvailabilityLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.put(`${API}/users/teacher/availability`, {
+      const res = await axiosInstance.put('/users/teacher/availability', {
         isAvailable: values.isAvailable,
         officeHours: values.officeHours
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
         message.success(res.data.message);
@@ -273,7 +257,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ defaultTab = 'overv
       key: 'content',
       render: (text: string) => (
         <div style={{ maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {text.replace(/<[^>]*>/g, '')}
+          {stripHtml(text)}
         </div>
       )
     },

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Tag, Space, Card, Typography, message, Empty, Skeleton, Divider } from 'antd';
 import { MessageOutlined, LikeOutlined, UserOutlined, ClockCircleOutlined, BookOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { STORAGE_KEYS } from '../constants/storageKeys';
+import { stripHtml } from '../utils/html';
 
 dayjs.extend(relativeTime);
 
@@ -31,17 +33,14 @@ const BookmarksPage: React.FC = () => {
   const fetchBookmarks = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
       if (!token) {
         message.warning('Vui lòng đăng nhập để xem bài viết đã lưu!');
         navigate('/login');
         return;
       }
       
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users/bookmarks`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axiosInstance.get('/users/bookmarks');
       
       if (res.data?.success) {
         setQuestions(res.data.data);
@@ -144,9 +143,9 @@ const BookmarksPage: React.FC = () => {
                 </div>
                 {/* Tóm tắt nội dung */}
                 <div style={{ margin: '12px 0', color: '#475569', fontSize: '14px', lineHeight: '1.6' }}>
-                  {item.description && item.description.length > 150
-                    ? `${item.description.replace(/<[^>]*>/g, '').substring(0, 150)}...`
-                    : item.description.replace(/<[^>]*>/g, '')}
+                  {item.description && (stripHtml(item.description).length > 150
+                    ? `${stripHtml(item.description).substring(0, 150)}...`
+                    : stripHtml(item.description))}
                 </div>
                 {/* Thẻ tags */}
                 <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: 16 }}>

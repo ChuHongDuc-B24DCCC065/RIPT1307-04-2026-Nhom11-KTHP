@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Modal, Form, Input, Button, message } from 'antd';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 
 interface EditProfileModalProps {
   user: any;
@@ -27,11 +27,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ user, isVisible, on
 
   const handleUpdateProfile = async (values: any) => {
     try {
-      const token = localStorage.getItem('token');
       // Gọi API cập nhật profile lên Backend
-      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users/profile`, values, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axiosInstance.put('/users/profile', values);
 
       const updatedUser = { ...user, ...values };
       message.success('Cập nhật thông tin thành công!');

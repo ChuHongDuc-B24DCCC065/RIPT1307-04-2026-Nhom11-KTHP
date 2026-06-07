@@ -33,27 +33,16 @@ import {
 } from '@ant-design/icons';
 import './App.css';
 import { StudentChatbot } from './components/StudentChatbot';
+import { STORAGE_KEYS } from './constants/storageKeys';
+import { getAvatarGradient } from './utils/avatar';
 
 const { Header, Content, Sider } = Layout;
-
-const getAvatarGradient = (name: string) => {
-  const gradients = [
-    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-  ];
-  const index = (name || 'A').charCodeAt(0) % gradients.length;
-  return gradients[index];
-};
 
 // Component Layout con để sử dụng được hooks của react-router-dom
 const AppContent: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const userData = localStorage.getItem('user');
+  const userData = localStorage.getItem(STORAGE_KEYS.USER);
   const parsedUser = userData ? JSON.parse(userData) : null;
 
   const handleLogout = () => {
@@ -243,12 +232,6 @@ const AppContent: React.FC = () => {
           theme="light"
           className="app-sidebar"
         >
-          <div className="sidebar-header-wrapper">
-            <div className="sidebar-section-title">
-              <span className="sidebar-title-dot"></span>
-              KHÁM PHÁ
-            </div>
-          </div>
           <Menu
             mode="inline"
             selectedKeys={[location.pathname]}
