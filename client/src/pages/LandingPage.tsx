@@ -18,7 +18,7 @@ const { Title, Paragraph } = Typography;
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const user = localStorage.getItem('user');
+  const user = localStorage.getItem(STORAGE_KEYS.USER);
 
   useEffect(() => {
     if (user) {

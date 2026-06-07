@@ -1,7 +1,7 @@
 import React from 'react';
 import { Form, Input, Button, Card, message, Select, Typography, Row, Col } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, TeamOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import { useNavigate, Link } from 'react-router-dom';
 import './RegisterPage.css';
 
@@ -18,7 +18,7 @@ const RegisterPage: React.FC = () => {
         ...rest,
         username: `${lastName || ''} ${firstName || ''}`.trim(),
       };
-      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/register`, payload);
+      await axiosInstance.post('/register', payload);
       message.success('Đăng ký tài khoản thành công!');
       setTimeout(() => navigate('/login'), 1500);
     } catch (err: any) {

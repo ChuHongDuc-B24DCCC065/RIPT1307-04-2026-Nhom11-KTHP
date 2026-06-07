@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button, message } from 'antd';
 import { BookOutlined, BookFilled } from '@ant-design/icons';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { useNavigate } from 'react-router-dom';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 interface BookmarkButtonProps {
   questionId: string | number;
@@ -15,37 +14,32 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({ questionId, style }) =>
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
-  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null');
+  const userId = user ? user.id : null;
+  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
 
   useEffect(() => {
     const fetchBookmarkStatus = async () => {
-      if (!user || !token) return;
+      if (!userId || !token) return;
       try {
-        const res = await axios.get(`${API}/questions/${questionId}/bookmark-status`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await axiosInstance.get(`/questions/${questionId}/bookmark-status`);
         setIsBookmarked(res.data.isBookmarked);
       } catch (error) {
         console.error('Lỗi khi lấy trạng thái bookmark', error);
       }
     };
     fetchBookmarkStatus();
-  }, [questionId, user, token]);
+  }, [questionId, userId, token]);
 
   const handleBookmark = async () => {
-    if (!user) {
+    if (!userId) {
       message.warning('Bạn cần đăng nhập để đánh dấu câu hỏi!');
       navigate('/login');
       return;
     }
     setLoading(true);
     try {
-      const res = await axios.post(
-        `${API}/questions/${questionId}/bookmark`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axiosInstance.post(`/questions/${questionId}/bookmark`, {});
       setIsBookmarked(res.data.isBookmarked);
       message.success(res.data.message);
     } catch {

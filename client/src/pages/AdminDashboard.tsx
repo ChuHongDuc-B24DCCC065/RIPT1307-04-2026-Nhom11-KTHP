@@ -11,25 +11,11 @@ import {
   ExclamationCircleOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 const { Title, Text } = Typography;
 const { confirm } = Modal;
-
-const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-});
-
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
 const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -38,7 +24,7 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     // 1. Kiểm tra Role bảo mật (AD01)
-    const userData = localStorage.getItem('user');
+    const userData = localStorage.getItem(STORAGE_KEYS.USER);
     if (userData) {
       try {
         const user = JSON.parse(userData);

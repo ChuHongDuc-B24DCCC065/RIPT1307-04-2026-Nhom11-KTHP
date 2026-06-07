@@ -3,6 +3,7 @@ import { Badge, Popover, Avatar, Typography, Button, Flex, theme, Spin, Empty, m
 import { BellOutlined, CheckOutlined, SyncOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/axiosConfig';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -77,11 +78,11 @@ export const NotificationBell: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [visibleCount, setVisibleCount] = useState(5); // Số lượng thông báo hiển thị ban đầu
 
-  const isLoggedIn = !!localStorage.getItem('token');
+  const isLoggedIn = !!localStorage.getItem(STORAGE_KEYS.TOKEN);
 
   // Hàm tải danh sách thông báo từ API
   const fetchNotifications = async () => {
-    if (!localStorage.getItem('token')) return;
+    if (!localStorage.getItem(STORAGE_KEYS.TOKEN)) return;
     try {
       const response = await axiosInstance.get('/notifications');
       if (response.data && response.data.success) {

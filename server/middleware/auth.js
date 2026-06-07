@@ -9,7 +9,10 @@ const authMiddleware = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'bi_mat_quoc_gia');
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not defined in environment variables");
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // { id, username, email, role }
     next();
   } catch (err) {

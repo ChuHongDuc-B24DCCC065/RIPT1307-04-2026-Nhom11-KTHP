@@ -1,7 +1,8 @@
 import React from 'react';
 import { Form, Input, Button, Card, message, Typography } from 'antd';
 import { MailOutlined, LockOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { Link, useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 
@@ -12,14 +13,14 @@ const LoginPage: React.FC = () => {
 
   const onFinish = async (values: any) => {
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/login`, {
+      const res = await axiosInstance.post('/login', {
         email: values.username,
         password: values.password
       });
 
       if (res.data.token) {
-        localStorage.setItem('token', res.data.token);
-        localStorage.setItem('user', JSON.stringify(res.data.user));
+        localStorage.setItem(STORAGE_KEYS.TOKEN, res.data.token);
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(res.data.user));
 
         message.success(`Chào mừng ${res.data.user.username} quay trở lại!`);
 

@@ -35,6 +35,38 @@ router.get('/profile', authMiddleware, async (req, res) => {
   }
 });
 
+// Lấy thông tin profile của một user bất kỳ theo ID
+router.get('/:id/profile', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT u.id, u.username, u.email, u.role, u.reputation, 
+              p.full_name as fullName, p.phone as phoneNumber, p.school, p.bio, p.website, p.avatar, p.class_name,
+              p.academic_title, p.department, p.major, p.teacher_code, p.is_available, p.office_hours, p.interests,
+              (SELECT COUNT(*) FROM answers WHERE verified_by_user_id = u.id) as verified_count,
+              (SELECT COUNT(*) FROM questions WHERE user_id = u.id AND post_type = 'announcement') as announcement_count,
+              (SELECT COUNT(*) FROM answers WHERE user_id = u.id) as answer_count
+       FROM users u 
+       LEFT JOIN user_profile p ON u.id = p.user_id 
+       WHERE u.id = ?`,
+      [req.params.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+
+    const userProfile = rows[0];
+    if (userProfile.role === 'teacher') {
+      userProfile.expert_score = (userProfile.verified_count * 15) + (userProfile.announcement_count * 10) + (userProfile.answer_count * 5);
+    }
+
+    res.json({ success: true, data: userProfile });
+  } catch (error) {
+    console.error('GET /users/:id/profile error:', error.message);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+});
+
 const bcrypt = require('bcrypt');
 
 // Cập nhật profile

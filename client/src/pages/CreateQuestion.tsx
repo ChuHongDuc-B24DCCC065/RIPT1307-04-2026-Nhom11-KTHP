@@ -13,7 +13,6 @@ import {
   Upload
 } from 'antd';
 import { 
-  SafetyCertificateOutlined,
   PlusOutlined,
   UploadOutlined,
   PaperClipOutlined,
@@ -21,7 +20,8 @@ import {
 } from '@ant-design/icons';
 import ReactQuill from 'react-quill-new';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance, { API_BASE_URL } from '../utils/axiosConfig';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import 'react-quill-new/dist/quill.snow.css';
 import './CreateQuestion.css';
 
@@ -39,7 +39,7 @@ const CreateQuestion: React.FC = () => {
   // Đọc dữ liệu từ localStorage an toàn trong khối try-catch
   const parsedUser = useMemo(() => {
     try {
-      const userData = localStorage.getItem('user');
+      const userData = localStorage.getItem(STORAGE_KEYS.USER);
       return userData ? JSON.parse(userData) : null;
     } catch (e) {
       console.error("Lỗi parse user data:", e);
@@ -50,7 +50,7 @@ const CreateQuestion: React.FC = () => {
   const isAnnouncement = searchParams.get('type') === 'announcement' && parsedUser?.role === 'teacher';
   const [postType, setPostType] = useState(isAnnouncement ? 'announcement' : 'question');
 
-  const username = parsedUser?.username || 'bạn';
+  // const username = parsedUser?.username || 'bạn';
 
   const onFinish = async (values: any) => {
     if (!content || !content.trim() || content === '<p><br></p>') {
@@ -60,18 +60,14 @@ const CreateQuestion: React.FC = () => {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      
-      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions`, {
+      const res = await axiosInstance.post('/questions', {
         title: values.title,
         description: content, 
         tags: values.tags ? values.tags.join(',') : '',
         post_type: parsedUser?.role === 'teacher' ? values.post_type : 'question',
         deadline: parsedUser?.role === 'teacher' && values.post_type === 'assignment' ? values.deadline : null,
         attachment_url: parsedUser?.role === 'teacher' ? attachmentUrl : null,
-        attachment_name: parsedUser?.role === 'teacher' ? attachmentName : null
-      }, {
-        headers: { Authorization: `Bearer ${token}` } 
+        attachment_name: parsedUser?.role === 'teacher' ? attachmentName : null,
       });
 
       if (res.status === 201 || res.status === 200) {
@@ -108,21 +104,21 @@ const CreateQuestion: React.FC = () => {
   }, [content]);
 
   // Bộ chọn tag gợi ý
-  const suggestionTags = ['Tailwind CSS', 'Frontend', 'UI/UX', 'JavaScript'];
+  // const suggestionTags = ['Tailwind CSS', 'Frontend', 'UI/UX', 'JavaScript'];
 
-  const handleSuggestionClick = (tag: string) => {
-    const currentTags = form.getFieldValue('tags') || [];
-    if (currentTags.includes(tag)) {
-      return; // Đã chọn rồi thì không thêm nữa
-    }
-    if (currentTags.length >= 5) {
-      message.warning('Bạn chỉ được chọn tối đa 5 thẻ!');
-      return;
-    }
-    const newTags = [...currentTags, tag];
-    form.setFieldsValue({ tags: newTags });
-    setSelectedTags(newTags);
-  };
+  // const handleSuggestionClick = (tag: string) => {
+  //   const currentTags = form.getFieldValue('tags') || [];
+  //   if (currentTags.includes(tag)) {
+  //     return; // Đã chọn rồi thì không thêm nữa
+  //   }
+  //   if (currentTags.length >= 5) {
+  //     message.warning('Bạn chỉ được chọn tối đa 5 thẻ!');
+  //     return;
+  //   }
+  //   const newTags = [...currentTags, tag];
+  //   form.setFieldsValue({ tags: newTags });
+  //   setSelectedTags(newTags);
+  // };
 
   const modules = {
     toolbar: [
@@ -145,21 +141,7 @@ const CreateQuestion: React.FC = () => {
     >
       <div className="create-question-container">
         <div className="create-question-wrapper">
-          
-          {parsedUser && (
-            <Alert 
-              title={
-                <span className="verification-banner-text">
-                  <b>Trạng thái đăng nhập đã xác thực.</b> Chào mừng bạn quay trở lại, {username}. Bạn có thể đăng bài ngay bây giờ.
-                </span>
-              } 
-              type="success" 
-              showIcon 
-              icon={<SafetyCertificateOutlined className="verification-banner-text" />} 
-              className="verification-banner"
-            />
-          )}
-
+        
           <Card variant="borderless" className="create-question-card">
             <div className="create-question-header">
               <h1 className="create-question-title">{parsedUser?.role === 'teacher' ? '👨‍🏫 Đăng tải nội dung học vụ' : 'Tạo bài viết mới'}</h1>
@@ -223,8 +205,8 @@ const CreateQuestion: React.FC = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <Upload
                         name="file"
-                        action={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/upload/document`}
-                        headers={{ Authorization: `Bearer ${localStorage.getItem('token')}` }}
+                        action={`${API_BASE_URL}/upload/document`}
+                        headers={{ Authorization: `Bearer ${localStorage.getItem(STORAGE_KEYS.TOKEN)}` }}
                         showUploadList={false}
                         onChange={(info) => {
                           if (info.file.status === 'uploading') {
@@ -359,20 +341,6 @@ const CreateQuestion: React.FC = () => {
                       { value: 'JavaScript', label: 'JavaScript' }
                     ]}
                   />
-
-                  {/* Suggestions row matching mockup */}
-                  <div className="create-question-suggestions-row">
-                    <span className="suggestions-label">Gợi ý:</span>
-                    {suggestionTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="suggestion-tag-pill"
-                        onClick={() => handleSuggestionClick(tag)}
-                      >
-                        +{tag}
-                      </span>
-                    ))}
-                  </div>
                 </div>
               </Form.Item>
 

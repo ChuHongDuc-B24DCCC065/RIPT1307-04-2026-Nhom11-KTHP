@@ -14,7 +14,7 @@ import {
   Tag 
 } from 'antd';
 import { SendOutlined, HistoryOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import MarkdownEditor from '../components/MarkdownEditor';
+import RichTextEditor from '../components/RichTextEditor';
 
 const { Title, Text } = Typography;
 const { confirm } = Modal;
@@ -213,7 +213,7 @@ const AdminEmailBroadcast: React.FC = () => {
             )}
 
             <Form.Item label={<Text strong>Nội dung chi tiết</Text>} required>
-              <MarkdownEditor 
+              <RichTextEditor 
                 value={content} 
                 onChange={setContent} 
                 placeholder="Soạn nội dung chi tiết của thông báo/email tại đây..."

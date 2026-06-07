@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Card, message, Typography, Result } from 'antd';
 import { MailOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import { Link, useNavigate } from 'react-router-dom';
 import './ForgotPasswordPage.css';
 
@@ -15,7 +15,7 @@ const ForgotPasswordPage: React.FC = () => {
   const onFinish = async (values: { email: string }) => {
     setLoading(true);
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/forgot-password`, {
+      const res = await axiosInstance.post('/forgot-password', {
         email: values.email
       });
       message.success(res.data.message || 'Yêu cầu lấy lại mật khẩu thành công!');

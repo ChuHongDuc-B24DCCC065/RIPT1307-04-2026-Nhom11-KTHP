@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Tag, Card, Typography, message, Empty, Skeleton, Input, Popover, Button, Avatar } from 'antd';
-import { CheckOutlined } from '@ant-design/icons';
+import { Tag, Card, Typography, message, Empty, Skeleton, Input, Popover, Button, Avatar, Select, Radio, Badge, Col, Row, Space } from 'antd';
+import { CheckOutlined, FilterOutlined, ClearOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import dayjs from 'dayjs';
+import { STORAGE_KEYS } from '../constants/storageKeys';
+import { getAvatarGradient } from '../utils/avatar';
+import { stripHtml } from '../utils/html';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 
@@ -37,24 +40,57 @@ interface Question {
 const SearchAndFilterPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null');
 
-  const query = searchParams.get('q');
-  const tag = searchParams.get('tag');
+  const query = searchParams.get('q') || '';
+  const tag = searchParams.get('tag') || '';
+  const tagsParam = searchParams.get('tags') || '';
+  const searchIn = searchParams.get('searchIn') || 'both';
+  const dateRange = searchParams.get('dateRange') || 'all';
+
+  // State to control filter panel visibility
+  const [showFilters, setShowFilters] = useState(() => {
+    const hasSearchIn = searchParams.has('searchIn') && searchParams.get('searchIn') !== 'both';
+    const hasDateRange = searchParams.has('dateRange') && searchParams.get('dateRange') !== 'all';
+    const hasTags = searchParams.has('tags') || searchParams.has('tag');
+    return hasSearchIn || hasDateRange || hasTags;
+  });
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [likedQuestions, setLikedQuestions] = useState<Record<number, boolean>>({});
   const [tagCounts, setTagCounts] = useState<Record<string, number>>({});
-
   const [tagsData, setTagsData] = useState<Record<string, { description: string; count: number }>>({});
+  
   const [watchedTags, setWatchedTags] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem('watchedTags') || '[]');
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.WATCHED_TAGS) || '[]');
     } catch {
       return [];
     }
   });
+
+  // Combine tag (clicked from other pages) and tagsParam (selected from dropdown)
+  const selectedTags = React.useMemo(() => {
+    const list: string[] = [];
+    if (tag) {
+      list.push(tag.toLowerCase());
+    }
+    if (tagsParam) {
+      tagsParam.split(',').forEach(t => {
+        const cleaned = t.trim().toLowerCase();
+        if (cleaned && !list.includes(cleaned)) {
+          list.push(cleaned);
+        }
+      });
+    }
+    return list;
+  }, [tag, tagsParam]);
+
+  const activeFiltersCount = 
+    selectedTags.length + 
+    (dateRange !== 'all' ? 1 : 0) + 
+    (searchIn !== 'both' ? 1 : 0);
 
   const toggleWatchTag = (tagName: string) => {
     const isWatched = watchedTags.includes(tagName.toLowerCase());
@@ -67,21 +103,17 @@ const SearchAndFilterPage: React.FC = () => {
       message.success(`Đã theo dõi thẻ #${tagName}`);
     }
     setWatchedTags(updated);
-    localStorage.setItem('watchedTags', JSON.stringify(updated));
+    localStorage.setItem(STORAGE_KEYS.WATCHED_TAGS, JSON.stringify(updated));
   };
 
   const fetchTagCounts = async () => {
     try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/tags/stats`
-      );
+      const res = await axiosInstance.get('/questions/tags/stats');
       if (res.data?.success) {
         setTagCounts(res.data.data || {});
       }
 
-      const resList = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/tags/list`
-      );
+      const resList = await axiosInstance.get('/questions/tags/list');
       if (resList.data?.success) {
         const data: Record<string, { description: string; count: number }> = {};
         resList.data.data.forEach((t: any) => {
@@ -96,6 +128,18 @@ const SearchAndFilterPage: React.FC = () => {
       console.error('Lỗi lấy thống kê tags:', error);
     }
   };
+
+  const tagOptions = React.useMemo(() => {
+    const keys = new Set([...Object.keys(tagsData), ...Object.keys(tagCounts)]);
+    return Array.from(keys).map(key => {
+      const info = tagsData[key];
+      const count = info?.count || tagCounts[key] || 0;
+      return {
+        label: `#${key} (${count})`,
+        value: key,
+      };
+    });
+  }, [tagsData, tagCounts]);
 
   const getTagInfo = (tagName: string) => {
     const key = tagName.toLowerCase();
@@ -113,40 +157,42 @@ const SearchAndFilterPage: React.FC = () => {
     return num;
   };
 
-  const getAvatarGradient = (name: string) => {
-    const gradients = [
-      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-      'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-    ];
-    const index = (name || 'A').charCodeAt(0) % gradients.length;
-    return gradients[index];
-  };
+  // getAvatarGradient được import từ utils/avatar
 
+  // Fetch tags stats once on mount
+  useEffect(() => {
+    fetchTagCounts();
+  }, []);
+
+  // Fetch search results reactive to query and filters
   useEffect(() => {
     const fetchResults = async () => {
       setLoading(true);
       try {
-        let endpoint = '';
-        if (query) {
-          endpoint = `/questions?search=${encodeURIComponent(query)}`;
-        } else if (tag) {
-          endpoint = `/questions?tag=${encodeURIComponent(tag)}`;
-        } else {
+        const hasFilter = query || tag || tagsParam || dateRange !== 'all';
+        if (!hasFilter) {
           setQuestions([]);
           setLoading(false);
           return;
         }
 
-        const token = localStorage.getItem('token');
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}${endpoint}`,
-          { headers }
-        );
+        const apiParams = new URLSearchParams();
+        if (query) {
+          apiParams.set('search', query);
+          if (searchIn && searchIn !== 'both') {
+            apiParams.set('searchIn', searchIn);
+          }
+        }
+        if (tagsParam) {
+          apiParams.set('tags', tagsParam);
+        } else if (tag) {
+          apiParams.set('tag', tag);
+        }
+        if (dateRange && dateRange !== 'all') {
+          apiParams.set('dateRange', dateRange);
+        }
+
+        const res = await axiosInstance.get(`/questions?${apiParams.toString()}`);
         const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
         setQuestions(data);
 
@@ -166,16 +212,55 @@ const SearchAndFilterPage: React.FC = () => {
     };
 
     fetchResults();
-    fetchTagCounts();
-  }, [query, tag]);
+  }, [query, tag, tagsParam, searchIn, dateRange]);
 
   const handleSearch = (value: string) => {
+    const newParams = new URLSearchParams(searchParams);
     if (value.trim()) {
-      setSearchParams({ q: value.trim() });
+      newParams.set('q', value.trim());
     } else {
-      searchParams.delete('q');
-      setSearchParams(searchParams);
+      newParams.delete('q');
     }
+    setSearchParams(newParams);
+  };
+
+  const handleTagsChange = (newTags: string[]) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('tag');
+    if (newTags.length > 0) {
+      newParams.set('tags', newTags.join(','));
+    } else {
+      newParams.delete('tags');
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleSearchInChange = (value: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (value && value !== 'both') {
+      newParams.set('searchIn', value);
+    } else {
+      newParams.delete('searchIn');
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleDateRangeChange = (value: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (value && value !== 'all') {
+      newParams.set('dateRange', value);
+    } else {
+      newParams.delete('dateRange');
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleResetFilters = () => {
+    const newParams = new URLSearchParams();
+    if (query) {
+      newParams.set('q', query);
+    }
+    setSearchParams(newParams);
   };
 
   const handleLike = async (e: React.MouseEvent, question: Question) => {
@@ -197,12 +282,7 @@ const SearchAndFilterPage: React.FC = () => {
     ));
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/questions/${question.id}/vote`,
-        { type: 'up' }, 
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axiosInstance.post(`/questions/${question.id}/vote`, { type: 'up' });
       
       // Cập nhật lại state chuẩn xác từ backend trả về
       setLikedQuestions(prev => ({ ...prev, [question.id]: res.data.user_vote_type === 1 }));
@@ -226,6 +306,7 @@ const SearchAndFilterPage: React.FC = () => {
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 8px' }}>
       <Input.Search
+        key={query}
         placeholder="Nhập từ khóa tìm kiếm..."
         allowClear
         enterButton="Tìm kiếm"
@@ -237,15 +318,117 @@ const SearchAndFilterPage: React.FC = () => {
           border: '1px solid #e2e8f0', 
           boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
           fontSize: '15px',
-          marginBottom: 28,
+          marginBottom: 20,
           overflow: 'hidden'
         }}
       />
 
+      {/* Advanced Filters Trigger Row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <Space>
+          <Badge count={activeFiltersCount} offset={[8, 0]} color="#6366f1">
+            <Button 
+              type={showFilters ? "primary" : "default"}
+              icon={<FilterOutlined />}
+              onClick={() => setShowFilters(!showFilters)}
+              style={{ borderRadius: '8px', fontWeight: 500 }}
+            >
+              Bộ lọc nâng cao {showFilters ? <UpOutlined /> : <DownOutlined />}
+            </Button>
+          </Badge>
+          {activeFiltersCount > 0 && (
+            <Button 
+              type="text" 
+              danger 
+              icon={<ClearOutlined />} 
+              onClick={handleResetFilters}
+              style={{ fontWeight: 500 }}
+            >
+              Đặt lại bộ lọc
+            </Button>
+          )}
+        </Space>
+      </div>
+
+      {/* Collapsible Filter Panel */}
+      {showFilters && (
+        <Card 
+          style={{ 
+            marginBottom: 28, 
+            borderRadius: '12px', 
+            border: '1px solid #e2e8f0',
+            background: 'rgba(255, 255, 255, 0.85)',
+            backdropFilter: 'blur(8px)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.02)'
+          }}
+          styles={{ body: { padding: '20px' } }}
+        >
+          <Row gutter={[20, 16]}>
+            <Col xs={24} md={12}>
+              <div style={{ fontWeight: 600, color: '#475569', marginBottom: 8 }}>Tìm kiếm trong:</div>
+              <Radio.Group 
+                value={searchIn} 
+                onChange={(e) => handleSearchInChange(e.target.value)}
+                optionType="button"
+                buttonStyle="solid"
+                style={{ width: '100%' }}
+              >
+                <Radio.Button value="both" style={{ width: '33.33%', textAlign: 'center' }}>Cả hai</Radio.Button>
+                <Radio.Button value="title" style={{ width: '33.33%', textAlign: 'center' }}>Tiêu đề</Radio.Button>
+                <Radio.Button value="content" style={{ width: '33.33%', textAlign: 'center' }}>Nội dung</Radio.Button>
+              </Radio.Group>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <div style={{ fontWeight: 600, color: '#475569', marginBottom: 8 }}>Thời gian đăng bài:</div>
+              <Select 
+                value={dateRange} 
+                onChange={handleDateRangeChange}
+                style={{ width: '100%' }}
+                options={[
+                  { label: 'Tất cả thời gian', value: 'all' },
+                  { label: 'Hôm nay', value: 'today' },
+                  { label: '7 ngày qua', value: 'week' },
+                  { label: '30 ngày qua', value: 'month' },
+                  { label: '1 năm qua', value: 'year' }
+                ]}
+              />
+            </Col>
+
+            <Col xs={24}>
+              <div style={{ fontWeight: 600, color: '#475569', marginBottom: 8 }}>Lọc theo thẻ (Tags):</div>
+              <Select 
+                mode="multiple"
+                allowClear
+                placeholder="Chọn một hoặc nhiều thẻ để lọc..."
+                value={selectedTags}
+                onChange={handleTagsChange}
+                style={{ width: '100%' }}
+                options={tagOptions}
+                filterOption={(input, option) => 
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+              />
+            </Col>
+          </Row>
+        </Card>
+      )}
+
       <Title level={3} style={{ marginBottom: 20 }}>
-        {query && `Kết quả tìm kiếm cho: "${query}"`}
-        {tag && `Các câu hỏi thuộc thẻ: #${tag}`}
-        {!query && !tag && 'Tìm kiếm câu hỏi'}
+        {query ? (
+          <>
+            Kết quả tìm kiếm cho: "{query}"
+            {selectedTags.length > 0 && (
+              <span style={{ fontSize: '15px', color: '#64748b', fontWeight: 'normal', marginLeft: 8 }}>
+                (Thẻ: {selectedTags.map(t => `#${t}`).join(', ')})
+              </span>
+            )}
+          </>
+        ) : selectedTags.length > 0 ? (
+          `Các câu hỏi thuộc thẻ: ${selectedTags.map(t => `#${t}`).join(', ')}`
+        ) : (
+          'Tìm kiếm câu hỏi'
+        )}
       </Title>
 
       {loading ? (
@@ -322,9 +505,9 @@ const SearchAndFilterPage: React.FC = () => {
                   </div>
 
                   <div className="so-question-excerpt">
-                    {item.description && item.description.length > 180
-                      ? `${item.description.replace(/<[^>]*>/g, '').substring(0, 180)}...`
-                      : item.description.replace(/<[^>]*>/g, '')}
+                    {item.description && (stripHtml(item.description).length > 180
+                      ? `${stripHtml(item.description).substring(0, 180)}...`
+                      : stripHtml(item.description))}
                   </div>
 
                   <div className="so-meta-row">
