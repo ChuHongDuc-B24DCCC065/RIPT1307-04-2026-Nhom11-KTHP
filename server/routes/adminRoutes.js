@@ -8,10 +8,7 @@ const pool = require("../config/db");
 // Hoặc nếu config/db.js nằm cùng cấp với index.js thì dùng:
 // const pool = require("../config/db");
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is not defined in environment variables");
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey_12345!';
 
 // ─────────────────────────────────────────
 // Middleware xác thực Token
